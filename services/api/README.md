@@ -18,6 +18,6 @@ uv run --project services/api --frozen --extra dev pytest services/api/tests
 uv run --project services/api --frozen python services/api/scripts/export_openapi.py
 ```
 
-Routes: `GET /api/v1/health`, `/api/v1/demo/news`, `/api/v1/demo/market`; schema ở `/openapi.json`, interactive docs ở `/docs`. Success envelope `{data, meta: {is_synthetic: true}}`; errors `{error: {code, message}, meta: {is_synthetic: true}}`. Chỉ demo market/news là fixture, health không chứng minh data source sẵn sàng.
+Routes chỉ đọc: `GET /api/v1/health`, `GET /api/v1/market/instruments`, `GET /api/v1/market/candles?instrument_id=…&interval=…`, `GET /api/v1/news/articles?instrument_id=…` và `GET /api/v1/portfolio/holdings`. Danh mục server trả mảng rỗng vì holdings hiện lưu cục bộ trong trình duyệt. Schema ở `/openapi.json`, interactive docs ở `/docs`. Success envelope `{data, meta: {is_synthetic: true}}`; errors `{error: {code, message}, meta: {is_synthetic: true}}`. Health không chứng minh data source sẵn sàng.
 
 Frontend gọi cùng origin qua Go Gateway/Vite proxy; API không bật cross-origin cookie/CORS. Bind loopback là mặc định local; deployment và provider selection thuộc phase sau.
