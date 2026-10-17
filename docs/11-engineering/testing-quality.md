@@ -1,15 +1,20 @@
 # Testing và quality
-**Trạng thái:** kế hoạch kiểm chứng, chưa có test runtime mới đã pass.
 
-## Lớp kiểm thử
-- Unit: parser, timestamp/unit conversion, bar closure, feature availability, ledger math và CSV validation.
-- Contract: Gateway/FastAPI OpenAPI, worker messages, dataset manifest, artifact schema và source grants.
-- Integration: managed Auth/JWT, account isolation, database uniqueness, immutable snapshots/result sync.
-- Browser: WebSocket lifecycle/CSP/access, Pyodide package compatibility, cancel/terminate/retry, 5k/25k/50k row benchmarks.
-- Quant: walk-forward, purging theo label intervals, train-only preprocessing, fees/slippage và baseline comparisons.
-- E2E: news→asset→watchlist, ledger import, Model Lab→private result và demo isolation.
+**Trạng thái:** prototype regression coverage đang chạy local và trong CI; production integration/quant suites vẫn là yêu cầu tương lai.
 
-## Scenarios bắt buộc
-Feed disconnect, late/duplicate/missing bars, open candle, timestamp milliseconds/microseconds; news duplicate/revision/backfill/publication absent; owner spoof/IDOR/JWT expired; CSV replay/same-time transactions/fee currencies; stale quote; worker unsupported/crash/tab close/logout mid-run; result spoof và large artifact; source chưa đủ quyền.
+## Checks hiện có
 
-CI dùng tiny deterministic fixtures. Benchmark report ghi browser/device/memory/time, không cam kết mọi máy. Network smoke test không thay quyền source thành approved. Public demo release phải chứng minh data/model claims bằng report, không bằng screenshots.
+- Frontend: `npm run test:web`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run security:env-boundaries`, `npm run fixtures:check`, `npm run test:tooling`.
+- Vitest/jsdom covers routing + fixture rendering, portfolio valuation/CSV/persistence, mocked WebSocket lifecycle, Model Lab mock labeling, data age, refresh success/failure and stale data preservation.
+- GitHub Actions runs frontend, FastAPI/OpenAPI drift, research inspection, Go gateway and fixture ingestion checks. Changes to `main` require PR review and required status checks.
+
+## Scenarios đã có regression tests
+
+- Portfolio: complete/partial/missing prices, zero cost basis, candles out of order/open, strict decimals, unsupported assets, CSV BOM/CRLF/quotes/header/row widths, atomic import, overlapping FileReader results, corrupt storage, partial persisted rows and quota write failure.
+- Stream: fake WebSocket subscription, malformed/valid messages, no-message stale timeout, reconnect backoff, visibility pause/resume, StrictMode and teardown.
+- Refresh: initial loading vs background refresh, cache data during refresh, error with previous data, source timestamp age and retry controls.
+- Model Lab: placeholder result remains `simulated`/`mock` and configuration does not change mock metrics.
+
+## Chưa được kiểm chứng
+
+Managed Auth/JWT and account isolation, database constraints, source rights, real feed gaps/duplicates/backfill, browser CSP and performance, actual worker runtime/cancel, walk-forward quant validation, contrast ratios, deployment, monitoring and recovery. CI fixture tests do not approve a market/news source or prove profitability.

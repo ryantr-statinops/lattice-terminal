@@ -1,66 +1,41 @@
-# Evaluation & security report (Phase 5)
+# Prototype evaluation and hardening report
 
-**Trạng thái:** audit completed 2026-10-17 (idea-new foundation). Scope limited to frontend foundations required for Phase 2.
+**Trạng thái:** cập nhật 2026-10-17 sau hardening prototype. Đây là bằng chứng cho code fixture, không phải production readiness.
 
-## 1. Source rights (Binance public market data)
+## Sản phẩm đang chạy
 
-- **MVP scope:** Binance Spot BTCUSDT/ETHUSDT, candles 15m/1h/1d (RT-ADR-005).
-- **Access:** Public REST/WebSocket, no API key required (RT-ADR-006).
-- **Rights gate:** Source eligibility/access/rights must be verified before production ingestion (RT-ADR-003). Current implementation uses synthetic fixtures only (`source_id=fixture-only`, `is_synthetic=true`).
-- **Conclusion:** Fixture-only. No real Binance data ingested. Source rights verification deferred to Phase 6 (live stream) gate.
+- Market hiển thị BTC/ETH, bảng nến và candlestick chart từ synthetic fixtures. Watchlist lưu local.
+- News hiển thị fixture articles, provenance timestamps và lọc theo instrument.
+- Portfolio nhập tay/CSV, kiểm tra dữ liệu, lưu localStorage và tính P&L theo nến fixture đã đóng. Thiếu giá thì ẩn tổng định giá/P&L.
+- Binance WebSocket chỉ kết nối khi người dùng bật; kiểm tra lifecycle/health và không đưa stream vào chart hoặc portfolio.
+- Model Lab form gọi mock adapter. Kết quả luôn `simulated`/`mock`; cấu hình không tham gia tính chỉ số.
+- FastAPI, Go Gateway và OpenAPI hoạt động quanh fixture; portfolio API vẫn trả mảng rỗng.
 
-## 2. Credential / legacy scan
+## Data rights và credentials
 
-- **Secret scan:** No private keys, AWS keys, OpenAI keys, or GitHub tokens found in tracked source (excluding check script itself).
-- **Legacy references:** Zero matches for `homematch`, `phongtro`, `supabase`, `apps.script`, `google.console`, `oauth.grant`, `service.account`, `HomeMatch`, `retirement` in tracked source.
-- **Ignored files:** `.env.local`, `scripts/*.json` ignored per `.gitignore`. No credential files present in repo.
-- **Environment boundaries:** `npm run security:env-boundaries` passes — only `VITE_API_BASE_URL` approved public env var; no dynamic server env access; no credential markers.
+- Không có dữ liệu market/news thật trong fixtures; mọi fixture ghi `source_id=fixture-only` và `is_synthetic=true`.
+- Binance stream có thể được bật trực tiếp trong trang Market. Trước ingestion/phát hành production cần xác minh quyền theo source, địa bàn, lưu trữ, hiển thị và mục đích sử dụng.
+- Environment boundary check chỉ cho phép `VITE_API_BASE_URL` ở frontend. Known-marker scan trên lịch sử chưa push tại thời điểm hardening không tìm thấy private key/AWS/GitHub/OpenAI token pattern; đây không thay thế managed secret scanner.
+- Không có auth/account hoặc exchange trading keys.
 
-## 3. Dependency audit
+## Kiểm chứng
 
-- **npm audit:** 0 vulnerabilities after `npm audit fix` (2 high fixed: brace-expansion, js-yaml — both dev deps).
-- **Frontend deps:** React 19, Vite 8, Tailwind 4, React Router 7, TanStack Query 5, @base-ui/react 1.5. No known high-severity issues.
-- **Python:** FastAPI/Pydantic via uv lock (frozen). No audit tool run (safety not installed); recommend `pip-audit` before production.
-- **Go:** Not available in this environment (Go 1.27.2 not on PATH). Tests not run locally; CI runs them.
+- Frontend: 51 Vitest tests pass; lint, typecheck và Vite production build pass local.
+- Tooling: fixture validator, environment-boundary check và 2 Node tooling tests pass.
+- API/OpenAPI và Go gateway/ingestion tests cùng fixture ingestion pass trong các required GitHub Actions jobs. Local không có Go và không thể tải Python runtime do network/DNS bị hạn chế.
+- `npm install` báo 0 vulnerabilities trong npm audit tại thời điểm cài test dependencies. Cần chạy lại dependency audit trước release.
+- Chart, portfolio và CSV có screen-reader table captions. Contrast ratios chưa được đo bằng axe/Lighthouse; browser UI smoke check được ghi lại khi hoàn tất phát hành này.
 
-## 4. Accessibility verification
+## Hành vi và giới hạn
 
-| Check | Status | Evidence |
-|-------|--------|----------|
-| Keyboard navigation | ✅ | Interactive elements use `<button>`/`<a>` with native tab order |
-| Focus visibility | ✅ | `a:focus-visible` outline in styles.css; buttons rely on browser default + `focus-visible` |
-| Reduced motion | ✅ | `@media (prefers-reduced-motion: reduce)` disables transitions/animations |
-| Color not sole indicator | ✅ | Market up/down use text color + numeric sign (±); watchlist uses ★/☆ |
-| Semantic HTML | ✅ | `<table>`, `<thead>`, `<tbody>`, `<article>`, `<section>`, `aria-labelledby`, `role="tablist"` |
-| ARIA labels | ✅ | Filter tabs have `aria-selected`; watchlist toggle has `aria-pressed`/`aria-label` |
-| Contrast | ⚠️ Not measured | Need axe/Lighthouse audit; recommend before production |
-| Screen reader tables | ⚠️ Partial | Tables lack `<caption>`; add in Phase 6 polish |
+| Khu vực | Có trong prototype | Chưa có |
+|---|---|---|
+| Market | Fixture candles/chart, watchlist, opt-in stream status, source timestamp | Real history, backfill, stream-to-chart merge, production source approval |
+| News | Fixture cards, instrument filters, published/first-seen times | News adapters, dedupe/revisions, source-rights approval |
+| Portfolio | Local holdings, CSV validation, fixture valuation, partial totals | Auth, server persistence, transaction ledger, live valuation |
+| Model Lab | Config form, explicitly mocked result | Web Worker/Pyodide, actual model training/backtest, reproducible artifact |
+| Operations | Local API/Gateway fixture path, CI gates | Deployment, auth isolation, production monitoring/recovery |
 
-## 5. State coverage
+## Readiness
 
-All six states defined in `design-tokens.md` and implemented where applicable:
-
-| State | MarketPage | NewsPage | PortfolioPage |
-|-------|-----------|----------|---------------|
-| Loading | ✅ skeleton | ✅ skeleton | — (localStorage sync) |
-| Error | ✅ + retry | ✅ + retry | — |
-| Empty | ✅ | ✅ | ✅ |
-| Stale | — (Phase 6) | — | ⚠️ valuation time shown |
-| Refreshing | — (Phase 6) | — | — |
-| Partial | — | — | — |
-
-## 6. Chart cleanup
-
-No chart components implemented yet (Phase 6). Cleanup pattern documented in `design-tokens.md` §Chart cleanup. Must be verified when TradingView Lightweight Charts is added (RT-ADR-017).
-
-## 7. Unresolved issues
-
-1. **Contrast ratios not measured** — need axe/Lighthouse audit before production.
-2. **Table captions** missing for screen readers — add in polish phase.
-3. **Python/Go audits not run** locally (tooling not installed).
-4. **Source rights** for Binance public data not formally verified (fixture-only).
-5. **No auth provider selected** — RT-ADR-008 deferred (managed auth, provider TBD).
-
-## 8. Conclusion
-
-Frontend foundations (Phase 1–4) pass all available checks. No secrets in repo. No high-severity dependency vulnerabilities. Accessibility basics in place; contrast and table captions need polish. Ready for Phase 6 (live stream) and Phase 7 (Model Lab) when source rights and browser feasibility are confirmed.
+Prototype hardening gates cover frontend regression tests, FastAPI/OpenAPI drift, research inspection and Go fixture services. Source-rights approval, contrast measurement, auth/persistence and production monitoring remain open. Use [next steps](../../task/next-plan.md) to sequence real-data work after rights and data contracts are reviewed.
