@@ -3,6 +3,7 @@ import Container from "../../components/layout/Container";
 import { RefreshingIndicator } from "../../components/ui/RefreshingIndicator";
 import { StaleBadge } from "../../components/ui/StaleBadge";
 import { useArticles, type Article } from "./api";
+import { isDataOlderThan } from "../../lib/dataAge";
 
 const FILTERS = [
   { id: null, label: "Tất cả" },
@@ -107,15 +108,23 @@ function ArticleCard({ article }: { article: Article }) {
 export function NewsPage() {
   const [filter, setFilter] = useState<string | null>(null);
   const articlesQuery = useArticles(filter);
+  const newestFirstSeen = articlesQuery.data
+    ?.map((article) => article.first_seen_at)
+    .filter((timestamp) => Number.isFinite(Date.parse(timestamp)))
+    .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
+  const isNewsOld = isDataOlderThan(newestFirstSeen, 24 * 60 * 60_000);
 
   return (
     <Container className="py-8 sm:py-12">
-      <RefreshingIndicator visible={articlesQuery.isFetching} />
+      <RefreshingIndicator visible={articlesQuery.data !== undefined && articlesQuery.isFetching} />
       <h1 className="text-2xl font-semibold tracking-tight">Tin tức</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         News-first · dữ liệu tổng hợp (fixture)
       </p>
-      {articlesQuery.isStale && <div className="mt-2"><StaleBadge since={null} /></div>}
+      {newestFirstSeen && (
+        <p className="mt-2 text-xs text-muted-foreground">Tin được thấy gần nhất: {formatVi(newestFirstSeen)}</p>
+      )}
+      {isNewsOld && newestFirstSeen && <div className="mt-2"><StaleBadge since={formatVi(newestFirstSeen)} /></div>}
 
       <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Lọc theo tài sản">
         {FILTERS.map((f) => (
@@ -140,9 +149,15 @@ export function NewsPage() {
         <h2 id="articles-heading" className="sr-only">
           Danh sách bài tin
         </h2>
+        {articlesQuery.isError && articlesQuery.data !== undefined && (
+          <div role="alert" className="mb-3 flex items-center gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+            <span>Không làm mới được tin; đang giữ danh sách đã tải.</span>
+            <button type="button" onClick={() => articlesQuery.refetch()} className="underline">Thử lại</button>
+          </div>
+        )}
         {articlesQuery.isLoading ? (
           <LoadingSkeleton />
-        ) : articlesQuery.isError ? (
+        ) : articlesQuery.data === undefined && articlesQuery.isError ? (
           <ErrorState
             message="Không tải được bài tin."
             onRetry={() => articlesQuery.refetch()}

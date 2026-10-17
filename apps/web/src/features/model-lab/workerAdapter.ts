@@ -17,23 +17,23 @@ export interface WorkerAdapter {
 }
 
 /**
- * No-op adapter used until Pyodide worker is implemented.
- * Returns a synthetic client-computed result.
+ * Placeholder adapter used until the worker runtime is implemented.
+ * Returned metrics are fixed mock values and do not depend on the config.
  */
 export function createNoopAdapter(): WorkerAdapter {
   return {
     async run(config: unknown) {
+      void config;
       const runId = `run-${Date.now()}`;
       await new Promise((r) => setTimeout(r, 300));
       return {
         run_id: runId,
-        status: "completed",
+        status: "simulated",
+        source: "mock",
         out_of_sample_windows: 5,
         baseline: 0.52,
         net_cost: 0.001,
         max_drawdown: 0.08,
-        client_computed: true,
-        config,
       };
     },
     cancel() {

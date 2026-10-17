@@ -36,7 +36,7 @@ export function ModelLabPage() {
     <Container className="py-8 sm:py-12">
       <h1 className="text-2xl font-semibold tracking-tight">Model Lab</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Browser Web Worker training/backtest · client-computed · chưa có Pyodide runtime
+        Giao diện cấu hình thử nghiệm · chưa có runtime training/backtest
       </p>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -111,7 +111,7 @@ export function ModelLabPage() {
             disabled={running}
             className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
-            {running ? "Đang chạy…" : "Run experiment"}
+            {running ? "Đang tạo kết quả mẫu…" : "Chạy mô phỏng giao diện"}
           </button>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -119,8 +119,12 @@ export function ModelLabPage() {
 
         <div className="panel">
           <h2 className="text-lg font-semibold">Kết quả</h2>
+          <div role="status" className="mt-3 rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm text-warning">
+            <p className="font-semibold">Kết quả mẫu — chưa chạy training/backtest.</p>
+            <p className="mt-1 text-xs">Cấu hình hiện tại chưa được dùng để tính các chỉ số.</p>
+          </div>
           {!result && !running && <EmptyState message="Chưa có kết quả. Cấu hình và chạy experiment." />}
-          {running && <p className="text-muted-foreground">Đang chạy… (noop adapter, sẽ thay bằng Pyodide worker)</p>}
+          {running && <p className="mt-3 text-muted-foreground">Đang tạo dữ liệu minh họa…</p>}
           {result && (
             <dl className="mt-3 grid gap-2 text-sm">
               <div className="flex justify-between">
@@ -136,21 +140,19 @@ export function ModelLabPage() {
                 <dd className="font-mono">{result.out_of_sample_windows}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Baseline</dt>
+                <dt className="text-muted-foreground">Baseline mẫu</dt>
                 <dd className="font-mono">{result.baseline ?? "—"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Net cost</dt>
+                <dt className="text-muted-foreground">Net cost mẫu</dt>
                 <dd className="font-mono">{result.net_cost ?? "—"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Max drawdown</dt>
+                <dt className="text-muted-foreground">Max drawdown mẫu</dt>
                 <dd className="font-mono">{result.max_drawdown ?? "—"}</dd>
               </div>
               <div className="mt-2 rounded-lg border border-border bg-secondary/50 p-2 text-xs text-muted-foreground">
-                {result.client_computed
-                  ? "Client-computed. Không phải bằng chứng alpha."
-                  : "Server-computed."}
+                Nguồn kết quả: {result.source} · không phải kết quả đánh giá mô hình.
               </div>
             </dl>
           )}
@@ -158,7 +160,7 @@ export function ModelLabPage() {
       </section>
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Arbitrary Python không được thực thi. Training/backtest chạy trong browser Web Worker (chưa triển khai). Pyodide phải qua feasibility spike.
+        Arbitrary Python không được thực thi. Web Worker/Pyodide runtime và training/backtest chưa được triển khai.
       </p>
     </Container>
   );

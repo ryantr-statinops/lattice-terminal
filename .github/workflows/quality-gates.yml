@@ -20,6 +20,7 @@ jobs:
       - run: npm run security:env-boundaries
       - run: npm run fixtures:check
       - run: npm run test:tooling
+      - run: npm run test:web
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build

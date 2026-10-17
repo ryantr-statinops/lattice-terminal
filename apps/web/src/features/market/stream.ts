@@ -15,129 +15,155 @@ const INITIAL: StreamState = {
   reconnectAttempts: 0,
   error: null,
 };
+const STALE_AFTER_MS = 60_000;
 
-/**
- * Public Binance kline stream hook.
- * - No API key.
- * - Reconnect with exponential backoff (capped).
- * - Pauses when tab hidden; resumes on visible.
- * - Only emits closed candles (is_closed=true).
- */
+function isKlineMessage(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const kline = (data as { k?: unknown }).k;
+  if (!kline || typeof kline !== "object") return false;
+  const candle = kline as { t?: unknown; c?: unknown; x?: unknown };
+  return typeof candle.t === "number" && typeof candle.c === "string" && typeof candle.x === "boolean";
+}
+
 export function useBinanceStream(symbol: string, interval: string, enabled: boolean) {
   const [state, setState] = useState<StreamState>(INITIAL);
+  const [visible, setVisible] = useState(() => !document.hidden);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const staleTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptsRef = useRef(0);
-  const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
+  const activeRef = useRef(false);
+  const connectedAtRef = useRef<number | null>(null);
+  const lastMessageAtRef = useRef<number | null>(null);
+
+  const active = enabled && visible;
 
   const cleanup = useCallback(() => {
-    if (reconnectTimer.current) {
+    if (reconnectTimer.current !== null) {
       clearTimeout(reconnectTimer.current);
       reconnectTimer.current = null;
     }
-    if (wsRef.current) {
+    if (staleTimer.current !== null) {
+      clearInterval(staleTimer.current);
+      staleTimer.current = null;
+    }
+    connectedAtRef.current = null;
+    lastMessageAtRef.current = null;
+    const socket = wsRef.current;
+    wsRef.current = null;
+    if (socket) {
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
+      socket.onclose = null;
       try {
-        wsRef.current.close();
+        socket.close();
       } catch {
-        // ignore
+        // Ignore an already closed socket.
       }
-      wsRef.current = null;
     }
   }, []);
 
   const connect = useCallback(() => {
-    if (!enabledRef.current) return;
-    cleanup();
-    setState((s) => ({ ...s, status: "connecting", error: null }));
-    const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`;
-    let ws: WebSocket;
+    if (!activeRef.current || wsRef.current) return;
+    if (reconnectTimer.current !== null) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+
+    setState((previous) => ({ ...previous, status: "connecting", lastMessageAt: null, error: null }));
+    let socket: WebSocket;
     try {
-      ws = new WebSocket(url);
-    } catch (e) {
-      setState((s) => ({ ...s, status: "unavailable", error: String(e) }));
+      socket = new WebSocket(
+        `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`,
+      );
+    } catch (error) {
+      setState((previous) => ({ ...previous, status: "unavailable", error: String(error) }));
       return;
     }
-    wsRef.current = ws;
 
-    ws.onopen = () => {
-      attemptsRef.current = 0;
-      setState((s) => ({ ...s, status: "live", reconnectAttempts: 0, error: null }));
+    wsRef.current = socket;
+    socket.onopen = () => {
+      if (wsRef.current !== socket) return;
+      connectedAtRef.current = Date.now();
+      lastMessageAtRef.current = null;
+      setState((previous) => ({ ...previous, status: "connecting", lastMessageAt: null, error: null }));
     };
-
-    ws.onmessage = (ev) => {
+    socket.onmessage = (event) => {
+      if (wsRef.current !== socket) return;
       try {
-        const msg = JSON.parse(ev.data);
-        const k = msg?.k;
-        if (!k) return;
-        // Only closed candles are considered valid data
-        if (k.x !== true) return;
-        setState((s) => ({ ...s, lastMessageAt: Date.now(), status: "live" }));
+        if (!isKlineMessage(JSON.parse(String(event.data)))) return;
+        const receivedAt = Date.now();
+        lastMessageAtRef.current = receivedAt;
+        attemptsRef.current = 0;
+        setState((previous) => ({ ...previous, status: "live", lastMessageAt: receivedAt, reconnectAttempts: 0, error: null }));
       } catch {
-        // ignore parse errors
+        // Ignore malformed stream messages.
       }
     };
-
-    ws.onerror = () => {
-      setState((s) => ({ ...s, status: "reconnecting", error: "WebSocket error" }));
+    socket.onerror = () => {
+      if (wsRef.current === socket) {
+        setState((previous) => ({ ...previous, status: "reconnecting", error: "WebSocket error" }));
+      }
     };
-
-    ws.onclose = () => {
-      if (!enabledRef.current) {
-        setState((s) => ({ ...s, status: "idle" }));
+    socket.onclose = () => {
+      if (wsRef.current !== socket) return;
+      wsRef.current = null;
+      connectedAtRef.current = null;
+      lastMessageAtRef.current = null;
+      if (!activeRef.current) {
+        setState(INITIAL);
         return;
       }
+
       const attempts = attemptsRef.current + 1;
       attemptsRef.current = attempts;
       const delay = Math.min(1000 * 2 ** (attempts - 1), 30_000);
-      setState((s) => ({ ...s, status: "reconnecting", reconnectAttempts: attempts }));
+      setState((previous) => ({ ...previous, status: "reconnecting", reconnectAttempts: attempts }));
       reconnectTimer.current = setTimeout(() => {
-        if (enabledRef.current) connect();
+        reconnectTimer.current = null;
+        connect();
       }, delay);
     };
-  }, [symbol, interval, cleanup]);
+  }, [interval, symbol]);
+
+  const reconnect = useCallback(() => {
+    if (!activeRef.current) return;
+    cleanup();
+    attemptsRef.current = 0;
+    setState({ ...INITIAL, status: "connecting" });
+    connect();
+  }, [cleanup, connect]);
 
   useEffect(() => {
-    if (!enabled) {
+    const onVisibilityChange = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    activeRef.current = active;
+    if (!active) {
       cleanup();
+      attemptsRef.current = 0;
       setState(INITIAL);
       return;
     }
+
+    attemptsRef.current = 0;
+    setState({ ...INITIAL, status: "connecting" });
     connect();
-    return cleanup;
-  }, [enabled, connect, cleanup]);
-
-  // Hidden tab grace: mark stale when hidden > 30s
-  useEffect(() => {
-    if (!enabled) return;
-    let hiddenSince: number | null = null;
-    const onVisibility = () => {
-      if (document.hidden) {
-        hiddenSince = Date.now();
-      } else {
-        if (hiddenSince && Date.now() - hiddenSince > 30_000) {
-          setState((s) => ({ ...s, status: "stale" }));
-        }
-        hiddenSince = null;
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [enabled]);
-
-  // Stale detection: no message for 60s while live
-  useEffect(() => {
-    if (!enabled) return;
-    const id = setInterval(() => {
-      setState((s) => {
-        if (s.status === "live" && s.lastMessageAt && Date.now() - s.lastMessageAt > 60_000) {
-          return { ...s, status: "stale" };
-        }
-        return s;
-      });
+    staleTimer.current = setInterval(() => {
+      const referenceTime = lastMessageAtRef.current ?? connectedAtRef.current;
+      if (!wsRef.current || referenceTime === null || Date.now() - referenceTime <= STALE_AFTER_MS) return;
+      setState((previous) => (previous.status === "stale" ? previous : { ...previous, status: "stale" }));
     }, 15_000);
-    return () => clearInterval(id);
-  }, [enabled]);
 
-  return { state, reconnect: connect };
+    return () => {
+      activeRef.current = false;
+      cleanup();
+    };
+  }, [active, connect, cleanup]);
+
+  return { state, reconnect };
 }

@@ -13,12 +13,12 @@ export interface ExperimentConfig {
 
 export interface ExperimentResult {
   run_id: string;
-  status: "pending" | "running" | "completed" | "failed" | "interrupted";
+  status: "simulated";
+  source: "mock";
   out_of_sample_windows: number;
   baseline: number | null;
   net_cost: number | null;
   max_drawdown: number | null;
-  client_computed: true;
   error?: string;
 }
 

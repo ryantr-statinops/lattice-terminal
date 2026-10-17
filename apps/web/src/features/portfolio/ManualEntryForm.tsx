@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Holding } from "./types";
+import { validateHoldingDraft } from "./validation";
 
 const INSTRUMENTS = [
   { id: "binance:spot:BTCUSDT", label: "BTC/USDT" },
@@ -18,18 +19,13 @@ export function ManualEntryForm({ onAdd }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const amt = parseFloat(amount);
-    const cost = parseFloat(avgCost);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      setError("Số lượng phải là số dương.");
-      return;
-    }
-    if (!Number.isFinite(cost) || cost < 0) {
-      setError("Giá vốn phải là số không âm.");
+    const result = validateHoldingDraft({ instrument_id: instrumentId, amount, avg_cost: avgCost });
+    if (!result.valid) {
+      setError(result.error);
       return;
     }
     setError(null);
-    onAdd({ instrument_id: instrumentId, amount: amount.trim(), avg_cost: avgCost.trim() });
+    onAdd(result.holding);
     setAmount("");
     setAvgCost("");
   }

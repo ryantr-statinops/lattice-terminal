@@ -1,55 +1,44 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Holding } from "./types";
-
-interface ParsedRow {
-  instrument_id: string;
-  amount: string;
-  avg_cost: string;
-  error?: string;
-}
+import { parseHoldingsCsv, type CsvPreviewRow } from "./csv";
 
 interface Props {
-  onImport: (rows: Omit<Holding, "id">[]) => void;
-}
-
-function parseCsv(text: string): ParsedRow[] {
-  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim() !== "");
-  if (lines.length === 0) return [];
-  const header = lines[0].toLowerCase().split(",").map((s) => s.trim());
-  const idxInstrument = header.indexOf("instrument_id");
-  const idxAmount = header.indexOf("amount");
-  const idxCost = header.indexOf("avg_cost");
-  if (idxInstrument < 0 || idxAmount < 0 || idxCost < 0) {
-    return [{ instrument_id: "", amount: "", avg_cost: "", error: "Header phải có instrument_id,amount,avg_cost" }];
-  }
-  const rows: ParsedRow[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(",").map((s) => s.trim());
-    const instrument_id = cols[idxInstrument] ?? "";
-    const amount = cols[idxAmount] ?? "";
-    const avg_cost = cols[idxCost] ?? "";
-    let error: string | undefined;
-    if (!instrument_id) error = "Thiếu instrument_id";
-    else if (!Number.isFinite(parseFloat(amount)) || parseFloat(amount) <= 0) error = "Số lượng không hợp lệ";
-    else if (!Number.isFinite(parseFloat(avg_cost)) || parseFloat(avg_cost) < 0) error = "Giá vốn không hợp lệ";
-    rows.push({ instrument_id, amount, avg_cost, error });
-  }
-  return rows;
+  onImport: (rows: Omit<Holding, "id">[]) => boolean | void;
 }
 
 export function CsvImport({ onImport }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [rows, setRows] = useState<CsvPreviewRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const readerRef = useRef<FileReader | null>(null);
+  const readGeneration = useRef(0);
+
+  useEffect(() => () => {
+    readGeneration.current += 1;
+    readerRef.current?.abort();
+  }, []);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
+    const generation = ++readGeneration.current;
+    readerRef.current?.abort();
+    setRows([]);
+    setParseError(null);
     setFileName(file.name);
     const reader = new FileReader();
+    readerRef.current = reader;
     reader.onload = () => {
+      if (generation !== readGeneration.current) return;
       const text = String(reader.result ?? "");
-      setRows(parseCsv(text));
+      const parsed = parseHoldingsCsv(text);
+      setRows(parsed.rows);
+      setParseError(parsed.parseError);
+    };
+    reader.onerror = () => {
+      if (generation === readGeneration.current) setParseError("Không đọc được file CSV.");
     };
     reader.readAsText(file);
   }
@@ -59,15 +48,22 @@ export function CsvImport({ onImport }: Props) {
 
   function handleConfirm() {
     if (validRows.length === 0 || hasErrors) return;
-    onImport(validRows.map((r) => ({ instrument_id: r.instrument_id, amount: r.amount, avg_cost: r.avg_cost })));
+    const accepted = onImport(validRows.map(({ instrument_id, amount, avg_cost }) => ({ instrument_id, amount, avg_cost })));
+    if (accepted === false) return;
     setRows([]);
     setFileName(null);
+    setParseError(null);
+    readGeneration.current += 1;
+    readerRef.current?.abort();
     if (inputRef.current) inputRef.current.value = "";
   }
 
   function handleCancel() {
+    readGeneration.current += 1;
+    readerRef.current?.abort();
     setRows([]);
     setFileName(null);
+    setParseError(null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -77,20 +73,23 @@ export function CsvImport({ onImport }: Props) {
         <input
           ref={inputRef}
           type="file"
+          aria-label="Chọn file CSV"
           accept=".csv,text/csv"
           onChange={handleFile}
           className="text-sm"
         />
         {fileName && <span className="text-xs text-muted-foreground">{fileName}</span>}
       </div>
+      {parseError && <p role="alert" className="text-sm text-destructive">{parseError}</p>}
 
-      {rows.length > 0 && (
+      {(rows.length > 0 || parseError) && (
         <>
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <caption className="sr-only">Xem trước dữ liệu CSV</caption>
               <thead className="bg-secondary text-left text-muted-foreground">
                 <tr>
+                  <th scope="col" className="px-3 py-2">Dòng</th>
                   <th className="px-3 py-2">Tài sản</th>
                   <th className="px-3 py-2">Số lượng</th>
                   <th className="px-3 py-2">Giá vốn</th>
@@ -98,8 +97,9 @@ export function CsvImport({ onImport }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i} className="border-t border-border">
+                {rows.map((r) => (
+                  <tr key={r.lineNumber} className="border-t border-border">
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{r.lineNumber}</td>
                     <td className="px-3 py-2 font-mono">{r.instrument_id || "—"}</td>
                     <td className="px-3 py-2 font-mono">{r.amount || "—"}</td>
                     <td className="px-3 py-2 font-mono">{r.avg_cost || "—"}</td>
@@ -115,7 +115,7 @@ export function CsvImport({ onImport }: Props) {
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={validRows.length === 0 || hasErrors}
+              disabled={validRows.length === 0 || hasErrors || Boolean(parseError)}
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
               Nhập {validRows.length} dòng
