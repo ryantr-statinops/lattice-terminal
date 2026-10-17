@@ -235,17 +235,17 @@ Bổ sung từ Lollypop/UIReady:
 
 ---
 
-## 7. Implementation Phases (map với project phases)
+## 7. Implementation status (map với project phases)
 
 | Phase | Frontend deliverable | Tokens/Components needed |
 |-------|---------------------|--------------------------|
-| **Phase 1 (done)** | Routing shell, placeholder pages | Container, Button, Dialog |
-| **Phase 2 — Market Data View** | Instrument cards, candle table, interval switcher, watchlist | Card, Table, Tabs, PriceDisplay, EmptyState, LoadingState |
-| **Phase 3 — News Feed** | News cards, filter chips, provenance, empty state | NewsCard, NewsFeed, Badge, FilterChips |
-| **Phase 4 — Portfolio** | Holdings table, CSV import, P&L display, forms | HoldingsTable, FormField, FileInput, PortfolioSummary |
-| **Phase 5 — Eval & Security** | Token audit, a11y test, contrast check | — |
-| **Phase 6 — Live Stream** | WebSocket client, reconnect UI, stale indicator | StatusBadge, ReconnectBanner |
-| **Phase 7 — Model Lab** | Config form, worker progress, results view | ModelLabForm, ProgressBar, ResultsTable, Chart |
+| **Foundation (implemented)** | Routing shell, shared layout, theme, fixture API, states and badges | Container, Button, Dialog, StatusBadge |
+| **Market view (fixture)** | BTC/ETH cards, candle table/chart, interval switcher and watchlist | Card, Table, Tabs, CandleChart |
+| **News view (fixture)** | Article cards, asset filters and provenance timestamps | ArticleCard, FilterChips |
+| **Portfolio (local prototype)** | Manual/CSV import, localStorage holdings and partial-aware P&L | ManualEntryForm, CsvImport, PartialBadge |
+| **Quality and data states (prototype)** | Loading/error/retry, source-age stale and refresh states; contrast still unmeasured | LoadingSkeleton, StaleBadge, RefreshingIndicator |
+| **Stream (connection status only)** | Opt-in WebSocket lifecycle/reconnect; no chart or portfolio updates | StatusBadge |
+| **Model Lab (mock only)** | Config form and explicitly simulated result; no training/backtest | ModelLabForm, mock adapter |
 
 ---
 
