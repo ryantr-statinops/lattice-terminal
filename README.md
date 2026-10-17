@@ -1,36 +1,47 @@
 # Research Terminal
 
-News-first research workspace cho retail trader người Việt: đọc tin theo tài sản, đối chiếu giá, theo dõi danh mục spot và thử nghiệm baseline qua Model Lab form.
+Research workspace tiếng Việt, ưu tiên đọc tin và đối chiếu BTC/ETH cho retail trader. Bản hiện tại là prototype dùng dữ liệu fixture synthetic; không dùng để ra quyết định giao dịch.
 
-## Trạng thái
+## Trạng thái hiện tại
 
-Idea mới: Binance Spot BTCUSDT/ETHUSDT, candles 15m/1h/1d, UI tiếng Việt, news-first. Không có auth/account legacy, không kết nối exchange trading keys. Codebase hiện tại là fixture shell (React/Vite + FastAPI + Go Gateway) để phát triển giao diện; chưa có feed thật, portfolio hay Model Lab runtime.
+- Market: BTC/ETH, bảng nến, chart, interval và watchlist đều dùng fixture.
+- News: lọc tin fixture theo tài sản; chưa có nguồn tin hoặc ingestion thật.
+- Portfolio: nhập holdings thủ công/CSV, lưu trên thiết bị bằng localStorage và tính P&L từ giá fixture.
+- Stream: kết nối Binance WebSocket chỉ khi người dùng bật; chỉ hiển thị tình trạng kết nối, chưa cập nhật chart hoặc portfolio.
+- Model Lab: form và kết quả mock để minh họa giao diện; chưa có training/backtest runtime.
+- API: FastAPI đọc fixture, Go gateway và OpenAPI contract. Chưa có database, auth/account hay lưu portfolio phía server.
 
-## Chạy bản fixture local
+Không yêu cầu exchange trading keys. Quyền sử dụng nguồn market/news phải được xác minh trước khi triển khai ingestion hoặc phát hành dữ liệu thật.
 
-Node 22.23.1/npm 10.9.8, Go 1.27.2, Python 3.11–3.13 và uv 0.11.28. Dependencies JS được pin trong `package-lock.json`, API trong `services/api/uv.lock`.
+## Chạy fixture local
+
+Yêu cầu Node 22.23.1/npm 10.9.8, Go 1.27.2, Python 3.11–3.13 và uv 0.11.28. JavaScript dependencies nằm trong `package-lock.json`, API dependencies trong `services/api/uv.lock`.
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-Web: http://127.0.0.1:5173/terminal/news. Routes: `/terminal/market`, `/terminal/news`, `/terminal/portfolio`, `/terminal/model-lab`, `/terminal/account`. Không cần credential hoặc API để xem fixture. Để thử API, chạy riêng [FastAPI theo hướng dẫn](services/api/README.md), rồi terminal khác:
+Mở http://127.0.0.1:5173/terminal/news. Các route gồm `/terminal/market`, `/terminal/news`, `/terminal/portfolio`, `/terminal/model-lab` và `/terminal/account`. Để chạy API/gateway, xem [hướng dẫn API](services/api/README.md) và [hướng dẫn gateway](services/gateway/README.md).
+
+Frontend gọi `/api` qua Vite proxy đến gateway port 8080; gateway mặc định chuyển tiếp đến API port 8000. Fixture synthetic nằm trong [data/fixtures](data/fixtures/README.md).
+
+## Kiểm tra
 
 ```powershell
-go -C services/gateway run ./cmd/gateway
+npm run security:env-boundaries
+npm run fixtures:check
+npm run test:tooling
+npm run test:web
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-Web proxy `/api` qua gateway port 8080 đến API port 8000. Chỉ gọi localhost; dữ liệu synthetic nằm tại [data/fixtures](data/fixtures/README.md).
+API, OpenAPI drift, research và Go checks chạy trong GitHub Actions. Repo bảo vệ `main` và yêu cầu thay đổi đi qua pull request.
 
 ## Tài liệu
 
 - [Documentation index](docs/README.md) và [glossary](docs/glossary.md).
 - [Vision & scope](docs/01-product/vision-and-scope.md).
-- [Next action](task/next-plan.md).
-
-## Default MVP
-
-Binance Spot BTCUSDT/ETHUSDT, candles 15m/1h/1d; UI tiếng Việt, news-first. Portfolio manual/CSV base USDT; experiments private, browser Web Worker training/backtest và client-computed results. Live public market stream theo tab hoạt động; ingestion theo lịch riêng.
-
-Không yêu cầu exchange trading keys. Nguồn miễn phí, quyền train/public display và chi phí hạ tầng phải được kiểm chứng riêng. Các thị trường Mỹ/FX/Việt Nam là nghiên cứu mở rộng. Tên thư mục repo và deployment hiện tại chưa đổi.
+- [Next steps](task/next-plan.md).

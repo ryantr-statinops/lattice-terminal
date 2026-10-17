@@ -1,24 +1,26 @@
-# Next action
+# Next steps
 
-Canonical roadmap: [Next plan](next-plan.md). Đây là pointer, không là roadmap thứ hai.
+## Trạng thái hiện tại
 
-## Current state
+Research Terminal là prototype news-first bằng tiếng Việt, định hướng BTC/ETH. Frontend React/Vite, FastAPI fixture API, Go gateway và OpenAPI contract đang có.
 
-- Idea mới đã chốt: Research Terminal v2 — news-first crypto research workspace cho retail trader VN.
-- Binance Spot BTCUSDT/ETHUSDT, candles 15m/1h/1d, UI tiếng Việt.
-- Codebase hiện tại: fixture shell (React/Vite + FastAPI + Go Gateway + OpenAPI contracts + synthetic fixtures).
-- Chưa có feed thật, portfolio, Model Lab runtime, auth (không dùng auth provider cũ).
-- Legacy product code và credential đã được gỡ khỏi tracked source.
+- Market, chart, candles và watchlist dùng dữ liệu tổng hợp trong `data/fixtures/`.
+- News có asset filters/provenance nhưng chưa kết nối news source hoặc ingestion.
+- Portfolio hỗ trợ nhập tay/CSV, validation, localStorage và P&L trên giá fixture; chưa có auth hoặc lưu server.
+- Binance WebSocket là opt-in, theo symbol/interval đang chọn và chỉ hiển thị kết nối; chart/portfolio chưa nhận dữ liệu stream.
+- Model Lab là form cùng chỉ số mock gắn `simulated`; chưa chạy training/backtest.
+- API đọc fixture; chưa có database, managed auth hay business persistence.
 
-## Tiếp theo
+## Các bước tiếp theo
 
-Theo roadmap idea mới:
+1. **Source rights và data contract:** lập source register cho market/news, kiểm tra quyền truy cập, lưu trữ, hiển thị, dẫn link và dùng cho research theo khu vực triển khai; chốt freshness, provenance và correction policy trước khi lấy dữ liệu thật.
+2. **Historical market data:** sau khi rights gate đạt, tích hợp một nguồn BTC/ETH, backfill candles 15m/1h/1d, kiểm tra gaps/duplicates/late bars và lưu snapshot có version; giữ fixture làm test dataset.
+3. **News ingestion:** chỉ thêm adapter cho nguồn đã qua rights gate; xử lý dedupe/revisions, publication/first-seen timestamps, instrument mapping và source-limited states.
+4. **Private workspace:** chọn managed auth và persistence trước khi lưu portfolio/experiments phía server; định nghĩa ownership/isolation, export/delete và migration từ local-only data.
+5. **Live market stream:** sau khi source rights xác nhận, nối stream với candle store/chart, merge REST backfill và WebSocket updates, xử lý reconnect/gaps/open-vs-closed bars.
+6. **Model Lab runtime:** chạy feasibility spike cho browser worker/runtime, rồi triển khai baseline có walk-forward validation, costs và reproducible artifacts; bỏ số mock khi có kết quả thực tính.
+7. **Release readiness:** dependency/source-rights/security review, accessibility contrast test, operational recovery/quotas, browser E2E và production data claims.
 
-1. **Phase 1 — Foundation & Contracts:** Cập nhật OpenAPI contracts cho idea mới; triển khai FastAPI endpoints theo contract; tách routing web thành `/terminal/market`, `/terminal/news`, `/terminal/portfolio` (placeholder).
-2. **Phase 2 — Market Data View:** Hiển thị BTC/ETH, bảng nến, watchlist từ fixture.
-3. **Phase 3 — News Feed:** News-first theo tài sản, lọc theo BTC/ETH.
-4. **Phase 4 — Portfolio Manual/CSV:** Nhập holdings thủ công hoặc import CSV, tính P&L đơn giản.
-5. **Phase 5 — Evaluation & Security Gate:** Kiểm tra source rights, audit dependencies, xác nhận không có credential legacy.
-6. **Phase 6 — Live Stream & Source Rights:** Kết nối public WebSocket Binance (nếu source rights được xác nhận).
+## Quy trình phát hành thay đổi
 
-Bắt đầu Phase 1 ngay: cập nhật OpenAPI contracts và FastAPI endpoints.
+Mỗi thay đổi được kiểm tra, commit và push thành mục nhỏ. `main` được bảo vệ và chỉ nhận thay đổi qua PR với hai required status checks; không push trực tiếp hoặc force-push. Rollback bằng `git revert <commit>` sau khi xác định ảnh hưởng contract/dữ liệu.

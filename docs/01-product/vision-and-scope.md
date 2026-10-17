@@ -1,6 +1,6 @@
 # Vision và phạm vi
 
-**Trạng thái:** target, chưa triển khai.
+**Trạng thái:** product target; prototype hiện có giao diện fixture, chưa có data production.
 
 Research Terminal giúp retail trader người Việt đọc tin theo tài sản, đối chiếu phần động giá, theo dõi danh mục và kiểm tra giả thuyết bằng model đơn giản. Giá trị chính là research workflow có evidence, không phải lời hứa lợi nhuận hay tín hiệu giao dịch.
 
@@ -20,4 +20,4 @@ Không real-order execution, không khóa sản, không margin/short/leverage/li
 
 ## Current versus target
 
-Codebase hiện tại là fixture shell (React/Vite + FastAPI + Go Gateway) cho phát triển giao diện. Feed thật, auth, portfolio và Model Lab runtime chưa triển khai. Không lấy dataset cũ hay credential cũ làm bằng chứng cho sản phẩm mới. Public demo là workspace mẫu riêng, không công khai danh mục/experiment người dùng.
+Prototype hiện có market/news fixture views, watchlist, chart, portfolio localStorage/CSV và form Model Lab mock trên React/Vite + FastAPI + Go Gateway. Binance WebSocket là opt-in và chỉ báo kết nối; không cập nhật chart. Feed/ingestion thật, auth, server-backed portfolio và Model Lab runtime chưa triển khai. Không lấy dataset cũ hay credential cũ làm bằng chứng cho sản phẩm mới. Public demo là workspace mẫu riêng, không công khai danh mục/experiment người dùng.
