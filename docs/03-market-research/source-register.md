@@ -1,6 +1,6 @@
 # Source register và source gates
 
-**Ngày review:** 2026-10-16. Phần lớn nguồn chỉ review documentation; P02 đã thử public Binance REST từ shell và một BTCUSDT stream trong Chrome như evidence dưới. Không tạo provider account hoặc ký agreement. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
+**Ngày review:** 2026-10-18. Phần lớn nguồn chỉ review documentation; repo hiện tại không chứa các P02 evidence files được trỏ bên dưới, nên các access-test claims chưa independently auditable từ checkout này. Không tạo provider account hoặc ký agreement. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
 
 ## Evidence flags độc lập
 
@@ -11,12 +11,12 @@
 
 Một source có thể documented=true nhưng rights=false. Quyền price không bao gồm news. Cờ true phải có evidence URL/document/date/owner; không lưu credential hoặc account identifiers riêng vào register public.
 
-P02 `BIN-SPOT-PUBLIC access-tested` chỉ gồm [6 REST probes](../../task/research-terminal-plan/evidence/p02-binance-rest-probe.json) từ shell local (BTCUSDT/ETHUSDT, 15m/1h/1d, mỗi request 3 rows) và [một BTCUSDT trade stream trong Chrome desktop](../../task/research-terminal-plan/p02-browser-feasibility.md). Không chứng minh REST CORS, hosting/region khác, lịch sử dài, archive, source rights hoặc production availability. Owner: coordinator + browser spike agent; ngày 2026-10-16. `approved=false` không đổi.
+P02 claim `BIN-SPOT-PUBLIC access-tested` được tài liệu cũ mô tả là 6 REST probes từ shell local (BTCUSDT/ETHUSDT, 15m/1h/1d, mỗi request 3 rows) và một BTCUSDT trade stream trong Chrome desktop. Các link dự kiến tới [REST probe](../../task/research-terminal-plan/evidence/p02-binance-rest-probe.json) và [browser feasibility](../../task/research-terminal-plan/p02-browser-feasibility.md) hiện không tồn tại trong checkout; do đó chưa xác minh lại response, region, schema hay thời gian. Claim chỉ là historical/unverified evidence, không dùng làm release gate. Không chứng minh REST CORS, hosting/region khác, lịch sử dài, archive, source rights hoặc production availability. Owner/evidence owner cần được xác nhận lại; ngày claim ban đầu 2026-10-16. `approved=false`.
 
 | ID / provider + product | Lớp dữ liệu / access | documented | access-tested | rights-confirmed | approved | Store / ML / display / redistribute |
 |---|---|---|---|---|---|---|
-| BIN-SPOT-PUBLIC | Giá; public-only REST/WS, no key | true | true (phạm vi P02 bên trên) | false | false | Quyền store/ML/display/redistribute còn chờ; deployment region chưa kiểm |
-| BIN-SPOT-ARCHIVE | Giá; download miễn phí có điều kiện | true | false | false | false | Terms v1.0/2026-08-26: CC BY-NC-SA4.0 + giới hạn use case; project fit chưa approved |
+| BIN-SPOT-PUBLIC | Giá; public-only REST/WS, no key | true | historical claim; evidence file missing, re-test required | false | false | Access capability không cấp quyền store/ML/display/redistribute; terms/use-case/geography review và deployment region còn mở |
+| BIN-SPOT-ARCHIVE | Giá; download miễn phí có điều kiện | true | false | false | false | Terms v1.0/2026-08-26 theo tài liệu khảo sát: CC BY-NC-SA4.0 + điều khoản bổ sung/giới hạn use case; phải re-open terms, xác minh hash/version và project fit chưa approved |
 | KRAKEN-OHLCVT | Giá; public archive | true | false | false | false | Chưa xác nhận từng mục đích |
 | SEC-RELEASES | News regulator; public website | true | false | false | false | Review content/third-party fields và attribution |
 | CFTC-RSS | News regulator; RSS | true | false | false | false | Review metadata/full text/derived ML riêng |
@@ -72,3 +72,17 @@ Binance Vision: evidence terms đã tìm thấy, nhưng chưa xác nhận tính 
 Source ID, purpose, allowed fields, permitted audience, geography, allowed transformations/ML, storage and deletion policy, attribution, current quota evidence, owner, review/expiry date, terms hash và disable procedure. Không nhúng secret vào URLs hoặc sample payload.
 
 Chưa khóa numeric quota hay retention khi chưa có evidence. Giá miễn phí ở personal tier không phải budget production. Khi terms thay đổi: disable use bị ảnh hưởng, đánh dấu snapshots restricted, review derivative artifacts và không silently chuyển nguồn.
+
+## P03 decision record — 2026-10-18
+
+**Quyết định: BLOCKED / not approved** cho MVP multi-account retail workspace, public display, research/ML, persistent historical storage, archive redistribution hoặc public demo. Không tải, cache hay persist market payload thật trong ứng dụng/CI cho đến khi có approval record đầy đủ. Quyết định này không khẳng định Binance từ chối quyền; evidence hiện có không đủ để xác nhận quyền.
+
+| Use case | Access capability | Rights confirmed | Decision / evidence needed |
+|---|---|---|---|
+| Public REST/WS access | Docs mô tả market-data-only endpoint; historical P02 probe không audit được từ checkout | false | Chỉ cho phép metadata/terms review và ephemeral connectivity test nếu phù hợp terms; cần re-test có ngày, vùng, endpoint, schema và quota |
+| Persist historical candles / raw archive | Archive docs và terms URL được ghi trong register; terms chưa được lưu/hash hoặc legal-fit review | false | Block; cần terms snapshot/hash, allowed fields, retention/deletion, derived snapshots và agreement nếu use case thương mại cần |
+| Multi-user/private display | Không có entitlement evidence trong repo | false | Block; xác nhận audience, territories, attribution, caching/redisplay và account/user limits |
+| Research/ML and derived artifacts | Chưa có grant xác nhận | false | Block; xác nhận training/backtest, derived metrics/artifacts và quyền chia sẻ/publication |
+| Redistribution/public demo | Chưa có grant xác nhận | false | Block; không phân phối raw/derived market data hay snapshot public |
+
+**Owner:** product/source-rights owner chưa được chỉ định trong repo (engineering record: Ryan Tran). **Geography:** chưa chốt. **Terms version/hash, retention, quota, review expiry, disable procedure:** pending evidence. `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` giữ `rights-confirmed=false`, `approved=false`. Gate chỉ được mở bằng review mới có evidence URL/document, version/hash, date, owner, region, allowed purposes/fields/audience, retention/deletion, attribution và operational disable rule.
