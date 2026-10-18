@@ -155,4 +155,3 @@ func readExistingSnapshot(path, snapshotID string) (Manifest, error) {
 	if err != nil || actualHash != manifest.CandlesSHA256 { return Manifest{}, errors.New("existing immutable snapshot checksum mismatch") }
 	return manifest, nil
 }
-
