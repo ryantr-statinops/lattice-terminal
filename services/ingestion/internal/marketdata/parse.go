@@ -199,6 +199,9 @@ func validateCandle(c Candle) error {
 	if c.SourceTimestampUnit != TimestampMilliseconds && c.SourceTimestampUnit != TimestampMicroseconds {
 		return errors.New("candle source timestamp unit is invalid")
 	}
+	if c.SourceTimestampUnit == TimestampMicroseconds && (c.SourceOpenTimestamp%1000 != 0 || c.SourceCloseTimestamp%1000 != 999) {
+		return errors.New("microsecond candle timestamps are not millisecond-aligned")
+	}
 	if sourceOpenMS, err := timestampToMilliseconds(c.SourceOpenTimestamp, c.SourceTimestampUnit); err != nil || sourceOpenMS != c.OpenTimeMS {
 		return errors.New("source open timestamp does not match normalized timestamp")
 	}
