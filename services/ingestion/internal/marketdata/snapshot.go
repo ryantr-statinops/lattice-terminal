@@ -36,6 +36,9 @@ func PublishSnapshot(outputRoot string, rows []Candle, inputs []InputObject, res
 	if strings.TrimSpace(outputRoot) == "" || createdAt.IsZero() {
 		return "", Manifest{}, errors.New("output directory and creation time are required")
 	}
+	if isNetworkPath(outputRoot) {
+		return "", Manifest{}, errors.New("offline snapshots must be written to a local filesystem path")
+	}
 	if symbol != "BTCUSDT" && symbol != "ETHUSDT" || !interval.Valid() || endMS <= startMS {
 		return "", Manifest{}, errors.New("invalid snapshot identity")
 	}

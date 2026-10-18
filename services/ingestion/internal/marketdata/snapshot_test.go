@@ -124,6 +124,13 @@ func TestOfflineLoaderRequiresSyntheticMarkerAndMatchingHash(t *testing.T) {
 	}
 }
 
+func TestOfflineLoaderRejectsNetworkPaths(t *testing.T) {
+	if _, _, err := LoadArchiveFile(`\\server\share\candles.csv`, "", parserConfig(TimestampMilliseconds)); err == nil {
+		t.Fatal("accepted UNC archive path in offline mode")
+	}
+	if isNetworkPath(`//server/share/candles.csv`) == false { t.Fatal("failed to recognize slash-form network path") }
+}
+
 func TestSnapshotPublishFailureLeavesNoPartialSnapshot(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "not-a-directory")
 	if err := os.WriteFile(root, []byte("occupied"), 0o600); err != nil { t.Fatal(err) }

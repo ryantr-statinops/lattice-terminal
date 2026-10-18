@@ -1,8 +1,8 @@
 # Historical ingestion
 
-**Trạng thái:** contract P03 chốt cho implementation; source rights gate chưa đạt. Không tải/lưu market payload thật cho đến khi policy được approved theo [source register](../03-market-research/source-register.md).
+**Trạng thái:** contract P03 chốt; Go offline parser/reconcile/snapshot chạy trên synthetic fixtures. Source rights gate chưa đạt. Không tải/lưu market payload thật cho đến khi policy được approved theo [source register](../03-market-research/source-register.md).
 
-Go ingestion tải Binance bulk archive cho lịch sử và public REST cho phần gần hiện tại/reconcile. REST/archives là nguồn canonical cho research snapshots; giá WebSocket trong browser không tự thành warehouse history. Lịch ingestion độc lập đăng nhập và lifecycle tab.
+Thiết kế mục tiêu là Go ingestion tải Binance bulk archive cho lịch sử và public REST cho phần gần hiện tại/reconcile. Hiện code mới có local-file parser/reconcile dùng synthetic fixtures; chưa có downloader/network transport, scheduler hoặc production snapshots. REST/archives chỉ trở thành nguồn research snapshot sau rights approval; giá WebSocket trong browser không tự thành warehouse history.
 
 ## Adapter và identity
 
@@ -23,6 +23,8 @@ Adapter giữ request range, source URL, retrieved_at, response schema version, 
 ## Rights gate bắt buộc
 
 Current source register đánh dấu `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` chưa rights-confirmed/approved; referenced P02 access evidence is missing from the current checkout. Vì vậy implementation chỉ được chạy synthetic fixtures cho đến khi owner ghi approval evidence đủ cho exact purpose/audience/geography/fields/retention. No live download, persistent raw cache, normalized real-data snapshot, or publication is permitted before that gate passes. A transient access smoke test is not approval and must not be described as production ingestion.
+
+Offline implementation hiện ở `services/ingestion/internal/marketdata` và `services/ingestion/cmd/marketdata`: chỉ local file inputs có synthetic marker khớp content hash mới được loader nhận; snapshot publisher kiểm tra provenance fixture và luôn ghi `rights_eligible=false`. Network downloader chưa có. Xem [lệnh fixture offline](../../services/ingestion/README.md#historical-market-data--offline-fixture-mode).
 
 ## Quy trình
 

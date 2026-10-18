@@ -17,6 +17,9 @@ import (
 )
 
 func LoadArchiveFile(path, checksumPath string, cfg ParseConfig) ([]Candle, InputObject, error) {
+	if isNetworkPath(path) || isNetworkPath(checksumPath) {
+		return nil, InputObject{}, errors.New("offline ingestion accepts local filesystem paths only")
+	}
 	if cfg.SourceID != SourceFixture {
 		return nil, InputObject{}, errors.New("offline ingestion accepts synthetic fixture inputs only")
 	}
@@ -88,6 +91,9 @@ func LoadArchiveFile(path, checksumPath string, cfg ParseConfig) ([]Candle, Inpu
 }
 
 func LoadRESTFile(path string, cfg ParseConfig) ([]Candle, InputObject, error) {
+	if isNetworkPath(path) {
+		return nil, InputObject{}, errors.New("offline ingestion accepts local filesystem paths only")
+	}
 	if cfg.SourceID != SourceFixture {
 		return nil, InputObject{}, errors.New("offline ingestion accepts synthetic fixture inputs only")
 	}
@@ -109,6 +115,10 @@ func LoadRESTFile(path string, cfg ParseConfig) ([]Candle, InputObject, error) {
 		return nil, InputObject{}, err
 	}
 	return candles, inputObject(path, cfg.SourceID, hash, cfg.TimestampUnit, cfg.RetrievedAt), nil
+}
+
+func isNetworkPath(path string) bool {
+	return strings.HasPrefix(path, `\\`) || strings.HasPrefix(path, `//`)
 }
 
 type syntheticFixtureEvidence struct {

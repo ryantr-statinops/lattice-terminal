@@ -17,6 +17,8 @@ P03 review đã xác định `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` chưa righ
 
 **Next action:** source/product owner cần cung cấp terms/grant evidence cho exact purposes, audience, geography, fields, retention/deletion, attribution và quota; khôi phục hoặc lặp lại access probes có thể tái kiểm chứng. Cho tới khi review mới đánh dấu gate approved, không chạy historical backfill, lưu market payload thật hoặc phát hành snapshot. Fixture-only checks vẫn được phép.
 
+Historical market-data offline foundation hiện đã có Go parser cho archive CSV/ZIP và REST kline JSON, candle validation/reconciliation, coverage report, cùng snapshot CSV/manifest chỉ nhận synthetic fixtures. Chưa có downloader/network adapter, backfill thật, API/UI serving hay WebSocket integration. Sau khi rights approval đạt, bước tiếp theo là triển khai transport/backfill theo source-specific approval rồi kiểm tra coverage trước serving.
+
 ## Các bước tiếp theo sau khi gate được giải quyết
 
 1. **Source rights và data contract:** lập source register cho market/news, kiểm tra quyền truy cập, lưu trữ, hiển thị, dẫn link và dùng cho research theo khu vực triển khai; chốt freshness, provenance và correction policy trước khi lấy dữ liệu thật.
