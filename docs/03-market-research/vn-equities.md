@@ -1,35 +1,61 @@
-# Cổ phiếu Việt Nam — hướng mở rộng tiếng Việt
+# Thị trường Việt Nam và SSI FastConnect Data
 
-**Khảo sát:** 2026-10-16; documentation-only, ngoài MVP.
+**Review:** 2026-10-18; official-documentation review, chưa tạo tài khoản, thử endpoint, nhận entitlement hoặc xác minh quyền lưu/hiển thị.
 
-## Nguồn giá và tin
+## Quyết định sản phẩm
 
-[SSI FastConnect Data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api) và [DNSE market data](https://developers.dnse.com.vn/docs/dnse/market-data/) có tài liệu API. Chưa xác nhận tài khoản/entitlement, phí, intraday retention, quota và quyền public redisplay trong môi trường dự án. API có documentation không chứng minh mọi endpoint miễn phí hoặc được lưu/training tùy ý.
+Thị trường Việt Nam và SSI FastConnect Data là hướng market-data đầu tiên. Product direction là tận dụng tối đa khả năng FastConnect **Data** có ích cho research, nhưng chỉ bật từng endpoint/feed sau khi xác minh entitlement, điều kiện dịch vụ, quota, coverage và quyền xử lý/lưu local. Không tích hợp FastConnect Trading. Không coi endpoint có trong docs là đã được cấp cho tài khoản hoặc được phép dùng mọi cách.
 
-[CafeF RSS](https://cafef.vn/index.rss) là ứng viên news tiếng Việt, [HNX disclosures](https://www.hnx.vn/en-gb/thong-tin-cong-bo-up-hnx.html) là nguồn công bố. Cần khảo sát thêm HOSE và investor relations theo nguồn. RSS metadata/link không tự cấp quyền toàn văn hoặc model processing. Không dựa trên private/undocumented endpoint làm contract sản phẩm.
+## Khả năng SSI công bố
 
-[Vnstock license](https://www.vnstocks.com/onboard/giay-phep-su-dung) cần phân biệt license SDK và quyền upstream data. SDK hữu ích cho khảo sát nhưng không tự giải quyết việc lưu, huấn luyện hoặc đưa dữ liệu lên public terminal. Chưa chốt SDK/provider cho production.
+Tài liệu [FastConnect Data API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api) mô tả các API REST sau:
 
-## Provider matrix
+| Nhóm | API được tài liệu liệt kê | Năng lực được mô tả | Cần xác minh trước khi dùng |
+|---|---|---|---|
+| Token | `AccessToken` | Lấy token từ ConsumerID/ConsumerSecret | TTL, refresh, rotation và scope trong entitlement thực tế |
+| Instrument/reference | `Securities`, `SecuritiesDetails` | Danh mục chứng khoán và chi tiết mã | Thị trường/asset class, field set, lịch cập nhật |
+| Index/reference | `IndexList`, `IndexComponents` | Danh sách chỉ số và thành phần | Coverage từng chỉ số và lịch sử constituent |
+| Historical daily | `DailyOhlc` | OHLCV/Value theo mã, khoảng ngày và pagination | History depth, adjusted/raw semantics, corrections, quota |
+| Historical intraday | `IntradayOhlc` | OHLCV/Value theo mã, ngày và pagination; tài liệu mô tả resolution mặc định một phút | Intraday retention, resolution được cấp, phiên/auction handling, quota |
+| Index history | `DailyIndex` | Thống kê chỉ số theo ngày, gồm breadth/volume/value fields | Lịch sử, field semantics và market coverage |
+| Daily snapshot | `DailyStockPrice` | Snapshot giá/đổi giá, ceiling/floor/reference, adjusted close, matched/deal volume/value, foreign buy/sell/room và trade counts | Quy tắc điều chỉnh, timestamp/availability và quyền lưu từng field |
 
-| Provider | Capabilities documented / access model | Giới hạn và rights cần xác minh |
+Tài liệu [streaming](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming) mô tả các nhóm subscription:
+
+| Mã/nhóm | Capability được mô tả | Vai trò tiềm năng trong local research |
 |---|---|---|
-| [SSI FastConnect Data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api) | Token bằng consumerID/secret tạo trên iBoard; securities/details, index components, daily/intraday OHLC | Account entitlement, phí, retention, rate limits và quyền ML/display; chưa feed test |
-| [DNSE market data](https://developers.dnse.com.vn/docs/dnse/market-data/) | OHLC, trades, bid/ask, foreign investors, trading sessions và quyền/corporate events | API account/auth flow phải test theo endpoint; chưa xác nhận public/free production entitlement |
-| [CafeF RSS](https://cafef.vn/index.rss) | Public news feed directory | RSS không cấp full-text/train/redisplay rights |
-| [Vietstock RSS](https://vietstock.vn/rss) | Official RSS page candidate | Chưa test feed, historical archive, quotas hoặc rights |
-| [VnEconomy candidate](https://vneconomy.vn/rss.htm) | RSS URL candidate; browsing lỗi | Chưa documented capability; cần xác minh official URL/interface |
-| [HNX disclosures](https://www.hnx.vn/en-gb/thong-tin-cong-bo-up-hnx.html) | Corporate disclosures website | Interface/history/attachment rights cần source review |
-| [Vnstock](https://www.vnstocks.com/onboard/giay-phep-su-dung) | SDK/tooling | Không đồng nhất SDK license với upstream data license |
+| `F` | Trạng thái chứng khoán/phiên giao dịch | Session state và kiểm soát thời gian có thể giao dịch |
+| `X` | Summary; `X-Quote` gồm bid/ask depth và trades/quotes | Quote/trade tape và thanh khoản hiển thị |
+| `B` | Realtime OHLCV; tài liệu ghi `Value` hiện bằng 0 | Nến live/provisional; phải reconcile với REST/historical |
+| `R` | Foreign room/foreign flows | Room và giao dịch khối ngoại |
+| `MI` | Index data với breadth, OHLC-like values, bid/ask/status | Chỉ số và market breadth |
+| `OL` | Odd-lot trades | Giao dịch lô lẻ, phải tách khỏi regular-board candle/trade totals |
 
-Free, trial, paid và account-gated là các chiều riêng: có tài khoản không chứng minh được cấp mọi dữ liệu. Chưa tìm được evidence đủ để chốt một gói miễn phí/trial đáp ứng toàn bộ research và public-terminal requirements. P10 phải ghi entitlement test và agreement theo sản phẩm dữ liệu cụ thể.
+Tài liệu dịch vụ có nhắc market codes `HOSE`, `HNX`, `UPCOM`, `DER`, `BOND`. Đây là capability evidence ở mức tài liệu; chưa xác minh mỗi API/feed có cùng coverage, và chưa chốt V1 có phái sinh/trái phiếu hay chỉ cổ phiếu cơ sở. “Dùng hết” trong product direction có nghĩa không bỏ qua nhóm SSI phù hợp; không có nghĩa bật mọi field/feed trước khi entitlement và ý nghĩa dữ liệu được kiểm tra.
 
-## Features và trở ngại nghiên cứu
+## Đăng ký, credentials và quota
 
-Returns/volume, market breadth, foreign flows, corporate announcements và fundamentals có thời điểm công bố. Cần handling phiên nghỉ trưa, auction, price limits, trading calendar, corporate actions, ticker/sàn thay đổi, delistings và quy tắc settlement. Backtest mô phỏng không được mặc định fill mọi mức giá tại close khi thanh khoản/biên độ không cho phép.
+[Hướng dẫn đăng ký dịch vụ SSI](https://guide.ssi.com.vn/ssi-products/service-registration) cho biết khách hàng cần đăng ký FastConnect, có tài khoản SSI và được chấp thuận; quy trình hướng dẫn tạo API key tại iBoard. ConsumerID/ConsumerSecret là thông tin bí mật; chỉ nhập vào local secret/config flow đã được triển khai, tuyệt đối không đưa lên chat, commit, log hoặc frontend bundle. FastConnect Data token endpoint tài liệu hóa ConsumerID/ConsumerSecret; không lấy nhầm credentials hoặc phạm vi của FastConnect Trading.
 
-News extraction tiếng Việt cần dataset nhãn và audit asset mapping (mã viết tắt dễ trùng từ thường). Fundamentals phải giữ bản sửa và published/first_seen times. Không dùng báo cáo tài chính cuối cùng như dữ liệu có sẵn từ đầu kỳ.
+[General Information](https://guide.ssi.com.vn/ssi-products/general-information) mô tả giới hạn API theo từng API và connection key, nhưng không công bố số quota áp dụng cho tài khoản cụ thể; SSI có thể xác nhận/nâng giới hạn. Streaming được khuyến nghị cho dữ liệu realtime thay cho polling dày. Hướng dẫn đăng ký mô tả thời hạn dịch vụ một năm và cần gia hạn. Tài liệu có nhắc lựa chọn fixed IP trong quy trình đăng ký; chưa xác minh đây là yêu cầu bắt buộc với entitlement cụ thể của người dùng.
 
-## Gate mở rộng
+Chưa có account/entitlement của người dùng để xác minh giá, phí, endpoint access, số kết nối đồng thời, request/subscription limits, rate reset, history depth, retention hoặc vùng/địa chỉ IP được phép. Không yêu cầu người dùng gửi secret để hoàn thành docs.
 
-Chọn broker/provider hợp lệ, xác minh display/store/train, đánh giá lịch sử và corporate actions; đo thực tế gaps/latency. Chưa có bằng chứng một gói miễn phí đáp ứng đồng thời mọi yêu cầu intraday, lưu trữ và public redistribution. Mục tiêu tiếng Việt hấp dẫn nhưng cần budget/licensing decision trước execution.
+## Rights và trạng thái nguồn
+
+Docs chính thức chứng minh capability/registration flow, không tự cấp quyền cho project hoặc cho mọi account. Cần đọc điều khoản dịch vụ/đăng ký cụ thể và xác minh riêng quyền local access, caching/retention, export, research/backtest, derived metrics, display, người xem, attribution, deletion và commercial status (dù app dự kiến miễn phí/open-source). Không mặc định user-provided key cho phép redistribute market payload.
+
+Source register giữ SSI REST và streaming riêng. Cả hai hiện `documented=true`, `access-tested=false`, `rights-confirmed=false`, `approved=false`. Cho tới khi rights/access gate được ghi nhận, implementation chỉ được chuẩn bị bằng synthetic fixtures; không gọi endpoint hoặc persist market response thật.
+
+## Yêu cầu market contract cần chốt
+
+- Canonical instrument identity phải giữ venue, board/market type, native symbol, instrument class và lifecycle dates; không dùng ticker đơn lẻ làm identity.
+- Giữ payload timestamp, timezone, resolution, observation/received time và publication/availability time riêng. Chuẩn hóa UTC nhưng lưu unit/original value theo policy.
+- Tách regular board, auction/session, odd lot, derivative và bond nếu SSI feed trả về chúng; không nhập chung candle series trước khi semantics được hiểu.
+- Giữ raw revisions, corrected/adjusted status và source version nếu được phép; backtest chỉ dùng dữ liệu khả dụng tại thời điểm tương ứng.
+- Missing ranges/unsupported fields là partial/unavailable; không nội suy hoặc gán zero.
+- Quote/trade stream không thay thế historical feed. Historical REST và live stream phải reconcile với rule về overlap, revisions, closed bars và reconnect gaps.
+
+## Các nguồn khác
+
+DNSE, news RSS/disclosures và Vnstock vẫn là nguồn khảo sát, không thuộc V1 market adapter đã chọn. News engine là workstream riêng; xem [News ingestion](../05-news-ingestion/README.md). Không dùng SDK license để suy ra quyền upstream data.
