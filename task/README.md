@@ -1,11 +1,13 @@
 # Task tracking
 
-[Next plan](next-plan.md) là roadmap active duy nhất. Đọc [docs](../docs/README.md) trước khi nhận task.
+[MVP roadmap](next-plan.md) is the active roadmap. Read [product/docs direction](../docs/README.md) before starting implementation.
 
-## Trạng thái
+## Current stage
 
-Idea mới: Binance Spot BTCUSDT/ETHUSDT, news-first, không auth legacy, không trading keys. Codebase hiện tại là fixture shell (React/Vite + FastAPI + Go Gateway). Feed thật, portfolio, Model Lab runtime chưa triển khai. Legacy code và credential cũ đã được gỡ khỏi tracked source; không tham chiếu product cũ.
+Product direction is now local-first Vietnam market research using SSI FastConnect Data; all user data stays local; portfolio MVP includes backtest and paper live trading; news engine is separate and integrated later; Model Lab is deferred. The implementation remains a synthetic-fixture prototype with no SSI connection or local persisted product runtime.
 
-## Lịch sử
+SSI REST and streaming capability is documented, but access, account entitlement and local usage rights have not been verified. Network/live market use remains blocked by the source register until exact evidence is recorded.
 
-Archive chứa các plan cũ đã superseded, không còn là hướng dẫn hiện hành. Mỗi status cần task ID/evidence; không suy current scope từ file archived.
+## History
+
+Archived plans preserve earlier Binance/hosted directions and are superseded. Do not treat them as active requirements. Current product decisions belong in docs and `next-plan.md`; update status only with evidence.

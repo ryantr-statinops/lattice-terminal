@@ -1,17 +1,23 @@
 # User journeys
-**Trạng thái:** target.
 
-## Từ news đến tài sản
-Người dùng mở demo có nhãn mẫu hoặc đăng nhập workspace. Lọc news theo BTC/ETH, thời gian, nguồn và event. Mở tin để xem published/first-seen/updated, link gốc, asset mapping và mức chắc chắn. Mở chart cùng venue/timeframe để đối chiếu diễn biến; không diễn đạt tương quan thành quan hệ nhân quả.
+**Trạng thái:** target for local-first V1; current app still shows fixtures and mocks.
 
-## Theo dõi riêng
-Thêm asset vào watchlist, bật live khi tab hoạt động. Kết nối chậm/mất phải hiện stale/reconnecting; khi trở lại tab, đồng bộ snapshot trước khi cập nhật. Logout dừng stream và xóa state private khỏi client.
+## Clone and start locally
 
-## Portfolio
-Tạo ledger USDT, nhập cash/opening balances hoặc CSV. Xem preview/errors/duplicates trước xác nhận; sau commit xem holdings, cost basis, P&L và timestamp valuation. Sửa ledger bằng phiên bản/correction có audit, không sửa kết quả P&L trực tiếp.
+Clone the repo on Windows, follow the setup guide, start the local web/API processes and open localhost. First-run flow explains local data paths, password-only access and SSI credential setup without exposing keys in source/browser/logs. Exact one-command launcher and recovery flow remain to be designed.
 
-## Model Lab
-Chọn dataset snapshot, asset, timeframe, features, target/horizon và baseline/model. Xem dữ liệu hợp lệ/missing và số mẫu sau label/split. Lưu config trước rồi chạy Web Worker. Có progress/cancel; đóng tab có thể làm run interrupted. Kết quả ghi dataset/runtime/seed/split/cost và client-computed.
+## Configure SSI and inspect market data
 
-## Thiếu khả năng
-Nguồn chưa đủ quyền: ẩn dữ liệu liên quan hoặc dùng demo được ghi nhãn. Không đủ lịch sử news: cho chạy price-only thay vì bịa feature. Browser không hỗ trợ: xem report và cấu hình nhưng không hứa train được.
+User configures their own SSI FastConnect Data service. App validates configuration safely, reports which REST/stream capabilities are entitled and shows supported instruments/fields. The user explores historical/reference data and, after enabling an entitled stream, sees source, session, last update, closed/provisional state, coverage gaps and stale/partial/unavailable status. No undocumented fallback source is used.
+
+## Backtest a portfolio
+
+User chooses a local portfolio, market/instrument universe, historical snapshot and date range, strategy/rules, capital/currency and fee/slippage/fill assumptions. Preview shows available rows and gaps. Run produces a reproducible simulated report with snapshot and engine versions. Portfolio accounting and market-specific mechanics need decisions before this journey is implementable.
+
+## Paper live session
+
+User starts a paper session using live SSI Data feed. The app reconciles against available history, then simulates orders/fills locally. Feed disconnect, stale data, gap, closed market or app restart pauses or marks state unknown according to explicit policy. Every outcome is labeled simulated; nothing reaches SSI Trading.
+
+## News and Model Lab
+
+News engine is built separately for international and Vietnam sources, then integrated in a later phase through a source-governed contract. Model Lab is deferred outside V1; current mock result is not a product capability.

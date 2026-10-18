@@ -1,17 +1,16 @@
 # Quy tắc sản phẩm
-**Trạng thái:** yêu cầu mục tiêu.
 
-1. News là luồng khám phá chính; chart, portfolio và model cung cấp bối cảnh và kiểm chứng.
-2. Mỗi account sở hữu workspace, watchlists, portfolio và experiments. Backend enforce quyền, không chỉ ẩn nút.
-3. Chỉ hiển thị coverage/latency thực có; source unapproved không thành dữ liệu production.
-4. Giá trị chưa biết khác 0. Tin cũ, giá cũ, nến mở và dữ liệu mẫu đều có nhãn.
-5. Sentiment không đồng nghĩa signal; in-sample accuracy không chứng minh alpha.
-6. Kết quả browser là client-computed; người dùng không thể tự gửi flag để có verified badge.
-7. Experiment mặc định private; public demo/report là lựa chọn riêng, không suy ra từ đăng ký tài khoản.
-8. Không thu khóa giao dịch sàn hoặc đặt lệnh; portfolio là ledger mô phỏng/theo dõi.
-9. UI tiếng Việt, lưu UTC và hiển thị timezone. USDT không tự đổi thành USD/VND.
-10. Login/logout và tab lifecycle kiểm soát live; thu news/history theo lịch độc lập.
-11. Form Model Lab chỉ dùng danh sách feature/model được phép, không thực thi mã do người dùng nhập.
-12. Truy cập miễn phí, quyền ML, quyền public display và chi phí hạ tầng là bốn câu hỏi riêng.
+**Trạng thái:** các nguyên tắc sau theo hướng local-first được chốt ngày 2026-10-18; các điểm chưa quyết định được liệt kê trong [roadmap](../../task/next-plan.md).
 
-Managed Auth provider, giới hạn browser và ngưỡng freshness/quota phải được chốt có evidence ở các phase tương ứng; chưa ghi như tính năng đã có.
+1. V1 là mã nguồn mở, miễn phí, clone và chạy local trên Windows; không phụ thuộc backend hay dịch vụ hosted để dùng chức năng cốt lõi.
+2. Mỗi bản chạy dùng cấu hình, SSI credentials, market data, portfolio, backtest và paper-trading history của người vận hành đó. Không gửi nội dung/secret lên dịch vụ dự án.
+3. Chỉ dùng SSI FastConnect Data, không FastConnect Trading. Credentials là secret: không commit, log, đưa vào browser bundle, URL, crash report hoặc fixture.
+4. Dùng tối đa những capability SSI phù hợp với nhu cầu và entitlement thực tế; mỗi REST/stream product có access, quota, storage/display permission và evidence riêng. Tài liệu endpoint không tự chứng minh quyền lưu trữ.
+5. News engine được xây riêng cho nguồn quốc tế và Việt Nam, theo source-specific policy; tích hợp vào terminal sau. RSS/link access không tự cấp quyền lưu full-text, dịch, ML hoặc redisplay.
+6. Hiển thị nguồn, coverage, freshness, gaps, provisional/closed state và unavailable/partial chính xác. Unknown khác zero; không tự fill missing prices/volume.
+7. Portfolio v1 chỉ mô phỏng nghiên cứu: backtest và paper live trading, không có order route, broker account, margin hoặc custody.
+8. Tất cả timestamps nội bộ dùng UTC; UI có thể hiển thị Asia/Ho_Chi_Minh. Decimal tài chính giữ chính xác qua parse/serialize.
+9. Password-only login là yêu cầu UX, không được xem như encryption-at-rest hoặc recovery model. Credential storage, local encryption, profile isolation và reset/recovery phải được thiết kế trước khi lưu dữ liệu nhạy cảm.
+10. Synthetic fixtures được nhận diện rõ là giả lập. Chúng không chứng minh quyền nguồn, market access hoặc chất lượng dữ liệu thật.
+11. Model Lab không nằm trong MVP đầu tiên. Backtesting cho portfolio được thiết kế độc lập, không kéo toàn bộ runtime Model Lab vào scope.
+12. Không tự động cập nhật provider/permission hoặc mở rộng instrument classes. Khi capability không được cấp hoặc lỗi policy, dừng an toàn và báo trạng thái.

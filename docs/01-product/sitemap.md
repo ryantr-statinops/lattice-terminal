@@ -1,17 +1,17 @@
 # Sitemap
-**Trạng thái:** route định hướng, chưa triển khai.
 
-| Khu vực | Chức năng / quyền |
+**Trạng thái:** route direction only; current routes belong to prototype.
+
+| Area | V1 function |
 |---|---|
-| / | Giới thiệu sản phẩm và dữ liệu/giới hạn |
-| /demo | Workspace mẫu, chỉ đọc, không dữ liệu account |
-| /auth/* | Đăng ký/đăng nhập/xác minh/reset theo managed provider |
-| /terminal/news | News feed, source/event/time filters |
-| /terminal/assets/:instrumentId | Chart, source identity, news và watchlist |
-| /workspace/watchlists | Watchlist private |
-| /workspace/portfolios | Ledger, imports, valuation, P&L private |
-| /workspace/lab | Form, datasets, browser capability và chạy experiment |
-| /workspace/experiments/:id | Config, run status, metrics/artifact private |
-| /account | Profile/session và xóa dữ liệu theo policy |
+| `/` | Local app landing/status, setup and data/security limits |
+| `/login` | Local password-only lock/login; recovery contract pending |
+| `/settings/data` | Local SSI FastConnect Data configuration and entitlement/connection status |
+| `/market` | SSI-supported instruments, reference/history/chart and data quality states |
+| `/portfolio` | Local portfolio overview and simulated ledger |
+| `/portfolio/backtest` | Historical snapshot selection, assumptions, replay and results |
+| `/portfolio/paper` | Start/stop/pause paper live session and inspect simulated orders/fills |
+| `/news` | Deferred until separate project-built news engine is integrated |
+| `/model-lab` | Deferred outside first MVP |
 
-Business API không tự public vì biết URL. Public published reports phải có authorization/publishing policy riêng, không chỉ bỏ auth khỏi route private.
+There is no hosted `/auth`, public demo account, server workspace or cloud portfolio API in the V1 direction. Route names may change with implementation, but local-only data flow and simulated-only trading boundary may not.

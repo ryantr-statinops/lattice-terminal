@@ -1,32 +1,35 @@
 # Research Terminal
 
-Research workspace tiếng Việt, ưu tiên đọc tin và đối chiếu BTC/ETH cho retail trader. Bản hiện tại là prototype dùng dữ liệu fixture synthetic; không dùng để ra quyết định giao dịch.
+Open-source, free research infrastructure for Vietnamese users. The V1 direction is to clone this repository and run it locally on Windows, opening the web interface on `localhost`. Market data is intended to come from the user's own SSI FastConnect Data configuration. The current code is still a synthetic-fixture prototype; it is not an operational market terminal and must not be used for investment decisions.
 
-## Trạng thái hiện tại
+## Product direction
 
-- Market: BTC/ETH, bảng nến, chart, interval và watchlist đều dùng fixture.
-- News: lọc tin fixture theo tài sản; chưa có nguồn tin hoặc ingestion thật.
-- Portfolio: nhập holdings thủ công/CSV, lưu trên thiết bị bằng localStorage và tính P&L từ giá fixture.
-- Stream: kết nối Binance WebSocket chỉ khi người dùng bật; chỉ hiển thị tình trạng kết nối, chưa cập nhật chart hoặc portfolio.
-- Model Lab: form và kết quả mock để minh họa giao diện; chưa có training/backtest runtime.
-- API: FastAPI đọc fixture, Go gateway và OpenAPI contract. Chưa có database, auth/account hay lưu portfolio phía server.
+- All configuration, SSI credentials, market data, portfolio records and research outputs stay on the user's machine.
+- SSI scope covers applicable FastConnect Data REST, reference-data and streaming capabilities, subject to the user's service entitlement and confirmed usage terms. No FastConnect Trading integration or real-order execution is planned.
+- Portfolio MVP target is historical backtesting and paper live trading.
+- A separate project news engine for international and Vietnamese sources is planned for later integration.
+- Model Lab runtime is outside the first MVP.
 
-Không yêu cầu exchange trading keys. Quyền sử dụng nguồn market/news phải được xác minh trước khi triển khai ingestion hoặc phát hành dữ liệu thật.
+## Current prototype
 
-## Chạy fixture local
+- Market, candles, news and portfolio views use synthetic fixtures or browser-local prototype state.
+- The Binance WebSocket control is legacy prototype behavior; it only shows connection state and does not update chart or portfolio.
+- Model Lab shows mock UI/results. SSI integration, local login, persistent local storage, backtesting and paper-trading engine are not implemented.
 
-Yêu cầu Node 22.23.1/npm 10.9.8, Go 1.27.2, Python 3.11–3.13 và uv 0.11.28. JavaScript dependencies nằm trong `package-lock.json`, API dependencies trong `services/api/uv.lock`.
+## Run the current frontend prototype
+
+Requirements: Node 22.23.1/npm 10.9.8, Go 1.27.2, Python 3.11–3.13 and uv 0.11.28. These are the current scaffold versions, not a packaged V1 installer.
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-Mở http://127.0.0.1:5173/terminal/news. Các route gồm `/terminal/market`, `/terminal/news`, `/terminal/portfolio`, `/terminal/model-lab` và `/terminal/account`. Để chạy API/gateway, xem [hướng dẫn API](services/api/README.md) và [hướng dẫn gateway](services/gateway/README.md).
+Open http://127.0.0.1:5173/terminal/news. Routes include `/terminal/market`, `/terminal/news`, `/terminal/portfolio`, `/terminal/model-lab` and `/terminal/account`. To start the fixture API and gateway, see [API](services/api/README.md) and [gateway](services/gateway/README.md).
 
-Frontend gọi `/api` qua Vite proxy đến gateway port 8080; gateway mặc định chuyển tiếp đến API port 8000. Fixture synthetic nằm trong [data/fixtures](data/fixtures/README.md).
+The frontend proxies `/api` to gateway port 8080; the gateway defaults to API port 8000. Synthetic fixtures are in [data/fixtures](data/fixtures/README.md). Do not enter SSI credentials in the current prototype.
 
-## Kiểm tra
+## Checks
 
 ```powershell
 npm run security:env-boundaries
@@ -38,10 +41,11 @@ npm run typecheck
 npm run build
 ```
 
-API, OpenAPI drift, research và Go checks chạy trong GitHub Actions. Repo bảo vệ `main` và yêu cầu thay đổi đi qua pull request.
+API, OpenAPI drift, research and Go checks run in GitHub Actions. The repository protects `main`; changes go through pull requests.
 
-## Tài liệu
+## Documentation
 
-- [Documentation index](docs/README.md) và [glossary](docs/glossary.md).
-- [Vision & scope](docs/01-product/vision-and-scope.md).
-- [Next steps](task/next-plan.md).
+- [Documentation index](docs/README.md).
+- [Product vision and scope](docs/01-product/vision-and-scope.md).
+- [SSI FastConnect Data research](docs/03-market-research/vn-equities.md).
+- [Current roadmap](task/next-plan.md).
