@@ -11,7 +11,13 @@ Research Terminal là prototype news-first bằng tiếng Việt, định hướ
 - Model Lab là form cùng chỉ số mock gắn `simulated`; chưa chạy training/backtest.
 - API đọc fixture; chưa có database, managed auth hay business persistence.
 
-## Các bước tiếp theo
+## Trạng thái gate (2026-10-18)
+
+P03 review đã xác định `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` chưa rights-confirmed/approved cho persistent storage, multi-user display, research/ML hoặc redistribution. P02 access evidence được trỏ trong tài liệu không có trong checkout hiện tại, nên chưa audit lại được. Xem [decision record](../docs/03-market-research/source-register.md#p03-decision-record--2026-10-18) và [candle contract](../docs/06-market-data/historical-ingestion.md).
+
+**Next action:** source/product owner cần cung cấp terms/grant evidence cho exact purposes, audience, geography, fields, retention/deletion, attribution và quota; khôi phục hoặc lặp lại access probes có thể tái kiểm chứng. Cho tới khi review mới đánh dấu gate approved, không chạy historical backfill, lưu market payload thật hoặc phát hành snapshot. Fixture-only checks vẫn được phép.
+
+## Các bước tiếp theo sau khi gate được giải quyết
 
 1. **Source rights và data contract:** lập source register cho market/news, kiểm tra quyền truy cập, lưu trữ, hiển thị, dẫn link và dùng cho research theo khu vực triển khai; chốt freshness, provenance và correction policy trước khi lấy dữ liệu thật.
 2. **Historical market data:** sau khi rights gate đạt, tích hợp một nguồn BTC/ETH, backfill candles 15m/1h/1d, kiểm tra gaps/duplicates/late bars và lưu snapshot có version; giữ fixture làm test dataset.
