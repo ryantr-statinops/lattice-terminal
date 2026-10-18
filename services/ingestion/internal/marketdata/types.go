@@ -121,6 +121,14 @@ type QualityReport struct {
 	RevisionRows    int      `json:"revision_rows"`
 	RejectedRows    int      `json:"rejected_rows"`
 	ConflictCount   int      `json:"conflict_count"`
+	LatestClosedOpenTimeMS int64 `json:"latest_closed_open_time_ms,omitempty"`
+	QualityPassed   bool     `json:"quality_passed"`
 	Gaps            []Gap    `json:"gaps"`
 	Errors          []string `json:"errors"`
+}
+
+type ReconcileResult struct {
+	Candles   []Candle
+	Conflicts []Conflict
+	Report    QualityReport
 }
