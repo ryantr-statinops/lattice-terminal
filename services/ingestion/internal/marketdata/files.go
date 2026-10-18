@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bufio"
 	"crypto/sha256"
-	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -123,9 +122,9 @@ func isNetworkPath(path string) bool {
 
 type syntheticFixtureEvidence struct {
 	SchemaVersion string `json:"schema_version"`
-	IsSynthetic bool `json:"is_synthetic"`
-	SourceID string `json:"source_id"`
-	SHA256 string `json:"sha256"`
+	IsSynthetic   bool   `json:"is_synthetic"`
+	SourceID      string `json:"source_id"`
+	SHA256        string `json:"sha256"`
 }
 
 func verifySyntheticFixture(path, actualHash string) error {
