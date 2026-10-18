@@ -1,5 +1,7 @@
 # Frontend architecture — Research Terminal
 
+**Status note (2026-10-18):** this file documents the current React fixture implementation and earlier hosted/crypto design. SSI local-first V1 needs a loopback API and must not use direct Binance browser streams or expose SSI credentials. Treat those references below as legacy until revised during implementation.
+
 ## Stack (RT-ADR-001, RT-ADR-018)
 
 - React 19 + Vite 8 + TypeScript 6 + Tailwind CSS 4

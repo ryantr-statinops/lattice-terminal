@@ -1,9 +1,11 @@
 # Kiến trúc
-**Trạng thái:** P01 đã có scaffold fixture; các service boundaries nghiệp vụ dưới đây vẫn là target, chưa có auth/feed/ledger/ML runtime.
+
+**Trạng thái:** local-first product direction được chốt ngày 2026-10-18; implementation boundaries còn cần quyết định. Hiện có React/Vite fixture, Go Gateway, FastAPI và CLI; chưa có local SSI integration, auth hay persistence.
+
 - [System architecture](system-architecture.md)
 - [Tech stack](tech-stack.md)
 - [Repository structure](folder-structure.md)
 - [ADR](decisions.md)
 - [Glossary](../glossary.md)
 
-FastAPI sở hữu domain/account isolation, Gateway mỏng. Public Binance WebSocket trực tiếp từ browser là ngoại lệ rõ ràng; browser training không phải server training job.
+V1 clone-and-run trên Windows, mọi config/data tại local. SSI credentials chỉ thuộc local service boundary; browser chỉ gọi loopback API. Hosted auth, cloud database/storage, Vercel và Binance browser WebSocket là hướng cũ, không phải target hiện hành.

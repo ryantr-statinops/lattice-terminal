@@ -5,17 +5,17 @@
 | ID | Quyết định | Trạng thái |
 |---|---|---|
 | RT-ADR-001 | React/Vite/React Router/TypeScript/Tailwind; UI tiếng Việt | Accepted |
-| RT-ADR-002 | Go Gateway HTTP màng; FastAPI sở hữu domain và kiểm tra ownership/JWT | Accepted |
-| RT-ADR-003 | Go ingestion theo lịch, độc lập phiên người dùng | Accepted boundary; runner chốt P02/P09 |
-| RT-ADR-004 | Browser Web Worker training/backtest; Pyodide là phương án spike đầu tiên | Accepted capability; runtime chưa test |
-| RT-ADR-005 | Binance Spot BTCUSDT/ETHUSDT; candles 15m/1h/1d | Accepted scope; source access/rights cần gate |
-| RT-ADR-006 | Browser public Binance WebSocket không key, theo tab hoạt động | Accepted ngoại lệ; region/CSP/lifecycle test P02 |
-| RT-ADR-007 | PostgreSQL cho metadata/ledger; object storage cho snapshots/artifacts qua interface | Accepted; vendor chưa chọn |
-| RT-ADR-008 | Managed Auth, không tự lưu/hash password | Accepted; provider chốt bằng ADR P02 |
-| RT-ADR-009 | Portfolio spot long/cash, weighted-average cost, base USDT; manual/CSV | Accepted; không execution |
-| RT-ADR-010 | Experiment/results private theo owner; browser output là client-computed | Accepted |
-| RT-ADR-011 | Vercel web/HTTP APIs sau kiểm chứng; ingestion chạy riêng | Accepted target; không giữ định Vercel giữ WebSocket upstream |
-| RT-ADR-012 | Funding/OI, cổ phiếu Mỹ, FX, Việt Nam | Deferred qua source gates |
+| RT-ADR-002 | Go Gateway + FastAPI là target domain boundary | Superseded as product target; current scaffold only. Local process architecture to be selected |
+| RT-ADR-003 | Go ingestion theo lịch, độc lập phiên người dùng | Superseded for hosted scheduler; local ingestion jobs remain a possible implementation |
+| RT-ADR-004 | Browser Web Worker training/backtest; Pyodide là phương án spike đầu tiên | Deferred with Model Lab; portfolio backtest is a separate MVP capability |
+| RT-ADR-005 | Binance Spot BTCUSDT/ETHUSDT; candles 15m/1h/1d | Superseded by Vietnam-market direction; Binance code/docs are prototype legacy |
+| RT-ADR-006 | Browser public Binance WebSocket không key, theo tab hoạt động | Superseded; SSI stream must be owned by local service and reconciled |
+| RT-ADR-007 | PostgreSQL cho metadata/ledger; object storage cho snapshots/artifacts qua interface | Superseded by local-only storage direction; exact format/engine pending |
+| RT-ADR-008 | Managed Auth, không tự lưu/hash password | Superseded by requested password-only local login; local security/recovery design pending |
+| RT-ADR-009 | Portfolio spot long/cash, weighted-average cost, base USDT; manual/CSV | Superseded; Vietnam instruments, backtest and paper live are the target; contract pending |
+| RT-ADR-010 | Experiment/results private theo owner; browser output là client-computed | Deferred with Model Lab and hosted accounts |
+| RT-ADR-011 | Vercel web/HTTP APIs sau kiểm chứng; ingestion chạy riêng | Superseded; clone-and-run local on Windows, no hosted runtime |
+| RT-ADR-012 | Funding/OI, cổ phiếu Mỹ, FX, Việt Nam | Superseded: Vietnam + SSI FC Data is selected direction; exact markets/instruments remain gated |
 | RT-ADR-013 | Dark mode default; light theme qua semantic tokens | Accepted (frontend) |
 | RT-ADR-014 | Accent `#21684e`; semantic accent tokens + market up/down colors riêng | Accepted (frontend) |
 | RT-ADR-015 | Inter (UI) + JetBrains Mono (numeric/terminal) với fallback stacks | Accepted (frontend) |
@@ -23,9 +23,21 @@
 | RT-ADR-017 | TradingView Lightweight Charts cho financial time series; kiểm tra deps/component hiện có trước migrate | Accepted (frontend) |
 | RT-ADR-018 | Tailwind CSS + CSS variables; semantic tokens, không hardcode theme colors trong components | Accepted (frontend) |
 
+## Current direction decisions (2026-10-18)
+
+| ID | Quyết định | Trạng thái |
+|---|---|---|
+| RT-ADR-019 | Open-source/free local-first V1, clone repo và chạy localhost trên Windows; không cần installer/hosted backend | Accepted product direction; launcher/process details pending |
+| RT-ADR-020 | SSI FastConnect Data là provider direction; dùng REST/reference/stream capabilities phù hợp sau entitlement/rights gates; không dùng FastConnect Trading | Accepted direction; account, terms, quota, fields and retention not yet verified; network use remains blocked |
+| RT-ADR-021 | Dữ liệu, config, credentials, portfolio và research output ở máy người dùng | Accepted requirement; secret store, encryption, storage format, backup/delete remain pending |
+| RT-ADR-022 | Password-only local login | Accepted UX requirement; local profile model, password hashing, recovery and at-rest protection pending |
+| RT-ADR-023 | Portfolio MVP includes historical backtest and paper live trading only; no real orders | Accepted product scope; fills, fees, taxes, market sessions and corporate actions pending design |
+| RT-ADR-024 | News engine for international and Vietnam sources is a separate workstream, integrated later | Accepted sequencing; source rights/engine requirements pending |
+| RT-ADR-025 | Model Lab runtime is outside first MVP | Accepted scope |
+
 ## Spike và quyết định tiếp theo
 
-P02 ghi provider Auth/PostgreSQL/storage, email/quota, toolchain versions, Pyodide compatibility, browser support, dataset/features limits và lifecycle timeout. P03/P04 khóa source eligibility, retention/freshness theo evidence. Không thay phương án âm thầm hoặc ghi approved khi chưa kiểm chứng.
+Các việc kế tiếp: xác minh user's SSI service entitlement and terms; chốt market/feed scope and field semantics; thiết kế local secret/persistence/password recovery; định nghĩa portfolio backtest/paper contracts; chốt local process launcher/setup. Model Lab/Pyodide, hosted auth/database/storage và cloud deployment không nằm trong first MVP.
 
 ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và trigger xem lại. Không đổi tên thư mục repo/domain deploy trong docs.
 

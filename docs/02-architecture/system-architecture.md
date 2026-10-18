@@ -1,31 +1,38 @@
 # System architecture
-**Trạng thái:** kiến trúc nghiệp vụ mục tiêu. P01 đã thay tracked Next.js/Admin bằng fixture scaffold; hiện chỉ có web fixture, gateway proxy, API read-only và CLI inspection. Auth, storage, scheduled feeds và browser ML chưa triển khai.
 
-| Thành phần | Sở hữu |
+**Trạng thái:** target local-first được chốt ở cấp product; process boundaries, local persistence và password protection vẫn đang thiết kế. Current fixture stack: React/Vite, Go Gateway, FastAPI và CLI.
+
+| Thành phần | Trách nhiệm mục tiêu |
 |---|---|
-| React/Vite web | UI, managed-auth client, private client state, stream lifecycle, browser Model Lab |
-| Go Gateway HTTP | Routing, request ID, bounded requests/timeouts; không tự tính ledger/model |
-| FastAPI | JWT/ownership, watchlist/ledger, dataset delivery policy, experiment config/results validation |
-| Go ingestion | Scheduled news/history capture và source run metadata |
-| Python pipeline | Chuẩn hóa/features/dataset/evaluation tooling; không nhận arbitrary user training jobs |
-| Web Worker/Pyodide | Form-approved training/backtest trên thiết bị user |
-| PostgreSQL | Metadata, source/version refs, ownership, ledger/config/result summaries |
-| Object storage | Raw/dataset/artifact theo quyền và retention, không public bucket mặc định |
+| React/Vite web | UI tại localhost, market/portfolio/research screens; không giữ SSI secret |
+| Local API process | Chỉ loopback; cấp normalized local data và portfolio/simulation operations |
+| SSI FC Data adapter | Dùng ConsumerID/Secret từ local secret boundary; REST history/reference và streaming theo entitlement. Không gọi FastConnect Trading |
+| Local data store | Snapshot/config/portfolio/backtest/paper history trên máy người dùng, với version/provenance và recovery policy |
+| Simulator | Backtest trên historical data và paper live trên reconciled live feed; không có broker order route |
+| Separate news engine | Nguồn quốc tế + Việt Nam, xây độc lập rồi mới tích hợp vào app |
 
-## Luồng
+## Luồng mục tiêu
+
 ~~~text
-Approved sources -> scheduled Go ingestion -> raw/versioned normalized data
-                                              -> dataset snapshot + manifest
-Browser -> Gateway -> FastAPI -> managed Auth/JWT + PostgreSQL/object storage
-Browser -> public Binance WS (display only; no exchange keys)
-Browser dataset -> Web Worker -> client-computed result -> owner API sync
+User starts local project
+Browser (localhost) -> loopback API -> local normalized snapshots / portfolio / simulator
+                                      -> SSI FastConnect Data (only after access + rights gates)
+                                      -> local stream reconciliation -> paper-trading simulator
+Separate news engine -> later, reviewed integration boundary
 ~~~
 
-News/history acquisition không phụ thuộc user đang online. Live stream phục vụ màn hình, không là nguồn duy nhất để xây lịch sử nghiên cứu. Browser quote không là authoritative proof cho ledger fill hay valuation lưu trên backend.
+Các process chỉ bind vào loopback trừ khi có ADR và bảo vệ phù hợp. Browser không nhận ConsumerID/ConsumerSecret và không tự kết nối SSI upstream. Local API chỉ expose fields cần cho app; log không chứa secret hoặc raw payload không được phép lưu.
 
-## Boundaries và failure
-Managed Auth cấp token; FastAPI kiểm issuer/audience/expiry và ownership, không tin ownerId client gửi. Source quyền không cho train/display thì dataset route chặn tương ứng. Result client không đạt verified chỉ qua schema validation.
+## Ranh giới và failure
 
-Browser WebSocket không cần server relay trong MVP; phải thử access/origin/region/CSP. Nếu không truy cập được, báo unavailable/historical; không proxy để vượt restrictions. Vercel chỉ xử lý web/HTTP API; không giả định giữ upstream socket. Batch runner chọn bằng evidence.
+- SSI REST/historical là nguồn lịch sử; stream dùng để cập nhật realtime/reconcile. Disconnect không xóa history, và stream không là nguồn duy nhất.
+- Rights/entitlement/access/quality gate riêng theo endpoint/feed. Không thay SSI bằng source khác âm thầm; không phát hành data fixture như data thật.
+- Provider auth error, policy/terms block, quota, session/market closure, stale feed và partial history có state riêng. Dừng request boundedly, không retry vô hạn.
+- Local storage corruption, interrupted write hoặc invalid secret không làm publish partial snapshot; cần recovery/export/delete contract.
+- Backtest chỉ nhận closed bars theo explicit availability rules. Paper live đánh dấu simulated fills; quote/trade stream không chứng minh fill thật.
+- Không có cloud sync/remote user account. Password-only local login là requested UX; threat model, encryption-at-rest, account recovery và whether lock is per profile or per app instance vẫn cần quyết định.
+- News engine không chặn market MVP và không được dùng content/fields ngoài rights của từng source.
 
-Worker crash không làm hỏng ledger. Dataset immutable; config lưu trước run; closing tab có thể interrupted. Account switch/logout đóng stream và hủy/xóa private worker state; không tự tiếp tục experiment cho account khác.
+## Implementation status
+
+SSI API/streaming, local secret store, local persistent store, password login, market-data serving, backtest, paper simulator và news integration chưa có. Detailed cloud/multi-account/Binance designs elsewhere describe earlier direction and are superseded until individually revised.
