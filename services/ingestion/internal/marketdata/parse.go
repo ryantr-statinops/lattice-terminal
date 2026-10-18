@@ -193,6 +193,18 @@ func validateCandle(c Candle) error {
 	if c.Venue != VenueBinance || c.MarketType != MarketSpot || (c.NativeSymbol != "BTCUSDT" && c.NativeSymbol != "ETHUSDT") || !c.Interval.Valid() {
 		return errors.New("unsupported candle identity")
 	}
+	if c.SourceID == "" || c.SourceObjectID == "" || c.AvailableAt.IsZero() {
+		return errors.New("candle provenance is incomplete")
+	}
+	if c.SourceTimestampUnit != TimestampMilliseconds && c.SourceTimestampUnit != TimestampMicroseconds {
+		return errors.New("candle source timestamp unit is invalid")
+	}
+	if sourceOpenMS, err := timestampToMilliseconds(c.SourceOpenTimestamp, c.SourceTimestampUnit); err != nil || sourceOpenMS != c.OpenTimeMS {
+		return errors.New("source open timestamp does not match normalized timestamp")
+	}
+	if sourceCloseMS, err := timestampToMilliseconds(c.SourceCloseTimestamp, c.SourceTimestampUnit); err != nil || sourceCloseMS != c.CloseTimeMS {
+		return errors.New("source close timestamp does not match normalized timestamp")
+	}
 	durationMS := c.Interval.Duration().Milliseconds()
 	if c.OpenTimeMS < 0 || c.CloseTimeMS != c.OpenTimeMS+durationMS-1 || c.OpenTimeMS%durationMS != 0 {
 		return errors.New("candle timestamps do not match interval boundaries")

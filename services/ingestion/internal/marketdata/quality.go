@@ -74,8 +74,8 @@ func Reconcile(candles []Candle, symbol string, interval Interval, startMS, endM
 	sort.Slice(result.Conflicts, func(i, j int) bool { return result.Conflicts[i].NaturalKey < result.Conflicts[j].NaturalKey })
 	result.Report.AcceptedRows = len(result.Candles)
 	result.Report.ConflictCount = len(result.Conflicts)
-	if len(result.Candles) > 0 {
-		result.Report.LatestClosedOpenTimeMS = result.Candles[len(result.Candles)-1].OpenTimeMS
+	if len(openTimes) > 0 {
+		result.Report.LatestClosedOpenTimeMS = openTimes[len(openTimes)-1]
 	}
 	result.Report.Gaps = calculateGaps(openTimes, startMS, endMS, duration)
 	result.Report.QualityPassed = len(result.Conflicts) == 0

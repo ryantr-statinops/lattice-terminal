@@ -63,6 +63,14 @@ func TestParseRESTKlines(t *testing.T) {
 	}
 }
 
+func TestLoadRESTFixtureVerifiesSyntheticSidecar(t *testing.T) {
+	candles, input, err := LoadRESTFile("testdata/synthetic-rest.json", parserConfig(TimestampMilliseconds))
+	if err != nil { t.Fatal(err) }
+	if len(candles) != 1 || !input.syntheticVerified || input.SourceID != SourceFixture {
+		t.Fatalf("REST loader did not preserve synthetic provenance: %+v %+v", candles, input)
+	}
+}
+
 func TestParsersRejectMalformedRowsAndUnsupportedIdentity(t *testing.T) {
 	for _, input := range []string{
 		"1735689600000,10,12,9,11,25.5,1735690499999,280.5,42,15,165.7\n",
