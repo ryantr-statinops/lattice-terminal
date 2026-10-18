@@ -1,6 +1,6 @@
 # Source register và source gates
 
-**Ngày review:** 2026-10-18. Phần lớn nguồn chỉ review documentation; repo hiện tại không chứa các P02 evidence files được trỏ bên dưới, nên các access-test claims chưa independently auditable từ checkout này. Không tạo provider account hoặc ký agreement. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
+**Ngày review:** 2026-10-18 (P03 follow-up). Phần lớn nguồn chỉ review documentation; repo hiện tại không chứa các P02 evidence files được trỏ bên dưới, nên các access-test claims chưa independently auditable từ checkout này. Không tạo provider account hoặc ký agreement. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
 
 ## Evidence flags độc lập
 
@@ -15,8 +15,8 @@ P02 claim `BIN-SPOT-PUBLIC access-tested` được tài liệu cũ mô tả là 
 
 | ID / provider + product | Lớp dữ liệu / access | documented | access-tested | rights-confirmed | approved | Store / ML / display / redistribute |
 |---|---|---|---|---|---|---|
-| BIN-SPOT-PUBLIC | Giá; public-only REST/WS, no key | true | historical claim; evidence file missing, re-test required | false | false | Access capability không cấp quyền store/ML/display/redistribute; terms/use-case/geography review và deployment region còn mở |
-| BIN-SPOT-ARCHIVE | Giá; download miễn phí có điều kiện | true | false | false | false | Terms v1.0/2026-08-26 theo tài liệu khảo sát: CC BY-NC-SA4.0 + điều khoản bổ sung/giới hạn use case; phải re-open terms, xác minh hash/version và project fit chưa approved |
+| BIN-SPOT-PUBLIC | Giá; public-only REST/WS, no key | true | historical claim; evidence file missing, re-test required | false | false | Tài liệu endpoint mô tả capability/schema; chưa tìm thấy grant cho persistent store, multi-user display, ML hoặc redistribution. Binance platform terms, geography và exact product entitlement vẫn cần owner/legal review |
+| BIN-SPOT-ARCHIVE | Giá; download miễn phí có điều kiện | true | false | false | false | Vision Dataset Terms v1.0 (2026-08-26), SHA-256 `99c4921dbe023cd68c1a447775707d621453cc78aec6ac0bfe2e6c06a5114ee0`: CC BY-NC-SA 4.0 + giới hạn bổ sung; commercial utilization cần separate written enterprise license; không phù hợp MVP multi-user/public product nếu chưa có license/review |
 | KRAKEN-OHLCVT | Giá; public archive | true | false | false | false | Chưa xác nhận từng mục đích |
 | SEC-RELEASES | News regulator; public website | true | false | false | false | Review content/third-party fields và attribution |
 | CFTC-RSS | News regulator; RSS | true | false | false | false | Review metadata/full text/derived ML riêng |
@@ -67,7 +67,7 @@ P02 claim `BIN-SPOT-PUBLIC access-tested` được tài liệu cũ mô tả là 
 
 ## Approval record phải có
 
-Binance Vision: evidence terms đã tìm thấy, nhưng chưa xác nhận tính phù hợp với dự án. License không phải MIT cho dataset; mục đích thương mại/multi-user và artifacts public phải qua scope review theo [báo cáo Crypto](crypto.md#dataset-terms-ảnh-hưởng-scope). Dùng source miễn phí không đồng nghĩa được host dịch vụ retail; riêng API/live cần terms review riêng, không suy ngược từ archive.
+Binance Vision: xem P03 follow-up record bên dưới. License không phải MIT cho dataset; mục đích thương mại/multi-user và artifacts public phải qua scope review theo [báo cáo Crypto](crypto.md#dataset-terms-ảnh-hưởng-scope). Dùng source miễn phí không đồng nghĩa được host dịch vụ retail; riêng API/live cần terms review riêng, không suy ngược từ archive.
 
 Source ID, purpose, allowed fields, permitted audience, geography, allowed transformations/ML, storage and deletion policy, attribution, current quota evidence, owner, review/expiry date, terms hash và disable procedure. Không nhúng secret vào URLs hoặc sample payload.
 
@@ -86,3 +86,33 @@ Chưa khóa numeric quota hay retention khi chưa có evidence. Giá miễn phí
 | Redistribution/public demo | Chưa có grant xác nhận | false | Block; không phân phối raw/derived market data hay snapshot public |
 
 **Owner:** product/source-rights owner chưa được chỉ định trong repo (engineering record: Ryan Tran). **Geography:** chưa chốt. **Terms version/hash, retention, quota, review expiry, disable procedure:** pending evidence. `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` giữ `rights-confirmed=false`, `approved=false`. Gate chỉ được mở bằng review mới có evidence URL/document, version/hash, date, owner, region, allowed purposes/fields/audience, retention/deletion, attribution và operational disable rule.
+
+## P03 follow-up decision record — 2026-10-18
+
+**Quyết định: tiếp tục BLOCKED / not approved** cho scope sản phẩm hiện được docs mô tả (multi-account retail workspace, public/multi-user display, research/ML, persistent historical storage và public demo). Không truy cập endpoint để tải candles, không cache/persist Binance market payload, và không phát hành snapshot thật. Đây là quyết định về thiếu quyền được chứng minh cho scope này, không phải kết luận pháp lý chung về mọi cách dùng Binance data.
+
+### Evidence reviewed
+
+- [Binance Vision Dataset Terms](https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md), version 1.0, last updated 2026-08-26; nội dung UTF-8 tải từ raw official repository ngày 2026-10-18 có SHA-256 `99c4921dbe023cd68c1a447775707d621453cc78aec6ac0bfe2e6c06a5114ee0`.
+- [Binance Public Data README](https://github.com/binance/binance-public-data/blob/master/README.md) mô tả archive klines, timestamp precision chuyển sang microseconds từ 2025-01-01 và checksum files. Đây là evidence kỹ thuật, không phải grant bổ sung.
+- [Binance Spot REST API documentation](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md) mô tả API endpoints và behavior. Tài liệu kỹ thuật được truy cập không tự xác nhận quyền lưu trữ hoặc redisplay; REST/WS không được cấp quyền suy diễn từ Vision dataset license.
+- P02 REST/stream probe được ghi nhận trong tài liệu cũ nhưng evidence file không có trong checkout, nên access claim chưa được tái xác minh. Không thực hiện live probe trong rights review này.
+
+### Scope decision by source and purpose
+
+| Source | Purpose | Evidence/assessment | Decision |
+|---|---|---|---|
+| BIN-SPOT-ARCHIVE | Download/access | Terms grant access subject to Vision Dataset Terms; README documents downloadable archives/checksums. | Chỉ documented; không dùng quyền truy cập như quyền sản phẩm. Offline synthetic fixtures được phép cho engineering. |
+| BIN-SPOT-ARCHIVE | Personal non-production historical research/backtest | Terms §4.1 liệt kê purely personal non-production backtesting và một số use case phi thương mại. Project hiện mô tả multi-account retail workspace, không phải personal-only scope. | Không áp dụng grant này cho project hiện tại; cần thu hẹp scope chính thức hoặc written license phù hợp. |
+| BIN-SPOT-ARCHIVE | Persistent storage/hosting, multi-user/public display, commercial product | Terms §3.4 loại commercial utilization khỏi license và yêu cầu separate written enterprise data license; §§4.3–4.5 hạn chế hosting/commercial exploitation và điều kiện redistributed derivatives. Chưa có project-specific grant. | BLOCKED. Không tải/cache/persist/serve real archive data hay derivatives. |
+| BIN-SPOT-ARCHIVE | Research/ML and derived charts/models | Terms §§2.4, 4 govern derived data including charts/models; permitted research is bounded by §4.1, while multi-user/product fit is unresolved. | BLOCKED cho shared/product ML, charts và artifacts; cần license/clarification ghi rõ use case. |
+| BIN-SPOT-PUBLIC (REST/WS) | Public endpoint access/schema | API/market-data-only docs mô tả endpoints và no-key capability; historical probe evidence missing. | `documented=true`, `access-tested` chưa xác minh lại; chỉ synthetic/local development. |
+| BIN-SPOT-PUBLIC (REST/WS) | Persistent storage, reconciliation snapshots, multi-user display, ML/derived use, redistribution | REST API documentation không phải project-specific data license; chưa có rights grant/entitlement trong repo. Archive terms không được tự động áp sang hoặc dùng để cấp quyền cho API. | BLOCKED độc lập với archive; cần review Binance platform/API terms và xác nhận bằng văn bản cho scope chính xác. |
+
+### Unresolved approval fields
+
+Product/source-rights owner và người có thẩm quyền nhận license chưa được chỉ định; geography/territories, vận hành cá nhân hay qua pháp nhân, monetization/commercial status, audience, fields/transformations, retention/deletion, attribution, quota, terms expiry và disable procedure chưa có bằng chứng. Không thể đánh dấu `rights-confirmed` hoặc `approved` chỉ dựa trên trang docs hay public endpoint.
+
+**Điều kiện mở gate:** (1) source/product owner xác nhận product/entity, territories, audience và từng purpose; (2) với Vision, cung cấp written enterprise data license nếu scope thương mại/hosted hoặc có văn bản giải thích grant áp dụng cho scope thực tế; (3) với REST/WS, có review/authorization riêng bao phủ storage, display, ML và derivatives; (4) ghi fields, retention/deletion, attribution, quota, terms version/hash, review expiry và disable procedure. Sau đó legal/source owner cập nhật approval record; engineering chỉ bật downloader cho các nguồn/purpose được duyệt.
+
+**Engineering state:** rights gate vẫn BLOCKED. Không có network downloader; không có Binance market data thật được tải hay lưu trong review này. Fixture-only offline tests tiếp tục được phép.
