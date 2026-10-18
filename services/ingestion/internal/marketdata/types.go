@@ -75,6 +75,7 @@ type InputObject struct {
 	TimestampUnit  TimestampUnit `json:"timestamp_unit"`
 	RetrievedAt    time.Time     `json:"retrieved_at"`
 	InputPath      string        `json:"input_path,omitempty"`
+	syntheticVerified bool
 }
 
 type Gap struct {
@@ -95,6 +96,7 @@ type Manifest struct {
 	SnapshotVersion     string        `json:"snapshot_version"`
 	CreatedAt           time.Time     `json:"created_at"`
 	SourceIDs           []string      `json:"source_ids"`
+	SourcePolicyReference string     `json:"source_policy_reference"`
 	Inputs              []InputObject `json:"inputs"`
 	AdapterVersion      string        `json:"adapter_version"`
 	Venue               string        `json:"venue"`
@@ -104,6 +106,7 @@ type Manifest struct {
 	RangeStartMS        int64         `json:"range_start_ms"`
 	RangeEndMS          int64         `json:"range_end_ms"`
 	RowCount            int           `json:"row_count"`
+	CandlesSHA256       string        `json:"candles_sha256"`
 	TimestampPolicy     string        `json:"timestamp_policy"`
 	ClosedBarPolicy     string        `json:"closed_bar_policy"`
 	RevisionCount       int           `json:"revision_count"`
@@ -125,6 +128,11 @@ type QualityReport struct {
 	QualityPassed   bool     `json:"quality_passed"`
 	Gaps            []Gap    `json:"gaps"`
 	Errors          []string `json:"errors"`
+}
+
+type QualityArtifact struct {
+	Report QualityReport `json:"report"`
+	Conflicts []Conflict `json:"conflicts"`
 }
 
 type ReconcileResult struct {
