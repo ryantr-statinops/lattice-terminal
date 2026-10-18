@@ -2,6 +2,8 @@
 
 **Trạng thái:** protocol mục tiêu; chưa có dataset, scores hoặc tuyên bố lợi nhuận đã kiểm chứng.
 
+**Scope note (2026-10-18):** this file describes a Model Lab/model-evaluation proposal and remains deferred. First-MVP portfolio backtesting is a separate deterministic simulator with Vietnam market/SSI contracts; do not reuse Binance/USDT/model defaults below as active requirements. See [Portfolio](../../07-portfolio/README.md) and [roadmap](../../task/next-plan.md).
+
 ## Splits và baselines
 
 Chia theo thời gian, không shuffle. Walk-forward dùng train quá khứ, validation sau train và test sau validation; holdout cuối chỉ mở sau khi khóa preset/features. Purge mọi train sample có label interval giao validation/test; gap/embargo ít nhất bao phủ horizon thực tế và latency, không cố định một số bars cho mọi target. Nếu tái dùng fold sau làm train, loại các sample còn overlap theo interval. Scaler, imputer, feature selection và calibration chỉ fit train của fold.
