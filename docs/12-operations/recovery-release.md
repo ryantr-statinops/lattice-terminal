@@ -21,6 +21,6 @@
 - [ ] Paper mode has no real-order route or trading credentials; simulated fills are clearly labeled and recover safely after restart/gaps.
 - [ ] Windows clone/start/stop/update/recovery guide verified; supported toolchain and ports documented.
 - [ ] Accessibility and Vietnamese source/freshness/session/partial labels reviewed.
-- [ ] News engine and Model Lab remain explicitly out of first MVP unless product scope changes.
+- [ ] News engine remains independently scoped and is not silently integrated into terminal MVP; Model Lab remains deferred.
 
 If a gate is missing, keep that capability disabled or fixture-only; do not present it as complete by editing copy.

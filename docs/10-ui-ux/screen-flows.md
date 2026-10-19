@@ -1,10 +1,10 @@
 # Screen flows
 
-**Trạng thái:** target UI follows local-first scope; current prototype screens are fixtures/mock.
+**Trạng thái:** luồng UX mục tiêu theo local-first; prototype hiện tại dùng fixtures/mocks và chưa thực hiện đầy đủ các luồng này.
 
 ## Local setup and password
 
-First run guides the user to configure SSI FastConnect Data without pasting credentials into source code or browser fields. Exact local secret-store flow is pending. Password-only local login/lock has no email account; reset and encryption behavior must be stated before implementation. Show provider status without echoing key values.
+First run hướng dẫn cấu hình SSI FastConnect Data mà không đưa credentials vào source hoặc browser. Local secret-store flow chưa được chọn; không nhập credentials thật trước khi flow an toàn được triển khai và source gate mở. Password-only local login/lock không dùng email account; reset và encryption behavior phải chốt trước implementation. Không hiển thị secret.
 
 ## Market research
 
@@ -12,11 +12,11 @@ Market screens show Vietnamese instruments/reference data supported by the user'
 
 ## Portfolio
 
-Users create a local portfolio and run historical backtests or paper live sessions. Backtest setup shows source snapshot, data range/coverage, strategy, capital/currency and costs/fill assumptions. Paper live shows feed freshness and makes every order/fill visibly simulated. Stop or pause safely on feed gap, stale data or market/session state. Never show a real-order action or ask for trading API credentials.
+Luồng mục tiêu cho phép tạo portfolio local, chạy historical backtest và paper live sessions sau khi data source/market assumptions được duyệt. Backtest setup nêu snapshot, range/coverage, strategy, capital/currency và cost/fill assumptions. Paper live thể hiện freshness và mọi order/fill là simulated. Pause an toàn khi feed gap, stale data hoặc session state không rõ. Prototype hiện chưa có simulator; không hiển thị real-order action hay yêu cầu trading credentials.
 
-## News and Model Lab
+## News and deferred model capability
 
-Current news fixture screen is placeholder; project-built international/Vietnam news engine is separate and integrated later. Model Lab is outside first MVP; remove/defer mock metrics rather than implying actual analysis capability.
+News fixture screen là placeholder. News engine quốc tế/Việt Nam là workstream riêng; terminal chỉ tích hợp sau khi source policy và contract được duyệt. Model Lab ngoài MVP đầu tiên; không trình bày mock metrics như kết quả phân tích thật.
 
 ## Local data lifecycle
 

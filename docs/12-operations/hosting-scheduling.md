@@ -6,7 +6,7 @@ V1 does not use Vercel, hosted APIs, managed auth, shared database/object storag
 
 SSI access will be opt-in only after the user's FastConnect Data entitlement, terms, quota and local storage permissions are documented. Historical refresh/backfill starts as an explicit local action with bounded ranges; no hidden scheduled task/background Windows service in first MVP. Realtime streaming runs only while the user starts an eligible live/paper session and stops with the local service.
 
-News engine is a separate future workstream; its scheduling and standalone operating model are not decided here. It must not be silently installed as a remote service or enabled in terminal before later integration approval.
+News engine quốc tế/Việt Nam là workstream độc lập trong định hướng hiện tại; scheduler và operating model của engine chưa quyết định. Không cài như remote service hoặc bật trong terminal trước integration approval.
 
 ## Run and support requirements
 

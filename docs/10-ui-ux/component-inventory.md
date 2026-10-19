@@ -1,6 +1,6 @@
 # Component inventory — Research Terminal
 
-Danh sách components hiện có và planned. Cập nhật khi thêm component mới.
+Danh sách này ghi nhận frontend prototype hiện tại và các ý tưởng planned; ✅ Có nghĩa là tồn tại trong code, không đồng nghĩa đã đáp ứng V1 hoặc production-ready.
 
 ## Layout
 
@@ -26,7 +26,7 @@ Danh sách components hiện có và planned. Cập nhật khi thêm component m
 | `CandleChart` | `features/market/CandleChart.tsx` | ✅ Có (Lightweight Charts) |
 | `useInstruments` / `useCandles` | `features/market/api.ts` | ✅ Có |
 | `useWatchlist` | `features/market/watchlist.ts` | ✅ Có |
-| `useBinanceStream` | `features/market/stream.ts` | ✅ Có |
+| Browser stream hook | `features/market/stream.ts` | ✅ Prototype only; không phải SSI V1 adapter |
 
 ### News
 | Component | Path | Trạng thái |
@@ -42,7 +42,7 @@ Danh sách components hiện có và planned. Cập nhật khi thêm component m
 | `CsvImport` | `features/portfolio/CsvImport.tsx` | ✅ Có |
 | `usePortfolio` | `features/portfolio/storage.ts` | ✅ Có |
 
-### Model Lab
+### Model Lab (deferred; mock prototype)
 | Component | Path | Trạng thái |
 |-----------|------|------------|
 | `ModelLabPage` | `features/model-lab/ModelLabPage.tsx` | ✅ Có |

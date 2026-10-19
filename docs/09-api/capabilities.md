@@ -15,6 +15,6 @@ Potential local capability groups (names illustrative, not approved routes):
 | Backtest | Start/cancel/read a deterministic local simulation | Snapshot/strategy/fill assumptions versioned |
 | Paper live | Simulated local orders/fills against permitted live feed | Must have no real-order route or trading credentials |
 
-No news endpoints are part of first MVP; the separate news engine will define its own integration contract later. Model Lab/datasets/experiments and hosted sharing remain deferred.
+No news endpoints are part of first terminal MVP; the independent news engine will define its own integration contract before a later connection. Model Lab/datasets/experiments and hosted sharing remain deferred.
 
 Each response with market state should include `as_of`, source/feed, last observed time, partial/stale flags and coverage/gap information where applicable. Exact fields, status enums, errors and OpenAPI remain to be designed alongside implementation.

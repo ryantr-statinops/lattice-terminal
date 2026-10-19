@@ -1,6 +1,6 @@
 # Security và privacy
 
-**Trạng thái:** local-first policy direction; password protection, storage encryption and SSI integration are not implemented.
+**Trạng thái:** local-first security requirements; password protection, storage encryption and SSI integration are not implemented. Technology choices remain pending ADR/review.
 
 - All config, SSI Data credentials, market data, portfolio and research output stay on the user's computer. No project-controlled upload or telemetry by default.
 - FastConnect Data only. No FastConnect Trading, broker credentials, real order execution or custody.

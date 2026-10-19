@@ -2,21 +2,21 @@
 
 **Trạng thái:** cập nhật 2026-10-17 sau hardening prototype. Đây là bằng chứng cho code fixture, không phải production readiness.
 
-**Product-direction note (2026-10-18):** this report is a historical snapshot of the prototype. Its Binance, hosted API/account and Model Lab descriptions do not define current scope. V1 is SSI/local-first with portfolio backtest and paper trading; see [active roadmap](../../task/next-plan.md).
+**Product-direction note (2026-10-19):** this report is a historical snapshot of the fixture prototype, not production readiness or a current product contract. V1 direction is SSI/local-first with portfolio backtest and paper simulation; see [product scope](../01-product/vision-and-scope.md) and [roadmap](../../task/next-plan.md).
 
 ## Sản phẩm đang chạy
 
-- Market hiển thị BTC/ETH, bảng nến và candlestick chart từ synthetic fixtures. Watchlist lưu local.
+- Market hiển thị synthetic instruments, bảng nến và candlestick chart từ fixtures. Watchlist lưu local.
 - News hiển thị fixture articles, provenance timestamps và lọc theo instrument.
 - Portfolio nhập tay/CSV, kiểm tra dữ liệu, lưu localStorage và tính P&L theo nến fixture đã đóng. Thiếu giá thì ẩn tổng định giá/P&L.
-- Binance WebSocket chỉ kết nối khi người dùng bật; kiểm tra lifecycle/health và không đưa stream vào chart hoặc portfolio.
+- Browser stream prototype chỉ kiểm tra lifecycle/health, không đưa stream vào chart hoặc portfolio; không đại diện cho V1 data integration.
 - Model Lab form gọi mock adapter. Kết quả luôn `simulated`/`mock`; cấu hình không tham gia tính chỉ số.
 - FastAPI, Go Gateway và OpenAPI hoạt động quanh fixture; portfolio API vẫn trả mảng rỗng.
 
 ## Data rights và credentials
 
 - Không có dữ liệu market/news thật trong fixtures; mọi fixture ghi `source_id=fixture-only` và `is_synthetic=true`.
-- Binance stream có thể được bật trực tiếp trong trang Market. Trước ingestion/phát hành production cần xác minh quyền theo source, địa bàn, lưu trữ, hiển thị và mục đích sử dụng.
+- Prototype có thể bật upstream stream từ trang Market. Trước integration production phải có source-specific entitlement/rights cho geography, storage, display và purpose.
 - Environment boundary check chỉ cho phép `VITE_API_BASE_URL` ở frontend. Known-marker scan trên lịch sử chưa push tại thời điểm hardening không tìm thấy private key/AWS/GitHub/OpenAI token pattern; đây không thay thế managed secret scanner.
 - Không có auth/account hoặc exchange trading keys.
 
@@ -32,7 +32,7 @@
 
 | Khu vực | Có trong prototype | Chưa có |
 |---|---|---|
-| Market | Fixture candles/chart, watchlist, opt-in stream status, source timestamp | Real history, backfill, stream-to-chart merge, production source approval |
+| Market | Synthetic fixture candles/chart, watchlist, prototype stream status, source timestamp | Approved real history, backfill, stream-to-chart merge, production source approval |
 | News | Fixture cards, instrument filters, published/first-seen times | News adapters, dedupe/revisions, source-rights approval |
 | Portfolio | Local holdings, CSV validation, fixture valuation, partial totals | Auth, server persistence, transaction ledger, live valuation |
 | Model Lab | Config form, explicitly mocked result | Web Worker/Pyodide, actual model training/backtest, reproducible artifact |

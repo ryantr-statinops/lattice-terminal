@@ -1,6 +1,6 @@
 # Frontend plan — Research Terminal
 
-**Status note (2026-10-18):** this plan was written for the previous news-first/Binance/Model Lab direction. It is historical design material, not the current MVP contract. Use [product vision](../01-product/vision-and-scope.md), [local screen flows](screen-flows.md) and [roadmap](../../task/next-plan.md) for current scope; several pages/components below are deferred or need redesign.
+**Status note (2026-10-19):** exploratory frontend proposal, not a current implementation plan or V1 contract. Some examples and priorities are stale. Use [product vision](../01-product/vision-and-scope.md), [screen flows](screen-flows.md) and [roadmap](../../task/next-plan.md) for current product scope; revalidate any design detail before implementation.
 
 Tài liệu này xây dựng kế hoạch frontend hoàn chỉnh cho Research Terminal, tham chiếu quy trình và best practices từ các tài liệu tương tự (trading terminal design, data-dense dashboards, fintech design system). Đây là plan, không phải spec đã lock; mỗi mục cần review trước khi implement.
 
