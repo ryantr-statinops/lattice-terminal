@@ -1,30 +1,40 @@
-# Browser live lifecycle
+# SSI live lifecycle — local target
 
-**Trạng thái:** ADR mục tiêu; P02 phải spike region, browser/CSP và provider limits trước implementation approval.
+**Trạng thái:** target local architecture, chưa triển khai và chưa được access/rights gate. SSI official docs describe streaming groups `F`, `X`/`X-Quote`, `B`, `R`, `MI` and `OL`; see [SSI streaming documentation](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming). It does not establish this user's entitlement, numeric quotas, replay behavior or local storage rights.
 
-[Binance public-only URLs](https://github.com/binance/binance-spot-api-docs/blob/master/faqs/market_data_only.md) mô tả public REST và `data-stream.binance.vision` không cần API key; không hỗ trợ user-data streams. Browser kết nối public WebSocket trực tiếp là ngoại lệ được ghi nhận với Gateway. API account/portfolio/experiments vẫn qua Gateway/FastAPI. Không có exchange trading key trong frontend/server của MVP.
+## Connection ownership
 
-## Subscription owner
+Local API/adapter process owns SSI connection and credentials. Browser connects only to a loopback endpoint with a narrow normalized contract; ConsumerID/ConsumerSecret never enter the browser. This boundary remains subject to verifying SSI's required auth/transport/connection model. Do not use the browser's direct upstream Binance WebSocket from the legacy prototype as a template for SSI.
 
-Một tab có một subscription manager làm owner, reference-count nhu cầu screens/widgets; components không tự mở sockets. Chỉ subscribe BTC/ETH và stream cần thiết, theo quota evidence. MVP quản lý theo từng tab; không hứa dedup socket giữa nhiều tab. P02 phải kiểm thử nhiều tab và đặt local concurrency cap; thiếu khả năng hỗ trợ thì báo degraded, không mở vô hạn.
+Use SSI REST/reference/history for initial state and historical recovery; stream supports realtime display and paper simulation. Groups may include:
 
-States: idle → connecting → snapshot/reconcile → live → stale/reconnecting → suspended/closed. UI phân biệt giá hiện tại, stale và last observed. Message chứa event/source time và local received_at; event time mới không tự chứng minh network latency nhỏ nếu clock sai.
+- `F` trading/session status.
+- `X` summary and `X-Quote` quote/depth/trades/quotes.
+- `B` realtime OHLCV; SSI docs say Value is currently 0.
+- `R` foreign room/flows.
+- `MI` index values/breadth/status.
+- `OL` odd-lot trade updates.
 
-## Lifecycle
+The product should consume all feeds that prove useful and are entitled, but do not merge their distinct semantics. In particular keep odd-lot, derivative/bond and regular-board data distinct; `B` provisional values do not replace historical candles.
 
-Login/active route có nhu cầu: lấy snapshot phù hợp, mở stream và reconcile overlap/buffer theo spike protocol. Khi tab hidden hoặc mất application heartbeat: bắt đầu grace timer cấu hình; quá grace thì unsubscribe/close và đánh dấu suspended. P02 khóa grace/heartbeat/timeouts và browser behavior bằng evidence, không dùng background timers như bảo đảm chính xác.
+## States and reconciliation
 
-Logout đóng ngay, xóa subscriptions và private cached state. Page teardown dùng best effort close; network/browser termination tự kết thúc socket, server không dựa event unload để bảo đảm cleanup. Đóng tab không tiếp tục live hoặc worker training.
+Proposed local states: disabled → validating configuration → connecting → snapshot/reconcile → live → stale/reconnecting → suspended/closed. UI should identify source, market/session state, event time, local received time and data age. Open/provisional bar, last closed bar and paper fill are separate concepts.
 
-Khi visible/heartbeat trở lại: refresh snapshot và REST-backfill nến thiếu trước khi live. Không coi WebSocket tự replay đủ thời gian offline. Reconnect dùng backoff+jitter, bounded retries, resubscription idempotent và freshness checks. Khi provider bắt reconnect theo giới hạn connection hiện hành, xử lý cùng state machine; numeric limits đọc current docs ở P02, không copy từ trí nhớ.
+On start/reconnect, obtain permitted REST snapshot/history, buffer incoming updates, reconcile overlap and only then publish a monotonic local view. Duplicate/out-of-order events must be idempotent or flagged. Disconnect gaps remain explicit until history recovers them. Never synthesize missing bars or treat quote updates as executed paper fills without a simulator rule.
 
-Browser region blocked/CSP/network fail: thông báo unavailable, có historical view theo quyền nguồn. Không proxy để vượt hạn chế vùng. Không âm thầm thay sàn; đổi venue là ADR và instrument identity mới.
+The stream owner uses bounded subscriptions and retries based on the actual SSI entitlement/quota. Auth, quota, policy, market-closed and network failures are distinct. Stop on auth/terms errors; do not retry forever or proxy around a restriction. If the API cannot restore a gap, label affected data partial/unavailable.
 
-## Acceptance scenarios
+## Lifecycle and privacy
 
-- Hai widgets cùng instrument không mở socket trùng trong tab; unmount một widget không ngắt widget còn lại.
-- Tab ẩn qua grace, browser throttle heartbeat, offline/online, logout trong reconnect và đóng route.
-- Message trễ/trùng/out-of-order, nến provisional đổi nhiều lần, reconnect mất đoạn.
-- Snapshot/stream race không hiển thị timestamp lùi hoặc thêm candle duplicate.
-- Browser unsupported/region denial hiển thị degraded, không gửi khóa hoặc credentials.
-- Historic/news ingestion vẫn chạy theo scheduler khi không có người dùng online.
+Starting the local application opens the stream only when required by the visible feature or a configured local paper session. Closing/stopping the app closes local subscriptions and flushes only permitted local state. The process must not silently become a Windows background service in V1. No auto-upload, project telemetry or remote relay by default.
+
+Password lock/logout behavior, whether local live sessions continue while UI is locked, and app-stop recovery need to be defined with the password/storage design. Localhost binding is not a substitute for access control.
+
+## Acceptance gates
+
+- SSI entitlement and rights are documented separately for the selected stream groups and REST reconciliation inputs.
+- Integration tests cover unauthorized/config missing, quota errors, market closed, duplicate/delayed/out-of-order events, dropped connection, overlap corrections, partial recovery and application stop/restart.
+- No secret appears in browser network requests, build assets, URLs, logs, fixtures or crash metadata.
+- Paper fills are generated only by the simulator contract and are permanently labeled simulated; no route can send real orders.
+- Local chart reports data source, market/session state, freshness, open/closed status and unresolved gaps.

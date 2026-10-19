@@ -1,18 +1,23 @@
-# Quotas, chi phí và observability
-**Trạng thái:** cần baseline thực để khóa limits.
+# Quotas, local observability and cost
 
-## Ngân sách
-Theo dõi data API calls, scheduled runtime, DB/storage/egress, auth/email, browser runtime asset bandwidth và log retention. Training client tiết kiệm server compute nhưng không loại chi phí dataset delivery và ingestion. Không đưa paid news/LLM thành dependency miễn phí.
+**Trạng thái:** SSI numerical quotas and user-specific service fees are unknown; no live calls have been made. App distribution is planned as open-source and free, but that does not imply SSI data service is free.
 
-P02 benchmark để khóa dataset rows/features, worker concurrency trong tab, payload/artifact caps, hidden-tab grace, download timeouts và supported browsers. P03/P04 chốt request/source/freshness thresholds; P09 quota/account và alerts. Limits chưa đo phải ghi pending, không quảng cáo unlimited.
+SSI docs describe API limits per API and connection key and recommend streaming for realtime use rather than frequent polling; they do not provide one universal quota for the user's entitlement. Check the current [SSI General Information](https://guide.ssi.com.vn/ssi-products/general-information) and the user's service agreement before enabling calls. Record actual limits, reset windows, concurrency, expiry and contact/escalation instructions locally without storing secrets.
 
-## Signals
-- Ingestion run outcome/lag/429/parser drift/source revisions.
-- Market gaps/duplicates/open bars/unit mismatch/reconnect/rest backfill failures.
-- News publication-to-seen lag, duplicate clusters, asset mapping confidence.
-- Auth/ownership failures, request IDs/latency/rate-limit.
-- CSV errors/duplicates, stale valuation.
-- Worker capability/load/train duration/cancel/crash/interrupted và result-sync failure (không thu raw personal data mặc định).
-- Source grants changes, storage growth và budget usage.
+## Local operation signals
 
-Public client metrics chỉ là telemetry được phép, không bằng chứng kết quả model đúng. Incident dashboard tách source unavailable, application failure và unsupported browser.
+Keep a user-visible local run history for:
+
+- Request/stream group, bounded requested range, result state, received time and safe source reference.
+- Rate/quota responses, retry/backoff and stop reason.
+- Parser/schema drift, checksum mismatch, revisions, gaps, stale/open bars and reconciliation status.
+- Local storage size, publish/export outcome and recovery status.
+- Paper simulator session, feed freshness, orders/fills simulated and any pause/gap events.
+
+Logs must not contain credentials, auth tokens, full request URLs with secret parameters, personal transaction bodies or source content not permitted for retention. No telemetry upload by default. User can export support diagnostics after preview/redaction.
+
+## Limits and safe behavior
+
+Until account-specific quota is measured/documented, do not assume unlimited access. Use bounded pagination/concurrency, explicit ranges, request timeouts and bounded exponential backoff respecting provider guidance. Stop on auth/terms/policy denial, hard rate quota and repeated schema errors. Avoid aggressive polling or fallback to undocumented/private endpoints.
+
+Hosted DB/storage/auth/egress, Model Lab worker budgets and project telemetry are deferred. Local no-fee software does not remove the user's own SSI service costs, data terms or Windows resource limits.

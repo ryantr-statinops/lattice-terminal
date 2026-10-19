@@ -3,8 +3,8 @@
 
 | Tình huống | Hành vi |
 |---|---|
-| Login thất bại/hết hạn | Managed auth xử lý; API không trả private payload; giữ form chưa gửi an toàn |
-| Logout/account switch | Đóng stream, terminate worker, clear private memory/cache theo policy, không gán kết quả cũ sang account mới |
+| Mật khẩu sai/khóa profile | Local auth xử lý; không giải mã local vault; giữ form an toàn |
+| Khóa profile/reset local | Đóng stream, ngắt worker, clear memory cache dữ liệu nhạy cảm |
 | Tab ẩn/heartbeat mất | Live paused sau grace được P02 khóa; browser có thể throttle/freeze nên không hứa timer chính xác |
 | Tab hoạt động trở lại | Xác minh session, snapshot/backfill rồi nối stream |
 | Feed ngắt/region inaccessible | Reconnecting có backoff hoặc unavailable; không silent proxy bypass |

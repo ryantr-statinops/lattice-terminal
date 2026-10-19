@@ -6,7 +6,7 @@ apps/web/src/
   app/                     Router và khung ứng dụng
   features/
     news/                  News feed, lọc và sự kiện
-    market/                BTC/ETH, chart và watchlist
+    market/                VN Equities (HOSE, HNX, UPCOM), chart và watchlist
     portfolio/             Holdings, giao dịch và P&L
     model-lab/             Cấu hình và kết quả nghiên cứu
     account/               Workspace, đăng nhập và cài đặt
@@ -22,7 +22,7 @@ data/fixtures/              Dữ liệu synthetic dùng dev/test
 data/samples/               Mẫu nhỏ có source rights rõ ràng
 experiments/                Spike độc lập, chưa tự động thành production
 docs/                       Tài liệu chuẩn theo domain
-task/research-terminal-plan/ Roadmap và trạng thái phase
+task/next-plan.md          Roadmap và trạng thái phase
 .github/workflows/          CI, test, lint và security checks
 ~~~
 

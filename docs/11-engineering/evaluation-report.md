@@ -2,6 +2,8 @@
 
 **Trạng thái:** cập nhật 2026-10-17 sau hardening prototype. Đây là bằng chứng cho code fixture, không phải production readiness.
 
+**Product-direction note (2026-10-18):** this report is a historical snapshot of the prototype. Its Binance, hosted API/account and Model Lab descriptions do not define current scope. V1 is SSI/local-first with portfolio backtest and paper trading; see [active roadmap](../../task/next-plan.md).
+
 ## Sản phẩm đang chạy
 
 - Market hiển thị BTC/ETH, bảng nến và candlestick chart từ synthetic fixtures. Watchlist lưu local.

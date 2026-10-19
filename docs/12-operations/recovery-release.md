@@ -1,19 +1,26 @@
 # Recovery và release gates
-**Trạng thái:** chưa diễn tập.
 
-## Recovery
-Immutable raw/dataset manifests cho phép replay theo quyền retention. Corrections tạo version mới, không đổi âm thầm dataset của experiment cũ. Ledger correction có history; migrations cần backup/restore rehearsal. Revoke leaked secret theo service, không tái kích hoạt key cũ làm rollback.
+**Trạng thái:** local release direction; recovery has not been rehearsed and no real SSI data is approved/loaded.
 
-Live reconnect dùng backoff/resubscribe/snapshot, không dùng tick đến muộn sửa lịch sử mà không version. Browser worker fail thì terminate/reinitialize; run interrupted có config lưu, không hứa auto resume. Result sync retry idempotent theo owner/run.
+## Recovery requirements
+
+- Back up local database/files with schema and manifest versions; test restore on a clean Windows profile.
+- Incomplete writes must not replace prior valid snapshot/portfolio state. Recovery reports state and the last consistent version.
+- User can export supported data and locally delete/reset the installation's workspace. Define how secrets are cleared/rotated in the SSI account separately.
+- App update/migration must preserve user data or provide a verified backup/rollback path.
+- Interrupted live/paper session restores as interrupted/unknown until the feed and ledger reconcile; never infer unseen fills.
+- Snapshot revisions preserve provenance and source policy. If source permission expires/revokes, stop affected access and apply the documented restrict/delete action.
+- Password recovery/reset and encryption-key recovery must be explicit; a lost password must not cause silent data loss or implied provider password reset.
 
 ## Release checklist
-- [ ] API/ownership/JWT, ledger/CSV và worker contract checks pass.
-- [ ] Pyodide/browser stream feasibility report có device/region/runtime evidence.
-- [ ] Source register đủ quyền train/display/retention cho dữ liệu release; demo fixtures được ghi nhãn.
-- [ ] News timestamps/corrections, closed-bar labels, no lookahead và strategy costs được review.
-- [ ] Client-computed report không có trusted badge từ user input.
-- [ ] Managed Auth/email, quotas, preview isolation, CSP và secrets boundaries đã chốt.
-- [ ] Recovery runbook, monitoring/cost owner và release IDs có bằng chứng.
-- [ ] UI tiếng Việt, source/quote/timezone/stale labels và accessibility smoke pass.
 
-Nếu thiếu gate, phát hành capability giới hạn hoặc demo synthetic có nhãn; không chuyển pending thành complete bằng sửa copy.
+- [ ] SSI REST/stream access and rights gates approved separately for exact account, endpoints, fields, geography, local retention and research/paper use.
+- [ ] Local secret management, loopback binding, password protection, storage encryption/recovery, export/delete and no-telemetry behavior reviewed.
+- [ ] SSI schema mapping, history/stream reconciliation, timestamp/session rules, quality and partial/unavailable states tested.
+- [ ] Backtest anti-lookahead, market calendar/mechanics, fees/taxes/slippage and reproducibility reviewed.
+- [ ] Paper mode has no real-order route or trading credentials; simulated fills are clearly labeled and recover safely after restart/gaps.
+- [ ] Windows clone/start/stop/update/recovery guide verified; supported toolchain and ports documented.
+- [ ] Accessibility and Vietnamese source/freshness/session/partial labels reviewed.
+- [ ] News engine and Model Lab remain explicitly out of first MVP unless product scope changes.
+
+If a gate is missing, keep that capability disabled or fixture-only; do not present it as complete by editing copy.

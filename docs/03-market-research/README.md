@@ -1,14 +1,11 @@
-# Khảo sát thị trường và lựa chọn Crypto
+# Market research and source eligibility
 
-**Trạng thái:** nghiên cứu tài liệu chính thức ngày 2026-10-16; chưa kiểm thử feed, ký hợp đồng hoặc xác nhận quyền sử dụng. Kiến trúc mục tiêu chưa triển khai.
+**Trạng thái:** Vietnam/SSI FastConnect Data is selected as the first market-data direction; other provider/market reviews are historical research, not V1 commitments.
 
-## Thứ tự đọc
+## Read order
 
-1. [So sánh và lựa chọn](market-comparison.md)
-2. [Crypto](crypto.md)
-3. [Cổ phiếu Mỹ](us-equities.md)
-4. [FX](fx.md)
-5. [Cổ phiếu Việt Nam](vn-equities.md)
-6. [Source register và quyền sử dụng](source-register.md)
+1. [Vietnam and SSI FastConnect Data capabilities](vn-equities.md).
+2. [Source register and approval gates](source-register.md).
+3. [Other market research](market-comparison.md), [crypto](crypto.md), [US equities](us-equities.md), [FX](fx.md) — retained for context; not first-MVP market scope.
 
-Các cờ evidence độc lập; truy cập documentation qua web không phải feed access test. Chỉ source đã qua gate mới được phục vụ người dùng hoặc tham gia dataset. Định nghĩa chung ở [glossary](../glossary.md).
+Official documentation proves documented capability, not a user's entitlement, fee, history depth, quota, storage rights or production access. `documented`, `access-tested`, `rights-confirmed` and `approved` are separate evidence flags. Do not call SSI or persist real market responses while its gate is blocked.

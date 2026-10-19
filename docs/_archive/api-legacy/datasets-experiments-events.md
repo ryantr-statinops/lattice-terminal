@@ -1,6 +1,7 @@
-# Dataset, experiment và event contracts
+# Dataset, experiment và event contracts — deferred
 
-**Trạng thái:** thiết kế mục tiêu chưa triển khai.
+**Trạng thái:** retained from the prior hosted/Model Lab direction. Model Lab runtime and hosted experiment APIs are outside V1; do not use these contracts as current implementation requirements. Portfolio backtesting has its own local contract in [Portfolio](../07-portfolio/README.md).
+
 
 ## Snapshot và delivery
 

@@ -1,17 +1,29 @@
-# Đo thành công
-**Trạng thái:** kế hoạch đo; chưa có kết quả.
+# Success metrics
 
-## Product
-Đo người dùng hoàn tất luồng news → asset → watchlist, import portfolio thành công, lưu/chạy experiment, hiểu nhãn nguồn/stale/client-computed. Không dùng số click hoặc tổng người đăng ký làm bằng chứng model có giá trị.
+**Trạng thái:** metric framework; no real SSI integration, simulator baseline or user pilot has been measured.
 
-## Data/operation
-Đo completeness, candle gaps/duplicates, source freshness, timestamp conflicts, ingestion lag và corrections. Phân biệt publication-to-seen lag với transport lag. News rights/coverage là gate xuất bản.
+## Local setup and privacy
 
-## Browser Lab
-Đo cold/warm load, memory, train duration, cancellation/recovery trên mẫu 5k/25k/50k rows và máy thử được ghi cấu hình. P02 khóa mức support sau đo; không cam kết mọi browser/mobile chạy model.
+- Clean Windows clone can install/start/stop using documented steps; record failures and time to first localhost screen.
+- Verify market credentials, market payloads, portfolio and research results remain local; no unexpected outbound calls/telemetry.
+- Local backup/export/restore/reset and password behavior succeed on a clean profile.
 
-## Quant
-So baseline/model trên cùng holdout và sample eligibility. Direction: log-loss/calibration và balanced metrics khi mất cân bằng; regression: MAE/error distribution; strategy: net P&L/drawdown/exposure/turnover có costs. Báo cáo cả thất bại, số thử và out-of-sample window; chưa có ngưỡng hoặc alpha được chứng minh.
+## SSI data quality
 
-## Acceptance
-Chỉ đặt mục tiêu số sau khi có pilot baseline và dữ liệu. Mỗi threshold ghi owner, dataset, lý do và ngày; không sửa metric sau khi nhìn test để tuyên bố đạt.
+- Entitled endpoint/feed availability and history depth by instrument/interval.
+- Coverage completeness, missing ranges, duplicates/revisions, timestamp/session mapping, stale duration and reconnect recovery.
+- Request/stream quota usage and stop/retry behavior against the actual user plan.
+- Do not publish a data quality score without recording the exact account entitlement, source version, period and excluded data.
+
+## Portfolio simulator
+
+- Backtest replay is deterministic for the same snapshot/config/engine version.
+- No-lookahead fixtures and market calendar/fees/lot/tick assumptions pass defined scenarios.
+- Paper feed gaps, stop/restart and simulated-fill audit produce safe, explainable states.
+- Report coverage, fees, taxes/slippage assumptions, drawdown and simulated trade count; no profitability/alpha claims without validated data and evaluation.
+
+## Deferred scope
+
+News quality metrics (coverage, correction handling and entity-linking precision) are defined with the standalone news engine before integration. Model Lab benchmark/runtime metrics are deferred; they are not V1 success criteria.
+
+Set numeric targets after a reproducible baseline and pilot. Every threshold needs owner, test setup, dataset version, reason and date; do not tune acceptance thresholds after inspecting final test output.

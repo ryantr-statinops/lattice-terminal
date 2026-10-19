@@ -1,16 +1,16 @@
 # Security và privacy
-**Trạng thái:** policy mục tiêu.
 
-Managed provider lưu password; FastAPI kiểm JWT issuer/audience/signature/expiry và workspace ownership. Mọi lookup/result/artifact/CSV phải scope account; không tin ownerId hoặc verified flag từ browser. Provider được chọn bằng ADR, không mặc định tái dùng project/key cũ.
+**Trạng thái:** local-first policy direction; password protection, storage encryption and SSI integration are not implemented.
 
-- Không yêu cầu exchange trading keys; public price stream không gửi token app cho Binance.
-- Source grants quyết định download/train/display; shared dataset không đồng nghĩa public bucket.
-- CORS/CSP/allowed origins và request size/rate/timeouts được kiểm thử; không dùng proxy để né source restrictions.
-- Form chỉ dùng model/features allowlist; không arbitrary Python, pickle hoặc executable artifacts.
-- Browser result client-computed không được coi trusted proof; validate shape/bounds/size để bảo vệ sync.
-- Cache/IndexedDB namespace theo account; logout xóa private state/worker buffers. Không hứa secure wipe vật lý.
-- Portfolio CSV có thể chứa tài chính cá nhân; không logging body, không commit fixtures từ file thật; retention/export/delete phải được thông báo.
-- Revoke/cancel session không đồng nghĩa xóa data server; account deletion là workflow riêng với retention obligations.
-- Secrets cloud/DB/source chỉ ở service cần; audit không in secret.
+- All config, SSI Data credentials, market data, portfolio and research output stay on the user's computer. No project-controlled upload or telemetry by default.
+- FastConnect Data only. No FastConnect Trading, broker credentials, real order execution or custody.
+- ConsumerID/ConsumerSecret must be isolated from browser bundles, localStorage, URLs, logs, crash reports, fixtures and commits. Select a Windows secret store/encrypted vault before enabling real credentials.
+- Local password-only login is a product request; define account/profile boundary, strong password hashing, session lock, encryption-at-rest/key management, recovery/reset and Windows threat model. Password login alone does not encrypt files.
+- Local API binds loopback only. Validate origins/CSRF as relevant, bound requests, and do not expose LAN listener by default. Localhost is not a trusted security boundary against other processes under the same Windows user.
+- Source rights and entitlement separately govern access, local persistence, export, research/backtest, display and retention. Do not infer rights from public docs or user-supplied credentials.
+- No secret or personal portfolio/raw CSV content in logs. Support diagnostics must redact and preview before export. Never add credentials or real user market data to fixtures/tests.
+- Use synthetic fixtures for development until gates pass. Clearly label synthetic/partial/stale/unavailable state.
+- News engine evaluates each source's metadata/full-text/image/translation/model/retention permissions separately before integration.
+- Paper simulation remains local and cannot issue real orders. Any future broker execution requires a separate product/security/legal review and is out of current scope.
 
-Chưa có consent/privacy SLA đã vận hành. Phase 5 chốt policies, deletion/retention và rate/cost budgets trước public release.
+V1 release must include a documented local data path, export/delete/reset behavior, backup/recovery and a secret-handling review. Hosted account isolation/JWT/managed Auth are deferred, not a security solution to reuse by default.

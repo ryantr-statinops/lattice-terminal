@@ -1,33 +1,20 @@
-# Auth và HTTP conventions
+# Local password and HTTP boundary
 
-**Trạng thái:** contract mục tiêu; provider/token SDK chốt bằng ADR P02.
+**Trạng thái:** product requests password-only login for the local app. Authentication protocol and local profile model are not designed. The earlier managed Auth/JWT/email contract is superseded for V1.
 
-Managed Auth xử lý đăng ký, xác minh email, login, reset password và refresh theo SDK chính thức của provider được chọn; không tự lưu/hash password. FastAPI kiểm chữ ký JWT, issuer, audience, expiry và accepted algorithms theo cấu hình tin cậy; không lấy issuer/JWKS tùy ý từ request. Provider subject ánh xạ account nội bộ; account ID trong payload không ghi đè identity.
+## Password-only local access
 
-Gateway tạo/kiểm request ID, giới hạn body/rate, timeout và routing. FastAPI là điểm quyết định authorization cho mọi read/write/export/download; không chỉ dựa vào kiểm tra Gateway. Internal API không public bypass auth; service credentials không gửi browser. News/instruments có thể shared nhưng delivery vẫn theo source policy; portfolio/experiments luôn private.
+The app should not require email, OAuth, hosted identity or a remote account. Before implementation, decide whether password protects one local installation or multiple local profiles, whether it encrypts data or only locks the UI, how reset/recovery works, session timeout/lock behavior and how a password change re-encrypts stored secrets. Use established password hashing and Windows secret-storage/encryption facilities after a threat-model review; never log/store plaintext passwords or SSI secrets.
 
-## HTTP và lifecycle
+A local password lock does not protect files from a Windows account administrator or malicious process running as that user. Do not describe it as full-disk encryption. Local APIs bind to loopback, validate local origin/CSRF boundaries as relevant and avoid permissive CORS; localhost is not an authorization mechanism by itself.
 
-- Version `/api/v1`; thay đổi breaking dùng version mới và migration note. OpenAPI từ implementation phải được so với contracts này khi xây P02.
-- JSON UTF-8; timestamp RFC3339 UTC; decimal tiền/quantity là string. Null khác zero và khác field không được gửi.
-- Lists dùng cursor opaque, `limit` bounded theo cấu hình, stable order và response `{items,next_cursor}`. Empty list là `200`, không phải lỗi. Không hứa snapshot consistency khi dataset mutable; snapshot endpoint ghi version rõ.
-- `Idempotency-Key` cho tạo ledger/import/experiment-result; scope theo account + route, cùng key khác payload trả `409`; retention key khóa P02.
-- `expected_revision` cho mutate ledger/config; conflict `409`, không last-write-wins âm thầm.
-- Response có `X-Request-ID`; error `{error:{code,message,details},request_id}`. Details chỉ gồm field/row safe, không token, raw news có hạn chế hay dữ liệu account khác.
+## HTTP conventions to carry forward
 
-| Status | Ý nghĩa |
-|---|---|
-| `400` / `422` | Request không hợp lệ / schema-domain validation fail |
-| `401` | Token thiếu/hết hạn/không hợp lệ; refresh theo SDK rồi retry an toàn |
-| `403` | Identity hợp lệ nhưng capability/source grant không cho phép |
-| `404` | Không tồn tại hoặc resource private ngoài ownership |
-| `409` | Revision/idempotency/data-state conflict |
-| `413` | Body/artifact/CSV vượt giới hạn |
-| `429` | Quota/rate exceeded; trả retry guidance |
-| `503` | Upstream/dataset tạm không khả dụng; không thay bằng dữ liệu giả |
+- Version local API contracts; generate/update OpenAPI with implementation.
+- Use JSON UTF-8, RFC3339 timestamps with explicit UTC/offset and decimal strings for financial quantities.
+- Bound body size, pagination, timeouts and accepted range. Return explicit partial/stale/unavailable/source-policy states.
+- Do not put ConsumerID/Secret or tokens in URL/query strings, headers returned to browser, error details or request logs.
+- Use request IDs and safe error codes; redact provider payloads and personal portfolio data from logs.
+- Keep a local request/session boundary; never accept client-supplied owner/account IDs as a way to access another profile.
 
-Logout dừng requests/subscriptions và Worker đang chạy; xóa state private/cache khỏi memory, draft account-scoped theo policy. Token expired khóa sync/download; config đã lưu có thể tiếp tục sau đăng nhập lại, nhưng không tự nhận output cũ thuộc user khác. UI phân biệt empty, forbidden, stale, offline và provider failure.
-
-## Nghiệm thu
-
-JWT sai issuer/audience/expiry/signature; IDOR trên mọi route và signed download; logout trong import/result upload; user switch cùng browser; cursor sửa; body quá lớn; duplicate retry; error không lộ secret; internal route không thể truy cập trực tiếp từ internet.
+Hosted JWT issuer/audience, managed account ownership, signed cloud downloads and email reset flows described in prior drafts are not V1 requirements. Revisit only if the product later adds remote hosting or sync.

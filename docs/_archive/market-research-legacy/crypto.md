@@ -1,6 +1,6 @@
 # Crypto — thị trường đầu tiên
 
-**Khảo sát:** 2026-10-16, documentation-only. **Mục tiêu:** Binance Spot BTCUSDT/ETHUSDT, nến 15m/1h/1d. Chưa có feed test hoặc source approval.
+**Khảo sát:** 2026-10-16, documentation-only. This is a historical review of the previous Binance prototype direction, not current product scope. SSI FastConnect Data for Vietnam is the selected first-market direction; see [current SSI research](vn-equities.md). No feed test or source approval is implied here.
 
 ## Giá và lịch sử
 

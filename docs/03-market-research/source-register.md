@@ -1,6 +1,6 @@
 # Source register và source gates
 
-**Ngày review:** 2026-10-18 (P03 follow-up). Phần lớn nguồn chỉ review documentation; repo hiện tại không chứa các P02 evidence files được trỏ bên dưới, nên các access-test claims chưa independently auditable từ checkout này. Không tạo provider account hoặc ký agreement. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
+**Ngày review:** 2026-10-18 (historical Binance P03 follow-up plus SSI local-V1 initial review). Binance rows/decision records below preserve the previous crypto direction and are not the selected V1 provider. SSI FastConnect Data is the current provider direction, but its gate is still blocked. Repo hiện không chứa các P02 Binance evidence files được trỏ bên dưới, nên access-test claims chưa independently auditable. Không tạo provider account, dùng credentials hoặc ký agreement trong review. `false` nghĩa chưa đạt evidence, không nhất thiết source không hỗ trợ.
 
 ## Evidence flags độc lập
 
@@ -35,7 +35,8 @@ P02 claim `BIN-SPOT-PUBLIC access-tested` được tài liệu cũ mô tả là 
 | BLS-API | Macro actual; public API registration/quota cần test | true | false | false | false | Review source direct và revision/vintage coverage |
 | BEA-API | Macro actual; API account/key cần xác minh | true | false | false | false | Review direct-source purposes/quota |
 | FRED | Macro aggregation; public/API key | true | false | false | false | ML và API cache bị hạn chế theo terms; không eligible hiện tại |
-| SSI-DATA | VN prices; account/entitlement cần xác minh | true | false | false | false | Chưa xác minh phí/store/train/display |
+| SSI-FC-DATA-REST | VN market/reference/history; SSI FastConnect Data REST, ConsumerID/ConsumerSecret | true | false | false | false | Official docs list token, securities/details, index list/components, daily/intraday OHLC, daily index and daily stock snapshot. Account entitlement, fees/quota/history-depth test and local cache/research/display terms unconfirmed |
+| SSI-FC-DATA-STREAM | VN realtime; SSI FastConnect Data streaming by connection key | true | false | false | false | Docs describe F, X/X-Quote, B, R, MI, OL. Not access-tested; subscription limits, local retention/replay/reconciliation rights and account-specific coverage unconfirmed |
 | DNSE-DATA | VN prices; account/entitlement cần xác minh | true | false | false | false | Chưa xác minh phí/store/train/display |
 | CAFEF-RSS | VN news; public RSS | true | false | false | false | Metadata/full text/ML/display chưa xác nhận |
 | VIETSTOCK-RSS | VN news; official RSS directory | true | false | false | false | Feed access/history/store/ML/display chưa xác nhận |
@@ -60,7 +61,8 @@ P02 claim `BIN-SPOT-PUBLIC access-tested` được tài liệu cũ mô tả là 
 | ECB | [Rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), [RSS](https://www.ecb.europa.eu/home/html/rss.en.html) | Terms and timestamp/vintage mapping |
 | Fed / BLS / BEA | [Fed RSS](https://www.federalreserve.gov/feeds/feeds.htm), [BLS](https://www.bls.gov/bls/api_features.htm), [BEA](https://apps.bea.gov/api/) | Direct source policy/revisions |
 | FRED | [Legal terms](https://fred.stlouisfed.org/legal/) | Keep excluded from ML/cache pending suitable permission |
-| SSI / DNSE | [SSI](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [DNSE](https://developers.dnse.com.vn/docs/dnse/market-data/) | Account, quota, store/train/display |
+| SSI FastConnect Data | [REST API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [streaming](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming), [registration](https://guide.ssi.com.vn/ssi-products/service-registration), [general information](https://guide.ssi.com.vn/ssi-products/general-information) | Confirm user entitlement/fees, each product's quota/coverage/history, service term/fixed-IP requirement, and local access/cache/retention/export/research/display/deletion terms; only then perform bounded schema/quality tests |
+| DNSE | [Market data](https://developers.dnse.com.vn/docs/dnse/market-data/) | Account, quota, store/train/display; outside selected V1 provider direction |
 | CafeF / HNX | [RSS](https://cafef.vn/index.rss), [disclosures](https://www.hnx.vn/en-gb/thong-tin-cong-bo-up-hnx.html) | Terms, news archive, adapter |
 | Vietstock / VnEconomy | [Vietstock RSS](https://vietstock.vn/rss), [VnEconomy candidate](https://vneconomy.vn/rss.htm) | VnEconomy browsing lỗi; xác minh URL rồi review rights từng nguồn |
 | Vnstock | [License](https://www.vnstocks.com/onboard/giay-phep-su-dung) | Verify each upstream data provider |
@@ -73,7 +75,18 @@ Source ID, purpose, allowed fields, permitted audience, geography, allowed trans
 
 Chưa khóa numeric quota hay retention khi chưa có evidence. Giá miễn phí ở personal tier không phải budget production. Khi terms thay đổi: disable use bị ảnh hưởng, đánh dấu snapshots restricted, review derivative artifacts và không silently chuyển nguồn.
 
-## P03 decision record — 2026-10-18
+## SSI FastConnect Data — local V1 initial review (2026-10-18)
+
+- **Product decision:** SSI FastConnect Data là provider direction đầu tiên; dùng tối đa REST/reference/stream capabilities phù hợp. FastConnect Trading không thuộc scope. App hướng open-source/free, clone-and-run local trên Windows; credentials, market records, portfolio and derived research remain on the user's machine.
+- **Responsible reviewer:** product owner / local operator (identity not recorded in public docs). **Provider/source owner:** SSI. **Review date:** 2026-10-18. **Evidence type:** official documentation only; no account credentials supplied and no access test performed.
+- **Official capability evidence:** [API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [streaming data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming), [service registration](https://guide.ssi.com.vn/ssi-products/service-registration), [general information](https://guide.ssi.com.vn/ssi-products/general-information).
+- **Status:** `SSI-FC-DATA-REST documented=true / access-tested=false / rights-confirmed=false / approved=false`; `SSI-FC-DATA-STREAM documented=true / access-tested=false / rights-confirmed=false / approved=false`.
+- **Known facts:** docs list nine REST APIs (AccessToken, Securities, SecuritiesDetails, IndexComponents, IndexList, DailyOhlc, IntradayOhlc, DailyIndex, DailyStockPrice), describe stream groups F/X/X-Quote/B/R/MI/OL, state API limits are per API and connection key without a universal numeric quota, and describe one-year service registration/renewal. Docs mention HOSE/HNX/UPCOM/DER/BOND but do not prove coverage or entitlement is uniform across API/feed types.
+- **Unknown:** user's service plan, exact endpoint/instrument access, price, history depth and intraday retention, numeric quota/concurrency, fixed-IP requirement, token lifecycle, local storage/export rights, allowed research/backtest/derived use, attribution, deletion, and whether terms permit single-user local open-source use in the user's geography.
+- **Gate decision:** BLOCKED for network calls and persistence of real market payload until the local operator has reviewed actual service terms/entitlement and recorded allowed purpose, fields, geography, local retention/deletion, export/display, research/backtest, attribution, quota, terms version/hash, expiry/review date and disable procedure. This records missing evidence; it does not claim SSI has denied access or use.
+- **Safe preparation allowed:** synthetic fixtures, parser/normalizer design, local secret-management design and test harnesses that cannot contact SSI. Never request or commit ConsumerID/ConsumerSecret. An access test must be authorized, bounded, redact credentials and avoid persisting real payload unless retention permission is confirmed.
+
+## Historical P03 Binance decision record — 2026-10-18
 
 **Quyết định: BLOCKED / not approved** cho MVP multi-account retail workspace, public display, research/ML, persistent historical storage, archive redistribution hoặc public demo. Không tải, cache hay persist market payload thật trong ứng dụng/CI cho đến khi có approval record đầy đủ. Quyết định này không khẳng định Binance từ chối quyền; evidence hiện có không đủ để xác nhận quyền.
 
@@ -87,7 +100,7 @@ Chưa khóa numeric quota hay retention khi chưa có evidence. Giá miễn phí
 
 **Owner:** product/source-rights owner chưa được chỉ định trong repo (engineering record: Ryan Tran). **Geography:** chưa chốt. **Terms version/hash, retention, quota, review expiry, disable procedure:** pending evidence. `BIN-SPOT-PUBLIC` và `BIN-SPOT-ARCHIVE` giữ `rights-confirmed=false`, `approved=false`. Gate chỉ được mở bằng review mới có evidence URL/document, version/hash, date, owner, region, allowed purposes/fields/audience, retention/deletion, attribution và operational disable rule.
 
-## P03 follow-up decision record — 2026-10-18
+## Historical P03 Binance follow-up decision record — 2026-10-18
 
 **Quyết định: tiếp tục BLOCKED / not approved** cho scope sản phẩm hiện được docs mô tả (multi-account retail workspace, public/multi-user display, research/ML, persistent historical storage và public demo). Không truy cập endpoint để tải candles, không cache/persist Binance market payload, và không phát hành snapshot thật. Đây là quyết định về thiếu quyền được chứng minh cho scope này, không phải kết luận pháp lý chung về mọi cách dùng Binance data.
 

@@ -1,17 +1,20 @@
 # Technology stack
-**Trạng thái:** scaffold P01 dùng Node 22.23.1/npm 10.9.8, Go 1.27.2, Python 3.11–3.13/uv 0.11.28. Phiên bản package thực tế nằm trong lockfiles; auth/storage/hosting và browser runtime vẫn cần spike P02.
 
-| Lớp | Default |
-|---|---|
-| Web | React, Vite, React Router, TypeScript, Tailwind |
-| Ingress | Go Gateway HTTP mỏng |
-| Domain | FastAPI/Pydantic, managed Auth JWT |
-| Ingestion | Go scheduled jobs |
-| Data/research | Python tooling, versioned datasets |
-| User training | Web Worker + Pyodide candidate, lazy-loaded; không Python install/desktop companion |
-| Structured/artifact storage | PostgreSQL + object storage contracts, vendor bằng ADR P02 |
-| Hosting | Vercel web/HTTP target; ingestion runner riêng |
+**Trạng thái:** target đã đổi sang local-first; implementation stack V1 chưa khóa. Code hiện là React/Vite + Go Gateway + FastAPI fixture scaffold.
 
-[Pyodide](https://pyodide.org/en/stable/index.html) có scientific packages; chạy trong [Web Worker](https://pyodide.org/en/stable/usage/index.html) giúp tách UI. Điều đó chưa chứng minh mọi model/dataset hoạt động. Pin runtime/package bundle sau compatibility benchmark, không dùng latest. Managed Auth được chọn sau thử email/quota/token lifecycle; không tự viết password hashing.
+| Lớp | Hướng V1 | Trạng thái |
+|---|---|---|
+| Web UI | React, Vite, TypeScript; chạy và mở tại localhost | Scaffold đang có |
+| Local API / process | Local process nghe loopback để cung cấp market, portfolio và simulator contracts | Cần chốt giữ Go Gateway + FastAPI hay hợp nhất; không bind public network mặc định |
+| SSI adapter | FastConnect Data REST + streaming trong local process; secret không vào browser | Capability documented, entitlement/terms chưa duyệt; chưa implement |
+| Local storage | Dữ liệu/config/portfolio/backtest artifacts trên máy user | Format, encryption, backup, migration và delete policy cần ADR |
+| Credentials | ConsumerID/ConsumerSecret chỉ được dùng từ backend process local | Chưa chọn OS secret store / encrypted local vault; không lưu plaintext trong repo hoặc browser storage |
+| News | Engine độc lập cho nguồn quốc tế và Việt Nam; tích hợp terminal ở phase sau | Chưa chọn stack/hosting/storage; không thuộc market MVP ban đầu |
+| Portfolio simulation | Backtest + paper live trading, no broker order routing | Cần thiết kế engine, exchange/session/fee/corporate-action models |
+| Model Lab | Ngoài MVP đầu tiên | Deferred; không kéo Pyodide/runtime vào V1 |
 
-Không đưa cloud LLM hoặc paid data vào dependency bắt buộc. Nếu thêm dịch/summary NLP phải có source rights, đánh giá chất lượng và ngân sách riêng.
+V1 hướng clone-and-run trên Windows; không cần desktop shell, installer, Vercel, managed auth, hosted database, object store hoặc cloud job runner. Hướng này chưa chốt cách người dùng chạy nhiều process hay dùng một launcher; phải chọn cách đơn giản để clone repo và khởi chạy local trước implementation.
+
+Không dùng cloud LLM hoặc paid data làm dependency bắt buộc. Mọi local secret storage phải có threat model cho Windows user profile, backups, logs, crashes và export. Localhost không tự thay thế authentication/encryption.
+
+Các packages/tool versions đang trong lockfiles; scaffold versions trong root README mô tả prototype hiện tại, không phải cam kết V1 runtime. Thay đổi stack phải cập nhật ADR và setup guide cùng implementation.

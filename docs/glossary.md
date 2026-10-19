@@ -1,34 +1,45 @@
 # Glossary — Research Terminal
 
-**Trạng thái:** định nghĩa mục tiêu, chưa xác nhận hệ thống đã triển khai.
+**Trạng thái:** definitions for local-first Vietnam research product; some capabilities are not implemented.
 
-| Thuật ngữ | Định nghĩa chuẩn |
+| Term | Standard definition |
 |---|---|
-| Asset | Tài sản kinh tế, ví dụ BTC, ETH hoặc USDT; không phải cặp giao dịch |
-| Instrument | Sản phẩm tại venue, có market type, base/quote và native symbol |
-| Venue / Symbol | Nguồn/sàn và nhãn riêng; MVP Binance Spot `BTCUSDT`, `ETHUSDT` |
-| Candle | Nến OHLCV gắn instrument, interval, open/close time và trạng thái đóng |
-| Quote / live price | Giá phục vụ hiển thị có source/time; không chứng minh fill thực tế |
-| Article / Event | Tin tại nguồn và sự kiện suy ra/gom từ một hoặc nhiều tin; giữ phiên bản và confidence |
-| published_at | Thời điểm nguồn khai báo xuất bản; có thể thiếu hoặc không chính xác |
-| first_seen_at | Lần đầu hệ thống quan sát; không backdate khi backfill |
-| available_at | Mốc bảo thủ feature có thể biết, theo policy/evidence |
-| updated_at | Thời điểm sửa; không ghi đè lịch sử khả dụng |
-| Feature / Target | Biến đầu vào khả dụng tại lúc dự đoán / đại lượng tương lai có horizon, label interval |
-| Signal | Output/quy tắc ứng viên; chỉ mô tả hiệu quả khi qua kiểm định ngoài mẫu và chi phí |
-| Dataset snapshot | Tập bất biến/tái lập có manifest, source revisions và quyền sử dụng |
-| Experiment | Dataset/config, feature/runtime/model versions, seed, split và kết quả một lần thử |
-| client-computed | Kết quả browser gửi; schema/ownership được kiểm tra, phép tính chưa được server chứng thực |
-| Workspace | Không gian riêng theo account cho watchlist, portfolio, experiments |
-| Portfolio | Ledger spot long/cash thủ công/CSV, base USDT; không phải tài khoản sàn |
-| Public demo | Workspace mẫu/report đã chọn, không tự công khai dữ liệu user |
+| Asset | Economic asset/security category; distinct from a trading instrument or ticker |
+| Instrument | Tradable/listed product identified by venue, board/market type, instrument class, native symbol and lifecycle |
+| Venue / board | Exchange and board/market label such as HOSE, HNX, UPCOM; DER/BOND require distinct product semantics |
+| Candle / OHLC | Time-bucketed open/high/low/close and volume/value with source, interval, session/time fields and closed/provisional state |
+| Quote / live price | Provider observation for display/simulation with source and event/receive times; not proof of executable fill |
+| Paper order/fill | Local simulated order/fill record; never submitted to a broker |
+| Backtest | Deterministic historical replay against a versioned snapshot, assumptions and simulator version |
+| Article / event | Source article/evidence and a related interpreted event; retains revisions and confidence |
+| `published_at` | Source-declared publication time; may be missing or wrong |
+| `first_seen_at` | First time the local engine observed an item; not backdated during backfill |
+| `available_at` | Conservative time at which the data could have been known under documented evidence/policy |
+| `updated_at` | Correction/update time; does not overwrite prior availability history |
+| Dataset snapshot | Versioned local data set with manifest, source revisions, coverage and rights reference |
+| SSI FastConnect Data | SSI market-data product; separate from FastConnect Trading |
+| Phiên ATO (At-The-Opening) | Phiên khớp lệnh định kỳ xác định giá mở cửa (09:00 - 09:15 trên HOSE) |
+| Phiên ATC (At-The-Closing) | Phiên khớp lệnh định kỳ xác định giá đóng cửa (14:30 - 14:45 trên HOSE, HNX) |
+| Khớp lệnh liên tục | Phiên giao dịch so khớp lệnh mua/bán ngay khi lệnh được nhập vào hệ thống |
+| Khớp lệnh thỏa thuận | Giao dịch khối lượng lớn thỏa thuận trực tiếp giữa các bên (Put-Through) |
+| Giá Trần / Sàn / Tham chiếu | Giá trần (Ceiling - tím), Sàn (Floor - xanh lơ), Tham chiếu (Reference - vàng) |
+| Biên độ giá (Price Band) | Biên độ dao động tối đa trong ngày: HOSE ±7%, HNX ±10%, UPCOM ±15% |
+| Bước giá (Tick Size) | Khoảng cách giá tối thiểu giữa các mức đặt lệnh (ví dụ HOSE: 10đ, 50đ, 100đ) |
+| Lô giao dịch (Lot Size) | Khối lượng tối thiểu đặt lệnh: Lô chẵn 100 cổ phiếu; Lô lẻ 1-99 cổ phiếu |
+| Chu kỳ thanh toán (T+2.5) | Cổ phiếu về tài khoản chiều ngày T+2, giao dịch được vào phiên sáng ngày T+3 |
+| Khối ngoại (Foreign Flow) | Dữ liệu khối lượng và giá trị mua/bán của nhà đầu tư nước ngoài |
+| Local profile | User-owned data/config boundary on one installation; profile count and password protection are pending design |
+| Portfolio | Local ledger plus backtest/paper simulation state; not an SSI/broker account |
+| Model Lab | Later experiment/model runtime, outside first MVP |
+| News engine | Separate future project for international and Vietnamese news, to integrate later |
 
-## Bất biến
+## Invariants
 
-- Không trộn venue hoặc spot/perpetual; USDT không mặc định bằng USD/VND.
-- Lưu UTC; UI mặc định Asia/Ho_Chi_Minh và ghi timezone.
-- Feature dùng nến đóng; UI có thể hiển thị nến mở với nhãn riêng.
-- Managed Auth; FastAPI enforce ownership; browser training dùng Web Worker, không yêu cầu cài Python.
-- Browser public Binance WebSocket là ngoại lệ trực tiếp; API nghiệp vụ/account qua Gateway.
-- Source flags `documented`, `access-tested`, `rights-confirmed`, `approved` có evidence riêng; truy cập được không chứng minh quyền dùng.
-- Config có state draft; run có running/succeeded/failed/cancelled/interrupted. Các state là client-reported; result giữ computation_origin=client-computed và verification_status=unverified theo API/Model Lab.
+- No venue/board/asset-class mixing without explicit normalization rules; tickers alone are not identities.
+- Store instants in UTC; UI defaults to Asia/Ho_Chi_Minh with timezone shown.
+- Preserve provider timestamp/value and source availability separately from local receive time.
+- Missing/unsupported/stale/partial data is not zero and must not be forward-filled into a fictitious bar.
+- A live quote does not prove a backtest price or paper fill; paper output is always labeled simulated.
+- Credentials and all user data remain local in V1; localhost is not a security boundary or encryption.
+- Source flags `documented`, `access-tested`, `rights-confirmed` and `approved` require distinct evidence.
+- No FastConnect Trading credentials or real order routes in V1.
