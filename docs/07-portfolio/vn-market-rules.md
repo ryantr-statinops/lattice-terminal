@@ -1,8 +1,8 @@
 # Quy Tắc Thị Trường Chứng Khoán Việt Nam (VN Market Trading Rules)
 
-**Trạng thái:** Đặc tả quy chuẩn giao dịch (Financial Market Specification) cho Động cơ Kiểm thử Chiến lược (**Backtest Engine**) và Hệ thống Giả lập Giao dịch Thời gian thực (**Paper Trading Simulator**) của **Research Terminal**.
+**Trạng thái:** tài liệu tham khảo sơ bộ cho market rules; chưa được xác minh theo quy định/venue hiện hành và không phải executable simulator specification. Phải đối chiếu nguồn chính thức, instrument class và ngày hiệu lực trước khi dùng trong backtest/paper.
 
-Mọi thuật toán tính toán khớp lệnh, quản lý tài sản, và tính toán số dư tiền/cổ phiếu phải tuân thủ chính xác các quy tắc vận hành của Sở Giao dịch Chứng khoán Việt Nam (VNX: HOSE, HNX, UPCOM) được định nghĩa trong tài liệu này.
+Không được coi các con số, phiên, phí hoặc settlement details bên dưới là đã duyệt cho mọi instrument/venue. Chúng là checklist nghiên cứu để xác minh và version hóa trước khi triển khai simulator.
 
 ---
 

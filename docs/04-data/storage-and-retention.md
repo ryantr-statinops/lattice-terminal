@@ -1,6 +1,6 @@
 # Storage, retention và quyền dữ liệu
 
-**Trạng thái:** target local-only được chốt; storage format, encryption, backup, migration và retention windows cần quyết định. Không tạo database/xóa dữ liệu trong docs-only change.
+**Trạng thái:** local-only là product requirement; storage format, encryption, backup, migration và retention windows cần quyết định. Không có persistence production được xác nhận.
 
 V1 giữ credentials, user config, market snapshots, portfolio, backtest artifacts và paper-trading ledger trên máy người dùng. Không có cloud sync, remote database, object storage hay dịch vụ project nhận payload. App clone/run không đồng nghĩa tất cả dữ liệu đã được mã hóa; password login không thay thế encryption-at-rest.
 

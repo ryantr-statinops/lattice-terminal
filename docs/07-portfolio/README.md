@@ -1,6 +1,6 @@
 # Portfolio — backtest và paper trading
 
-**Trạng thái:** portfolio simulation is in first MVP scope. Current UI is fixture/localStorage prototype only; local persistence, backtesting and paper engine are not implemented.
+**Trạng thái:** portfolio simulation thuộc scope V1 dự kiến. UI hiện chỉ là fixture/browser-storage prototype; local persistence, backtest engine và paper engine chưa triển khai.
 
 V1 portfolio is a local research ledger for Vietnamese instruments. It supports:
 
@@ -23,4 +23,4 @@ Data/config/ledger/results stay on the user's machine. There is no account/works
 - Paper order types, partial fills, queue/liquidity approximation, behavior during feed gaps and restart/recovery.
 - CSV schema and storage encryption/backup/export/reset policy.
 
-See [SSI market research](../03-market-research/vn-equities.md) and [roadmap](../../task/next-plan.md). Binance Spot/USDT ledger specifics previously in this folder are superseded and must not be used as V1 assumptions.
+See [SSI market research](../03-market-research/vn-equities.md) and [roadmap](../../task/next-plan.md). Các giả định kế toán của prototype không phải contract V1.

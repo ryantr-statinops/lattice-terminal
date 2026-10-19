@@ -15,7 +15,7 @@ CSV import/export is a candidate local workflow, not yet a locked schema. Before
 - Atomic import: either all accepted rows are committed or none are; do not silently discard/rewrite rows.
 - Export format plus manifest for source, snapshot, strategy, simulation assumptions and application version.
 
-No Binance symbol, USDT fee rule or old account ownership/JWT assumptions apply automatically to Vietnam instruments.
+Không áp dụng tự động giả định định danh/fee/account ownership của prototype cho instrument Việt Nam.
 
 ## Local lifecycle
 

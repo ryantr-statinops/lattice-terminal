@@ -1,6 +1,6 @@
 # Portfolio simulator contract
 
-**Trạng thái:** product scope accepted; detailed accounting, market and simulation rules are not yet decided. The former Binance/USDT weighted-average ledger design is superseded, not an active contract.
+**Trạng thái:** portfolio simulation thuộc scope sản phẩm; chi tiết kế toán, thị trường và mô phỏng chưa được chốt. Đây là design proposal, chưa phải engine/contract đã triển khai.
 
 Portfolio state is stored locally and independent from SSI account/trading balances. Use exact decimal arithmetic for money, price, quantity, tax and fees. Every record has local portfolio ID, instrument identity, event time, recorded/available time, source/assumptions and schema version. Do not represent an estimated value as a broker-reported balance.
 
@@ -26,4 +26,4 @@ App restart must preserve a consistent paper ledger or recover to a clear interr
 - Strategy interface/backtest UX and whether users define strategies through forms, built-ins or code (arbitrary code is not assumed).
 - Valuation source/freshness and handling of suspended, delisted, stale or missing instruments.
 
-No defaults should be inferred from prior USDT examples. See [product scope](../01-product/vision-and-scope.md), [SSI source gate](../03-market-research/source-register.md) and [MVP roadmap](../../task/next-plan.md).
+Không suy diễn default kế toán/tiền tệ từ ví dụ prototype. See [product scope](../01-product/vision-and-scope.md), [SSI source gate](../03-market-research/source-register.md) and [MVP roadmap](../../task/next-plan.md).

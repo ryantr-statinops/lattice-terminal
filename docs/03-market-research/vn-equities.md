@@ -1,10 +1,10 @@
 # Thị trường Việt Nam và SSI FastConnect Data
 
-**Review:** 2026-10-18; official-documentation review, chưa tạo tài khoản, thử endpoint, nhận entitlement hoặc xác minh quyền lưu/hiển thị.
+**Review:** 2026-10-18; official-documentation review only. No account, endpoint test, entitlement or storage/display right has been verified.
 
 ## Quyết định sản phẩm
 
-Thị trường Việt Nam và SSI FastConnect Data là hướng market-data đầu tiên. Product direction là tận dụng tối đa khả năng FastConnect **Data** có ích cho research, nhưng chỉ bật từng endpoint/feed sau khi xác minh entitlement, điều kiện dịch vụ, quota, coverage và quyền xử lý/lưu local. Không tích hợp FastConnect Trading. Không coi endpoint có trong docs là đã được cấp cho tài khoản hoặc được phép dùng mọi cách.
+Thị trường Việt Nam và SSI FastConnect Data là hướng market-data đầu tiên. Chỉ bật endpoint/feed phù hợp sau khi xác minh entitlement, điều khoản dịch vụ, quota, coverage, schema và quyền xử lý/lưu local. Không tích hợp FastConnect Trading. Endpoint được tài liệu hóa không đồng nghĩa tài khoản có quyền truy cập hoặc project có quyền sử dụng theo mọi cách.
 
 ## Khả năng SSI công bố
 
@@ -43,9 +43,9 @@ Chưa có account/entitlement của người dùng để xác minh giá, phí, e
 
 ## Rights và trạng thái nguồn
 
-Docs chính thức chứng minh capability/registration flow, không tự cấp quyền cho project hoặc cho mọi account. Cần đọc điều khoản dịch vụ/đăng ký cụ thể và xác minh riêng quyền local access, caching/retention, export, research/backtest, derived metrics, display, người xem, attribution, deletion và commercial status (dù app dự kiến miễn phí/open-source). Không mặc định user-provided key cho phép redistribute market payload.
+Official docs describe capabilities and registration flow; they do not grant project-wide rights or prove a user's account entitlement. Review service terms and separately verify local access, caching/retention, export, research/backtest, derived metrics, display/audience, attribution, deletion and commercial status. A user-provided key does not imply redistribution rights.
 
-Source register giữ SSI REST và streaming riêng. Cả hai hiện `documented=true`, `access-tested=false`, `rights-confirmed=false`, `approved=false`. Cho tới khi rights/access gate được ghi nhận, implementation chỉ được chuẩn bị bằng synthetic fixtures; không gọi endpoint hoặc persist market response thật.
+Source register keeps SSI REST and streaming separate. Both currently have `documented=true`, `access-tested=false`, `rights-confirmed=false`, `approved=false`. Until the gates are evidenced, implementation preparation is fixture-only: do not call endpoints or persist real market responses.
 
 ## Yêu cầu market contract cần chốt
 
