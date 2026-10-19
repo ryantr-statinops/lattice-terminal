@@ -1,0 +1,32 @@
+[
+  {
+    "id": "HOSE:REGULAR:equity:SYN01",
+    "venue": "HOSE",
+    "board": "REGULAR",
+    "native_symbol": "SYN01",
+    "name": "Synthetic HOSE equity 1",
+    "instrument_class": "equity",
+    "source_id": "SYNTHETIC-FIXTURE",
+    "is_synthetic": true
+  },
+  {
+    "id": "HNX:REGULAR:equity:SYN02",
+    "venue": "HNX",
+    "board": "REGULAR",
+    "native_symbol": "SYN02",
+    "name": "Synthetic HNX equity 2",
+    "instrument_class": "equity",
+    "source_id": "SYNTHETIC-FIXTURE",
+    "is_synthetic": true
+  },
+  {
+    "id": "UPCOM:REGULAR:equity:SYN03",
+    "venue": "UPCOM",
+    "board": "REGULAR",
+    "native_symbol": "SYN03",
+    "name": "Synthetic UPCOM equity 3",
+    "instrument_class": "equity",
+    "source_id": "SYNTHETIC-FIXTURE",
+    "is_synthetic": true
+  }
+]
