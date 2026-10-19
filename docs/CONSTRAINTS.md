@@ -13,7 +13,7 @@
    - Không gửi bất kỳ dữ liệu hành vi, chỉ số hiệu năng, lịch sử xem mã, hay log lỗi ra bất kỳ máy chủ nào do dự án quản lý.
    - Kết nối mạng duy nhất được phép khởi tạo từ ứng dụng là kết nối trực tiếp từ máy người dùng đến các endpoint dịch vụ dữ liệu chính thức do người dùng cấu hình (cụ thể: SSI FastConnect Data API & Streaming Hub).
 3. **Chủ Quyền Dữ Liệu Thuộc Về Người Dùng (Data Sovereignty):**
-   - Mọi cấu hình, dữ liệu thị trường đã tải (nến, tick, bảng giá), danh mục theo dõi, lịch sử lệnh mô phỏng (Paper Trading), và kết quả kiểm thử chiến lược (Backtest) được lưu trữ trực tiếp trên ổ cứng máy người dùng.
+   - Cấu hình, dữ liệu thị trường được phép lưu, portfolio và kết quả nghiên cứu nằm trên máy người dùng; đường dẫn, backup, export, delete và recovery phải được định nghĩa trước release.
    - Khi người dùng xóa thư mục ứng dụng hoặc xóa file cơ sở dữ liệu local, toàn bộ dữ liệu bị tiêu hủy hoàn toàn, không có bản sao lưu trên đám mây.
 
 ---
@@ -21,7 +21,7 @@
 ## 2. Bất Biến Nguồn Dữ Liệu & Bản Quyền (Market Data & Rights)
 
 1. **SSI FastConnect Data Là Nguồn Dữ Liệu Mục Tiêu Duy Nhất Cho V1:**
-   - Ứng dụng khai thác dữ liệu chứng khoán cơ sở Việt Nam (HOSE, HNX, UPCOM) thông qua API chính thức **SSI FastConnect Data (FC Data)**.
+   - SSI FastConnect Data là provider direction cho V1; entitlement, coverage, điều khoản và quyền lưu trữ theo tài khoản chưa được xác nhận.
    - Người dùng tự đăng ký và sử dụng cặp định danh truy cập cá nhân: `ConsumerID` và `ConsumerSecret`.
 2. **Chỉ Đọc Dữ Liệu — Tuyệt Đối Không Gửi Lệnh Thật (Read-Only Data Only):**
    - Chỉ sử dụng SSI FastConnect Data (Market Data API).
@@ -29,7 +29,7 @@
 3. **Quy Tắc Source Gate (Acceptance Gate):**
    - Mọi nguồn dữ liệu phải vượt qua 4 điều kiện trước khi được kích hoạt trực tiếp trong code production:
      `documented=true` $\rightarrow$ `access-tested=true` $\rightarrow$ `rights-confirmed=true` $\rightarrow$ `approved=true`.
-   - Trong quá trình phát triển khi Gate chưa được duyệt hoàn toàn (`approved=false`), toàn bộ code frontend, gateway và services chỉ được phép chạy trên bộ dữ liệu giả lập chuẩn hóa (**Synthetic Fixtures**). Không được phép hardcode credential hay bypass gate.
+   - Khi gate chưa được duyệt hoàn toàn (`approved=false`), chỉ dùng synthetic fixtures; không gọi nguồn thật hoặc persist market payload. Không hardcode credential hay bypass gate.
 4. **Ghi Nhận Bản Quyền Nguồn Minh Bạch (Explicit Attribution):**
    - Mọi dữ liệu hiển thị trên giao diện hoặc lưu trong cơ sở dữ liệu local đều phải gắn nhãn nguồn gốc xuất xứ (`SSI-FC-DATA` hoặc `SYNTHETIC-FIXTURE`) kèm timestamp chính xác. Không che giấu nguồn gốc hoặc mạo danh dữ liệu.
 
@@ -40,9 +40,9 @@
 1. **Không Lưu Credential Trong Trình Duyệt Web (No Web Storage for Secrets):**
    - Trình duyệt (`apps/web` React UI) tuyệt đối không được lưu `ConsumerSecret`, mật khẩu master, hay token dài hạn vào `localStorage`, `sessionStorage`, hoặc cookie không an toàn.
    - `ConsumerSecret` chỉ được xử lý tại tiến trình local backend và được mã hóa lưu trữ an toàn.
-2. **Bảo Mật Bằng Cơ Chế Mã Hóa Của Hệ Điều Hành (OS-Level Credential Protection):**
-   - Trên Windows, các khóa nhạy cảm (`ConsumerSecret`, access tokens) phải được bảo vệ bằng cơ chế mã hóa cấp hệ điều hành (ví dụ: **Windows DPAPI** hoặc **Windows Credential Manager**).
-   - Không lưu trữ plaintext credential trong các file cấu hình `.env`, `.json`, hay commit vào Git repository.
+2. **Local Secret Storage:**
+   - Phải chọn và review Windows secret store/encrypted vault trước khi nhập credentials thật; implementation technology chưa được chốt.
+   - Không lưu plaintext credential trong file cấu hình, browser hoặc Git repository.
 3. **Xác Thực Cục Bộ (Local Authentication & Profile Lock):**
    - Ứng dụng sử dụng cơ chế đặt mật khẩu cục bộ (Local Profile Password) để mở khóa vault giải mã cấu hình và mở phiên làm việc.
    - Khi hết phiên (timeout) hoặc khi người dùng chủ động Khóa (Lock), toàn bộ khóa nhạy cảm trong bộ nhớ RAM phải được giải phóng (zeroize/clear).
@@ -70,6 +70,5 @@
 Các tính năng sau đây **tuyệt đối không triển khai trong V1** để giữ tập trung tối đa vào trải nghiệm Local Terminal cốt lõi:
 - ❌ **Đặt lệnh thật vào tài khoản chứng khoán (Real Order Execution).**
 - ❌ **Dịch vụ máy chủ tập trung, đồng bộ tài khoản đa thiết bị qua Cloud.**
-- ❌ **Thị trường Tiền mã hóa (Crypto / Binance) và Ngoại hối (FX) — Đã chuyển sang `_archive`.**
 - ❌ **Hệ thống huấn luyện mô hình học máy phức tạp (Model Lab) — Hoãn sang V2.**
-- ❌ **Tin tức đa kênh tự động (News Ingestion Engine) — Tách thành dự án độc lập, chưa tích hợp vào V1.**
+- ❌ **Tích hợp News Engine vào terminal trong MVP đầu tiên — engine là workstream độc lập, cần source gates và integration contract trước khi kết nối.**

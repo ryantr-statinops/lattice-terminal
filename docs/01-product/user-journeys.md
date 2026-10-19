@@ -1,23 +1,23 @@
 # User journeys
 
-**Trạng thái:** target for local-first V1; current app still shows fixtures and mocks.
+**Trạng thái:** hành trình mục tiêu cho V1; prototype hiện tại vẫn dùng fixtures/mocks và chưa hỗ trợ các luồng hoàn chỉnh dưới đây.
 
 ## Clone and start locally
 
-Clone the repo on Windows, follow the setup guide, start the local web/API processes and open localhost. First-run flow explains local data paths, password-only access and SSI credential setup without exposing keys in source/browser/logs. Exact one-command launcher and recovery flow remain to be designed.
+Người dùng clone repository trên Windows, làm theo hướng dẫn cài đặt, khởi chạy web/API local và mở `localhost`. First-run giải thích đường dẫn dữ liệu và giới hạn bảo mật. Luồng nhập SSI credentials chỉ được triển khai sau khi local secret storage được thiết kế; credentials không đi vào source, browser, URL hay log. Launcher một lệnh và recovery còn là quyết định mở.
 
 ## Configure SSI and inspect market data
 
-User configures their own SSI FastConnect Data service. App validates configuration safely, reports which REST/stream capabilities are entitled and shows supported instruments/fields. The user explores historical/reference data and, after enabling an entitled stream, sees source, session, last update, closed/provisional state, coverage gaps and stale/partial/unavailable status. No undocumented fallback source is used.
+Người dùng cấu hình SSI FastConnect Data trên local service. Ứng dụng báo trạng thái cấu hình và capability được xác nhận mà không hiển thị secret. Chỉ sau khi source gate mở cho đúng endpoint/feed, người dùng mới xem instruments, dữ liệu lịch sử/tham chiếu và chất lượng dữ liệu. Mọi màn hình nêu nguồn, thời điểm, coverage, session, provisional/closed và stale/partial/unavailable state. Không tự dùng nguồn thay thế.
 
 ## Backtest a portfolio
 
-User chooses a local portfolio, market/instrument universe, historical snapshot and date range, strategy/rules, capital/currency and fee/slippage/fill assumptions. Preview shows available rows and gaps. Run produces a reproducible simulated report with snapshot and engine versions. Portfolio accounting and market-specific mechanics need decisions before this journey is implementable.
+Người dùng chọn portfolio local, universe, snapshot được phép, khoảng ngày, chiến lược và giả định vốn/chi phí/khớp lệnh. Preview nêu coverage và gaps; kết quả lưu phiên bản snapshot, cấu hình và simulator để có thể tái lập. Quy tắc kế toán và thị trường còn phải chốt trước khi hành trình có thể triển khai.
 
 ## Paper live session
 
-User starts a paper session using live SSI Data feed. The app reconciles against available history, then simulates orders/fills locally. Feed disconnect, stale data, gap, closed market or app restart pauses or marks state unknown according to explicit policy. Every outcome is labeled simulated; nothing reaches SSI Trading.
+Người dùng bắt đầu phiên paper dùng feed SSI được cấp quyền. Local simulator đối chiếu feed với history rồi mô phỏng lệnh/fill. Mất kết nối, dữ liệu stale/gap, ngoài giờ hoặc restart phải chuyển sang trạng thái pause/unknown theo policy đã định nghĩa. Mọi kết quả là simulated; không có lệnh nào gửi tới broker.
 
-## News and Model Lab
+## News engine độc lập
 
-News engine is built separately for international and Vietnam sources, then integrated in a later phase through a source-governed contract. Model Lab is deferred outside V1; current mock result is not a product capability.
+Engine tin tức quốc tế và Việt Nam được xây và vận hành như workstream riêng, với source inventory, quyền xử lý, provenance, correction và retention policy. Chỉ tích hợp vào terminal qua contract được review sau; news fixture hiện tại không phải năng lực sản phẩm. Model Lab nằm ngoài MVP đầu tiên; mock hiện tại không phải năng lực sản phẩm.

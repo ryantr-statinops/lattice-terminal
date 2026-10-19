@@ -1,39 +1,39 @@
 # Vision và phạm vi
 
-**Trạng thái:** hướng sản phẩm được chốt ngày 2026-10-18; chi tiết vận hành, nguồn và các contract dưới đây vẫn cần hoàn thiện trước implementation.
+**Trạng thái:** định hướng sản phẩm được chốt ngày 2026-10-18; đây là mục tiêu, không phải mô tả tính năng đã triển khai.
 
-Research Terminal là bộ hạ tầng nghiên cứu mã nguồn mở, miễn phí, chạy hoàn toàn trên máy người dùng. V1 dành cho người dùng Việt Nam tự clone repository và chạy web app trên `localhost`; chưa đóng gói thành desktop app hay vận hành dịch vụ hosted. Sản phẩm giúp người dùng khảo sát thị trường, xây và kiểm tra giả thuyết, backtest và paper trade; không hứa lợi nhuận hay thực hiện lệnh thật.
+Research Terminal là bộ công cụ nghiên cứu mã nguồn mở, miễn phí, chạy trên máy người dùng. V1 hướng tới nhà đầu tư tự nghiên cứu thị trường Việt Nam, khởi chạy từ repository trên Windows và truy cập giao diện qua `localhost`. Sản phẩm hỗ trợ xem dữ liệu được cấp quyền, quản lý sổ cái nghiên cứu, backtest và paper trading. Không cam kết lợi nhuận và không gửi lệnh thật.
 
-## Người dùng và cài đặt
+## Người dùng và quyền sở hữu
 
-- Người dùng đầu tiên là product owner; hướng tới người dùng Việt Nam tự nghiên cứu.
-- Người dùng tự cài đặt, cấu hình và cấp quyền với SSI FastConnect Data. Ứng dụng dùng cấu hình của chính người chạy và giữ cấu hình, credentials, dữ liệu, portfolio và kết quả trên máy đó.
-- Có màn hình đăng nhập chỉ bằng mật khẩu theo yêu cầu sản phẩm. Model account, mã hóa dữ liệu, reset/recovery và xử lý mất mật khẩu vẫn cần quyết định; không có email/OAuth hoặc dịch vụ auth hosted trong hướng V1.
-- Hướng ban đầu là thị trường Việt Nam và tận dụng các năng lực SSI FC Data phù hợp, trong giới hạn entitlement và quyền được xác nhận cho từng endpoint/dataset.
+- Người dùng tự cài đặt và tự đăng ký/cấu hình dịch vụ SSI FastConnect Data nếu có entitlement phù hợp.
+- Cấu hình, credentials, dữ liệu, portfolio và kết quả nghiên cứu thuộc người vận hành và được lưu trên máy của họ.
+- Đăng nhập mật khẩu cục bộ là yêu cầu UX; mô hình profile, lưu secret, mã hóa dữ liệu, khóa phiên và khôi phục còn phải thiết kế.
+- Giao diện dự kiến dùng tiếng Việt và hiển thị giờ `Asia/Ho_Chi_Minh`; thời gian nội bộ chuẩn hóa UTC.
 
-## MVP đầu tiên
+## Phạm vi V1 dự kiến
 
-- Chạy từ source clone trên Windows, mở tại localhost. Chưa cần installer, public hosting, cloud account, database service hoặc scheduler hosted.
-- Market data lấy qua SSI FastConnect Data: REST/historical, reference data và streaming được khảo sát để dùng tối đa trong phạm vi được cấp. Exact instrument classes, endpoint coverage, history depth, entitlement, quota và permitted local retention phải được xác minh trước khi bật từng nguồn.
-- News engine là một workstream riêng do dự án tự xây cho nguồn quốc tế và Việt Nam. Nó sẽ được tích hợp vào Research Terminal sau; không chặn market/portfolio MVP đầu tiên.
-- Portfolio có backtesting và paper live trading. Paper live dùng market feed để mô phỏng, không gửi lệnh, không dùng FastConnect Trading và không giữ trading credentials.
-- Model Lab là sản phẩm/workstream sau, ngoài MVP đầu tiên.
-- UI tiếng Việt, thời gian chuẩn UTC và hiển thị mặc định theo Asia/Ho_Chi_Minh.
+- Chạy local trên Windows, không yêu cầu backend hosted, tài khoản cloud, đồng bộ nhiều thiết bị hoặc dịch vụ database từ xa.
+- Tích hợp SSI FastConnect **Data** qua local service, chỉ bật các REST/feed phù hợp sau khi kiểm tra entitlement, điều khoản, quota, coverage, schema và quyền xử lý/lưu trữ.
+- Xem instruments, dữ liệu tham chiếu/lịch sử và trạng thái chất lượng dữ liệu trong phạm vi được cấp.
+- Portfolio nghiên cứu có backtest lịch sử và paper live simulation. Không dùng FastConnect Trading, broker credentials hay order route thật.
+- News engine cho nguồn quốc tế và Việt Nam là workstream độc lập; tích hợp sau khi có source policy và contract riêng.
+- Model Lab không thuộc MVP đầu tiên.
 
-## Không thuộc MVP đầu tiên
+## Ngoài phạm vi
 
-- Real-order execution, broker trading API, custody, margin, leverage, short hoặc tự động đặt lệnh.
-- Hosted/multi-user service, đồng bộ đám mây, chia sẻ portfolio, public data redisplay hoặc thu phí.
-- News ingestion tích hợp vào terminal trước khi engine riêng và source gates sẵn sàng.
-- Model Lab runtime, arbitrary Python hoặc server-side training.
-- Installer/desktop shell. V1 chạy trực tiếp từ repository theo hướng dẫn.
+- Đặt lệnh thật, custody, margin, leverage, short hoặc tự động giao dịch.
+- Hosted/multi-user service, cloud sync, chia sẻ portfolio và public market-data redisplay.
+- Tích hợp news engine vào terminal trước khi engine và rights gates sẵn sàng.
+- Runtime huấn luyện Model Lab và arbitrary user code.
+- Installer/desktop shell; V1 bắt đầu bằng clone và chạy từ source.
 
-## Code hiện tại và hướng chuyển đổi
+## Trạng thái code hiện tại
 
-Codebase hiện là prototype fixture React/Vite + Go Gateway + FastAPI. Market/news/portfolio dùng synthetic fixtures hoặc local browser state; Model Lab là mock; Binance WebSocket chỉ là kết nối thử nghiệm. Chưa có SSI integration, local secret/config management, password login, persisted local user workspace, backtesting engine hay paper-trading engine. Binance contracts/fixtures là legacy prototype material, không phải quyết định provider cho MVP này.
+Repository hiện là prototype fixture với React/Vite, Go Gateway, FastAPI và CLI. Market/news/portfolio đang dùng fixtures hoặc browser-local state; kết nối streaming trong UI là prototype; Model Lab trả kết quả mock. Chưa có tích hợp SSI, local secret store, auth, kho dữ liệu người dùng bền vững, backtest engine hay paper-trading engine. Các mô tả này ghi nhận trạng thái code, không mở rộng phạm vi sản phẩm.
 
-Khi một capability chưa có quyền, entitlement hoặc data quality evidence, app phải hiển thị unavailable/partial rõ ràng; không tự chuyển sang source khác hoặc giả dữ liệu.
+Khi entitlement, rights hoặc chất lượng dữ liệu chưa được xác nhận, capability tương ứng phải ở trạng thái blocked/unavailable hoặc fixture-only. Không dùng fallback nguồn không được duyệt và không trình bày fixture như thị trường thật.
 
-## Decisions còn mở
+## Quyết định còn mở
 
-Xem roadmap tại [task/next-plan](../../task/next-plan.md). Các quyết định cần user duyệt tiếp gồm: SSI service/entitlement thực tế; HOSE/HNX/UPCOM và có bao gồm phái sinh/trái phiếu hay không; dữ liệu nào trong stream cần cho V1; persistence/encryption và password recovery; portfolio currency, fees, taxes và market rules; cách chạy các local services; phạm vi backtesting và paper live.
+Theo dõi quyết định và dependency tại [roadmap](../../task/next-plan.md): entitlement/điều khoản SSI; instrument classes và market coverage; fields/feed cần cho V1; lưu trữ/mã hóa/khôi phục; quy tắc tiền tệ, phí, thuế và mô phỏng; cách khởi chạy local services; phạm vi backtest và paper session.

@@ -1,6 +1,6 @@
 # Success metrics
 
-**Trạng thái:** metric framework; no real SSI integration, simulator baseline or user pilot has been measured.
+**Trạng thái:** khung đo lường; chưa có tích hợp SSI thật, baseline simulator hay pilot người dùng.
 
 ## Local setup and privacy
 
@@ -22,8 +22,8 @@
 - Paper feed gaps, stop/restart and simulated-fill audit produce safe, explainable states.
 - Report coverage, fees, taxes/slippage assumptions, drawdown and simulated trade count; no profitability/alpha claims without validated data and evaluation.
 
-## Deferred scope
+## News và phạm vi hoãn
 
-News quality metrics (coverage, correction handling and entity-linking precision) are defined with the standalone news engine before integration. Model Lab benchmark/runtime metrics are deferred; they are not V1 success criteria.
+News quality metrics (coverage, correction handling and entity-linking precision) được định nghĩa trong workstream news độc lập trước khi tích hợp. Model Lab benchmark/runtime metrics được hoãn; không phải tiêu chí V1.
 
 Set numeric targets after a reproducible baseline and pilot. Every threshold needs owner, test setup, dataset version, reason and date; do not tune acceptance thresholds after inspecting final test output.

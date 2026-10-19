@@ -31,7 +31,7 @@
 | Local profile | User-owned data/config boundary on one installation; profile count and password protection are pending design |
 | Portfolio | Local ledger plus backtest/paper simulation state; not an SSI/broker account |
 | Model Lab | Later experiment/model runtime, outside first MVP |
-| News engine | Separate future project for international and Vietnamese news, to integrate later |
+| News engine | Workstream độc lập cho nguồn quốc tế và Việt Nam; tích hợp sau khi source/integration gates sẵn sàng |
 
 ## Invariants
 
