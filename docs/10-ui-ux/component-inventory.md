@@ -63,7 +63,7 @@ No phase numbers or completion claims are assigned here. New components require 
 
 ## Component guidelines
 
-- Use Tailwind utility classes mapped to tokens (`text-fg`, `bg-surface`, `border-border`).
+- Use Tailwind utility classes mapped to tokens declared in `apps/web/src/styles.css` (for example `text-foreground`, `bg-secondary`, `border-border`). `text-fg`, `bg-surface`, and `text-accent` are design-target names, not current stylesheet mappings; add and review the mapping before using them.
 - Never hardcode hex; use CSS variable or Tailwind token (RT-ADR-018).
 - All interactive elements: visible focus ring (`focus-visible:outline-2 outline-ring`).
 - Reduced motion: respect `prefers-reduced-motion`.

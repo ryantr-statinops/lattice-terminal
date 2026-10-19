@@ -1,6 +1,23 @@
 # Design tokens — Research Terminal
 
-Tokens derived from RT-ADR-013..018. Components must use semantic tokens, never hardcoded hex.
+This page separates the **implemented prototype tokens** from **design targets**. The palette below records intended semantic design values from RT-ADR-013..018; it is not a complete inventory of CSS variables or generated Tailwind utilities in the current prototype. Components should use tokens that exist in `apps/web/src/styles.css` until a reviewed implementation adds the target aliases.
+
+### Implemented prototype token names
+
+`apps/web/src/styles.css` currently declares and maps these names through Tailwind v4 `@theme inline`:
+
+| CSS variable | Available semantic utility examples | Notes |
+|---|---|---|
+| `--color-background` | `bg-background`, `text-background` | Dark/light values |
+| `--color-foreground` | `bg-foreground`, `text-foreground` | Dark/light values |
+| `--color-primary`, `--color-primary-foreground` | `bg-primary`, `text-primary`, `text-primary-foreground` | Primary action/brand |
+| `--color-secondary`, `--color-secondary-foreground` | `bg-secondary`, `text-secondary-foreground` | Dark/light values |
+| `--color-muted`, `--color-muted-foreground` | `bg-muted`, `text-muted-foreground` | Dark/light values |
+| `--color-border`, `--color-ring`, `--color-input` | `border-border`, `outline-ring`, `bg-input` | Focus and form tokens |
+| `--color-destructive`, `--color-warning`, `--color-up`, `--color-down` | `text-destructive`, `text-warning`, `text-up`, `text-down` | `up`/`down` have theme-specific values |
+| `--font-sans`, `--font-mono` | `font-sans`, `font-mono` | Font delivery policy is documented below |
+
+This list describes declared mappings, not a guarantee that every example is used or visually verified in all components. Names such as `bg-surface`, `text-fg`, `text-accent`, `border-subtle`, and the spacing/motion/shadow/breakpoint variables below are design targets only; they are not declared aliases in the current stylesheet.
 
 ## Theme (RT-ADR-013)
 - **Default:** dark. Light supported via semantic token swap.
@@ -132,9 +149,9 @@ Dark mode: increase opacity or use borders instead of shadows.
 
 ## Component guidelines (RT-ADR-018)
 
-- Components use Tailwind utility classes mapped to tokens (`text-fg`, `bg-surface`, `border-border`).
+- Components use implemented Tailwind utilities mapped to tokens (for example `text-foreground`, `bg-secondary`, `border-border`). Do not use target-only aliases such as `text-fg`, `bg-surface`, or `text-accent` until they are added to the stylesheet.
 - Never hardcode hex in components; use CSS variable or Tailwind token.
-- Semantic color usage: `text-up`/`text-down` for market signals; `text-accent` for brand actions.
+- Semantic color usage: `text-up`/`text-down` for market signals; use implemented `text-primary` for brand actions. `text-accent` remains a target alias until mapped.
 - All interactive elements: visible focus ring (`focus-visible:outline-2 outline-ring`).
 - Reduced motion: respect `prefers-reduced-motion`.
 
@@ -196,6 +213,6 @@ useEffect(() => {
 
 - Tailwind v4 with `@theme inline` for token mapping.
 - CSS variables defined in `:root` (dark) and `[data-theme="light"]`.
-- Components use Tailwind classes referencing tokens (`bg-primary`, `text-fg`, `border-border`).
+- Components use Tailwind classes referencing implemented tokens (for example `bg-primary`, `text-foreground`, `border-border`). Target aliases must be implemented before use.
 - No hardcoded hex in component files (enforced by lint rule if added).
 - Tailwind config in `apps/web/src/styles.css` (v4 CSS-first config).
