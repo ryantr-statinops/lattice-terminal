@@ -1,4 +1,6 @@
-# Frontend data contracts
+# Frontend data contracts — prototype
+
+**Trạng thái:** mô tả fixture API hiện có, không phải contract V1. V1 local API schema chưa được khóa; portfolio hiện là browser-side placeholder và news không thuộc MVP terminal đầu tiên.
 
 ## API client (`apps/web/src/lib/api.ts`)
 
@@ -14,8 +16,8 @@
 | GET | `/api/v1/health` | `HealthResponse` | service/mode synthetic marker |
 | GET | `/api/v1/market/instruments` | `InstrumentsResponse` | list of Instrument |
 | GET | `/api/v1/market/candles?instrument_id=&interval=` | `CandlesResponse` | filtered by instrument + interval; 404 if instrument unknown |
-| GET | `/api/v1/news/articles?instrument_id=` | `ArticlesResponse` | optional filter by instrument_id |
-| GET | `/api/v1/portfolio/holdings` | `HoldingsResponse` | empty array (placeholder; portfolio is client-side) |
+| GET | `/api/v1/news/articles?instrument_id=` | `ArticlesResponse` | synthetic fixture; news API V1 chưa định nghĩa |
+| GET | `/api/v1/portfolio/holdings` | `HoldingsResponse` | empty placeholder; V1 portfolio API chưa định nghĩa |
 
 ## Envelope
 

@@ -35,4 +35,4 @@ Các process chỉ bind vào loopback trừ khi có ADR và bảo vệ phù hợ
 
 ## Implementation status
 
-SSI API/streaming, local secret store, local persistent store, password login, market-data serving, backtest, paper simulator và news integration chưa có. Detailed cloud/multi-account/Binance designs elsewhere describe earlier direction and are superseded until individually revised.
+SSI API/streaming, local secret store, local persistent store, password login, market-data serving, backtest, paper simulator và news integration chưa có. Các tài liệu legacy chỉ ghi lại prototype/thiết kế cũ; không phải yêu cầu V1.

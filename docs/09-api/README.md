@@ -4,10 +4,10 @@
 
 The V1 API must not require a remote business service, managed auth or cloud database. SSI credentials are used only by a local adapter and must never be sent from browser to SSI. The browser talks to an allowlisted localhost origin; the local process owns upstream auth, source quota and data normalization.
 
-The docs below preserve prior contracts and need revision during implementation:
+Các trang bên dưới là contract/prototype tham khảo; không định nghĩa wire schema V1 đã chốt:
 
 1. [Auth and HTTP conventions](auth-and-http.md) — hosted JWT behavior is superseded.
 2. [Capability contracts](capabilities.md) — workspace/experiment endpoints are not V1 requirements.
 3. [Dataset, experiment and event contracts](datasets-experiments-events.md) — Model Lab is deferred.
 
-V1 endpoint families likely include local health/config validation, instrument/reference data, historical market data/coverage, stream session state and portfolio/backtest/paper simulation. Exact routes and password/session protections must be designed with the local runtime; do not expose a public network listener by default.
+Nhóm capability dự kiến gồm local health/config validation, instrument/reference data, historical market data/coverage, stream session state và portfolio/backtest/paper simulation. Exact routes và password/session protections phải được thiết kế cùng local runtime; không mở public network listener mặc định.

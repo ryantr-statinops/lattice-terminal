@@ -8,14 +8,14 @@
 | RT-ADR-002 | Go Gateway + FastAPI là target domain boundary | Superseded as product target; current scaffold only. Local process architecture to be selected |
 | RT-ADR-003 | Go ingestion theo lịch, độc lập phiên người dùng | Superseded for hosted scheduler; local ingestion jobs remain a possible implementation |
 | RT-ADR-004 | Browser Web Worker training/backtest; Pyodide là phương án spike đầu tiên | Deferred with Model Lab; portfolio backtest is a separate MVP capability |
-| RT-ADR-005 | Binance Spot BTCUSDT/ETHUSDT; candles 15m/1h/1d | Superseded by Vietnam-market direction; Binance code/docs are prototype legacy |
-| RT-ADR-006 | Browser public Binance WebSocket không key, theo tab hoạt động | Superseded; SSI stream must be owned by local service and reconciled |
+| RT-ADR-005 | Provider/instrument universe and intervals of the early prototype | Superseded by Vietnam-market direction; not a V1 provider decision |
+| RT-ADR-006 | Browser-owned public prototype stream | Superseded; any SSI stream must be owned by an approved local service and reconciled |
 | RT-ADR-007 | PostgreSQL cho metadata/ledger; object storage cho snapshots/artifacts qua interface | Superseded by local-only storage direction; exact format/engine pending |
 | RT-ADR-008 | Managed Auth, không tự lưu/hash password | Superseded by requested password-only local login; local security/recovery design pending |
-| RT-ADR-009 | Portfolio spot long/cash, weighted-average cost, base USDT; manual/CSV | Superseded; Vietnam instruments, backtest and paper live are the target; contract pending |
+| RT-ADR-009 | Early prototype portfolio accounting assumptions | Superseded; Vietnam instruments, backtest and paper live are the target; contract pending |
 | RT-ADR-010 | Experiment/results private theo owner; browser output là client-computed | Deferred with Model Lab and hosted accounts |
 | RT-ADR-011 | Vercel web/HTTP APIs sau kiểm chứng; ingestion chạy riêng | Superseded; clone-and-run local on Windows, no hosted runtime |
-| RT-ADR-012 | Funding/OI, cổ phiếu Mỹ, FX, Việt Nam | Superseded: Vietnam + SSI FC Data is selected direction; exact markets/instruments remain gated |
+| RT-ADR-012 | Multi-market research scope | Superseded: Vietnam + SSI FC Data is selected direction; exact markets/instruments remain gated |
 | RT-ADR-013 | Dark mode default; light theme qua semantic tokens | Accepted (frontend) |
 | RT-ADR-014 | Accent `#21684e`; semantic accent tokens + market up/down colors riêng | Accepted (frontend) |
 | RT-ADR-015 | Inter (UI) + JetBrains Mono (numeric/terminal) với fallback stacks | Accepted (frontend) |
@@ -34,9 +34,9 @@
 | RT-ADR-023 | Portfolio MVP includes historical backtest and paper live trading only; no real orders | Accepted product scope; fills, fees, taxes, market sessions and corporate actions pending design |
 | RT-ADR-024 | News engine for international and Vietnam sources is a separate workstream, integrated later | Accepted sequencing; source rights/engine requirements pending |
 | RT-ADR-025 | Model Lab runtime is outside first MVP | Accepted scope |
-| RT-ADR-026 | Cơ sở dữ liệu local: DuckDB (nến/tick time-series OLAP) + SQLite (sổ cái portfolio/orders ACID) | Accepted architecture decision |
-| RT-ADR-027 | Quản lý tiến trình Windows cục bộ: Go/PowerShell launcher 1 lệnh khởi động | Accepted architecture decision |
-| RT-ADR-028 | Bảo mật thông tin nhạy cảm SSI: Windows DPAPI / Windows Credential Manager | Accepted security decision |
+| RT-ADR-026 | Cân nhắc storage engine local cho market data và ledger | Proposal only; format, concurrency and recovery not evaluated |
+| RT-ADR-027 | Cân nhắc launcher/process supervision Windows | Proposal only; runtime process topology and shutdown not selected |
+| RT-ADR-028 | Cân nhắc Windows secret storage for SSI credentials | Proposal only; threat model and recovery not reviewed |
 
 ## Spike và quyết định tiếp theo
 
@@ -84,20 +84,14 @@ ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và 
 
 ## Local Architecture ADRs (2026-10-19)
 
-### RT-ADR-026 — Local storage engine
-- **Quyết định:** Kiến trúc lưu trữ lai (Hybrid Storage): **DuckDB** lưu trữ dữ liệu chuỗi thời gian (Nến OHLCV, Tick Trades, Snapshots) + **SQLite** lưu trữ danh mục tài sản, cấu hình, và sổ lệnh giả lập (Portfolio Ledger, Paper Orders, Local Profiles).
-- **Rationale:** Dữ liệu nến và tick đòi hỏi tốc độ truy vấn phân tích (OLAP) và nén dữ liệu dạng cột vượt trội (DuckDB xử lý hàng triệu nến trong vài mili-giây, hỗ trợ đọc trực tiếp file Parquet/DuckDB local). Ngược lại, số dư tài khoản và lệnh giao dịch đòi hỏi tính toàn vẹn giao dịch (ACID transactional) đơn giản và không có overhead (SQLite). Cả hai đều là file-based cục bộ, không cần cài đặt database server riêng biệt.
-- **Impact:** Thêm DuckDB driver cho Golang/Python; SQLite file `lattice_ledger.db` và DuckDB file `lattice_market.duckdb` lưu tại thư mục dữ liệu local của người dùng.
-- **Trigger xem lại:** Kích thước file dữ liệu vượt quá 50GB hoặc vấn đề khóa file đồng thời giữa các tiến trình.
+### RT-ADR-026 — Local storage engine (proposal)
+- **Trạng thái:** chưa chọn engine hoặc physical schema.
+- **Cần đánh giá:** workload, process ownership, atomic writes, migration, backup/restore, encryption and cross-language support.
 
-### RT-ADR-027 — Windows process supervision and launcher
-- **Quyết định:** Cung cấp script launcher duy nhất (hỗ trợ `launcher.ps1` và command `go run ./cmd/lattice-terminal`) để khởi động và giám sát đồng bộ cả 3 thành phần: React Web UI, Go Market/Gateway Service, và Python Local Engine.
-- **Rationale:** Trải nghiệm người dùng desktop là "Clone & Run". Không yêu cầu người dùng phải tự mở 3 cửa sổ terminal riêng biệt. Launcher quản lý vòng đời, kiểm tra cổng mạng loopback, và tự động dọn dẹp tiến trình con khi người dùng nhấn Ctrl+C.
-- **Impact:** Cần viết `scripts/launch.ps1` chuẩn hóa và health-check endpoint cho từng service.
-- **Trigger xem lại:** Yêu cầu đóng gói thành file `.exe` cài đặt độc lập (Single-file Desktop executable).
+### RT-ADR-027 — Windows process supervision (proposal)
+- **Trạng thái:** launcher, process count, health checks and shutdown behavior chưa được chọn.
+- **Cần đánh giá:** clean clone setup, loopback binding, child-process cleanup and diagnostic output.
 
-### RT-ADR-028 — Windows secret storage for SSI credentials
-- **Quyết định:** Sử dụng **Windows DPAPI (Data Protection API)** hoặc **Windows Credential Manager** để mã hóa và lưu trữ `ConsumerID`, `ConsumerSecret`, và Access Token của người dùng.
-- **Rationale:** Ứng dụng chạy trên Windows của người dùng. Tuyệt đối không lưu plaintext credentials vào file `.env` hay lưu trong trình duyệt `localStorage`. DPAPI tận dụng khóa bảo mật gắn liền với tài khoản đăng nhập Windows của người dùng, đảm bảo các phần mềm độc hại không có quyền người dùng không thể đọc trộm khóa.
-- **Impact:** Service local Go/Python gọi Windows API để mã hóa/giải mã khóa khi khởi động phiên làm việc.
-- **Trigger xem lại:** Mở rộng hỗ trợ hệ điều hành macOS/Linux.
+### RT-ADR-028 — Windows secret storage (proposal)
+- **Trạng thái:** chưa chọn Windows facility hoặc vault design.
+- **Cần đánh giá:** threat model, backup/recovery, profile isolation, process access and secret rotation before accepting credentials.

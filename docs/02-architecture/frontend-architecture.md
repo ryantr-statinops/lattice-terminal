@@ -1,6 +1,6 @@
 # Frontend architecture — Research Terminal
 
-**Status note (2026-10-18):** this file documents the current React fixture implementation and earlier hosted/crypto design. SSI local-first V1 needs a loopback API and must not use direct Binance browser streams or expose SSI credentials. Treat those references below as legacy until revised during implementation.
+**Trạng thái:** tài liệu mô tả frontend prototype hiện tại; route, query và storage dưới đây không phải API/UI contract V1. V1 yêu cầu browser chỉ gọi local loopback API; SSI secrets và upstream stream thuộc local service sau khi source gates được duyệt.
 
 ## Stack (RT-ADR-001, RT-ADR-018)
 
@@ -47,20 +47,19 @@ Layout: `AppLayout` provides header (nav + theme toggle), footer, skip link. Pag
 | Market candles | `["market", "candles", instrumentId, interval]` | 30s |
 | News articles | `["news", "articles", instrumentId]` | 30s |
 
-## WebSocket (Phase 6)
+## Streaming prototype
 
-- `useBinanceStream(symbol, interval, enabled)` in `features/market/stream.ts`.
-- Public Binance kline stream, no API key.
+- Prototype hiện có hook kết nối stream upstream từ browser; không dùng thiết kế này làm mẫu cho V1.
 - Reconnect with exponential backoff (cap 30s).
 - Hidden tab grace: mark stale if hidden > 30s.
 - Stale detection: no message for 60s while live.
 - Only closed candles (`k.x === true`) are considered valid data.
 
-## Web Worker (Phase 7 — planned)
+## Model Lab mock (deferred)
 
 - `workerAdapter.ts` defines `WorkerAdapter` interface.
 - Current implementation: `createNoopAdapter()` (synthetic result).
-- Future: real Web Worker + Pyodide, lazy-loaded on Run.
+- Runtime thực không thuộc MVP đầu tiên.
 - Worker must be terminated on unmount; progress split: download/runtime vs training.
 
 ## Local storage

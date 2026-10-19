@@ -13,7 +13,7 @@
 | Portfolio simulation | Backtest + paper live trading, no broker order routing | Cần thiết kế engine, exchange/session/fee/corporate-action models |
 | Model Lab | Ngoài MVP đầu tiên | Deferred; không kéo Pyodide/runtime vào V1 |
 
-V1 hướng clone-and-run trên Windows; không cần desktop shell, installer, Vercel, managed auth, hosted database, object store hoặc cloud job runner. Hướng này chưa chốt cách người dùng chạy nhiều process hay dùng một launcher; phải chọn cách đơn giản để clone repo và khởi chạy local trước implementation.
+V1 hướng clone-and-run trên Windows; không cần desktop shell, installer, managed auth, hosted database, object store hoặc cloud job runner. Chưa chốt số process hay launcher; phải đánh giá vận hành và khởi chạy local trước implementation.
 
 Không dùng cloud LLM hoặc paid data làm dependency bắt buộc. Mọi local secret storage phải có threat model cho Windows user profile, backups, logs, crashes và export. Localhost không tự thay thế authentication/encryption.
 

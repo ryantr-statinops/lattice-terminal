@@ -1,6 +1,6 @@
 # Kiến trúc
 
-**Trạng thái:** local-first product direction được chốt ngày 2026-10-18; implementation boundaries còn cần quyết định. Hiện có React/Vite fixture, Go Gateway, FastAPI và CLI; chưa có local SSI integration, auth hay persistence.
+**Trạng thái:** local-first product direction được chốt; process boundaries và persistence chưa quyết định. Hiện có React/Vite fixture, Go Gateway, FastAPI và CLI; chưa có SSI integration, local auth hay persistence production.
 
 - [System architecture](system-architecture.md)
 - [Tech stack](tech-stack.md)
@@ -8,4 +8,4 @@
 - [ADR](decisions.md)
 - [Glossary](../glossary.md)
 
-V1 clone-and-run trên Windows, mọi config/data tại local. SSI credentials chỉ thuộc local service boundary; browser chỉ gọi loopback API. Hosted auth, cloud database/storage, Vercel và Binance browser WebSocket là hướng cũ, không phải target hiện hành.
+V1 clone-and-run trên Windows, config/data thuộc local installation. SSI credentials chỉ được xử lý tại local service sau khi secret storage được thiết kế; browser chỉ gọi loopback API. Các lựa chọn cụ thể về process, storage, password security và launcher vẫn pending cho tới khi ADR được chấp nhận.

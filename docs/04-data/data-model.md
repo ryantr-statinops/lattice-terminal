@@ -1,6 +1,6 @@
 # Entities và data dictionary
 
-**Trạng thái:** logical model đang chuyển từ hosted/multi-account crypto design sang local SSI/VN market data. Physical schema chưa chốt; Binance-specific examples below are legacy prototype context until replaced.
+**Trạng thái:** logical model định hướng cho local SSI/VN market data; physical schema chưa chốt. Đây là domain proposal, không phải schema production đã triển khai.
 
 ```mermaid
 erDiagram
@@ -21,7 +21,7 @@ erDiagram
 | Entity | Trường tối thiểu và quy tắc |
 |---|---|
 | Source | source_id, provider, product/feed, terms_version/hash, permitted_use_policy_id, evidence flags; không có credential |
-| Asset | asset_id, canonical name/code and asset class; Vietnamese equities, indices, derivatives and bonds must not be conflated |
+| Asset | asset_id, canonical name/code and asset class; equities, indices, derivatives and bonds must not be conflated |
 | Instrument | instrument_id, venue, market/board type (e.g. HOSE/HNX/UPCOM/DER/BOND where applicable), instrument class, native symbol, lifecycle dates and precision evidence |
 | CandleRevision | instrument_id, interval, open_time, close_time, is_closed, OHLC, base_volume, quote_volume nếu có, trade_count nếu có, revision_id, source_object_id, ingested_at, available_at |
 | Quote | instrument_id, price/bid/ask theo source payload, event_time, received_at, source; không dùng last trade như bid/ask |
