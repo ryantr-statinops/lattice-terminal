@@ -5,7 +5,7 @@ from .execution import Order,quote_fill,validate_order
 class PaperSession:
     def __init__(self,capital,rules,emit):
         self.cash=Decimal(capital);self.rules=rules;self.emit=emit;self.orders=[];self.positions={};self.counter=0
-        if not self.cash.is_finite() or self.cash<=0:raise ValueError('positive paper capital required')
+        if not self.cash.is_finite() or self.cash<0:raise ValueError('non-negative paper cash required')
         if not rules.synthetic:raise ValueError('production rule/settlement/feed validation is pending')
     def place(self,event,intent,allocation,run_id):
         self.counter+=1

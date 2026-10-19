@@ -34,9 +34,11 @@ class RunManager:
     def _run(self,config,job):
         acquired=False;process=None;close_tree=None
         try:
-            while not job['cancel'].is_set():
-                if self.cpu.acquire(timeout=.1):acquired=True;break
-            if not acquired:self.append(config['id'],'state',{'status':'cancelled'});return
+            if config['kind']!='strategy':
+                while not job['cancel'].is_set():
+                    if self.cpu.acquire(timeout=.1):acquired=True;break
+                if not acquired:self.append(config['id'],'state',{'status':'cancelled'});return
+            elif job['cancel'].is_set():self.append(config['id'],'state',{'status':'cancelled'});return
             config=dict(config,data_root=str(self.root))
             process=subprocess.Popen([sys.executable,'-m','kestrel_engine.worker'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',cwd=Path(__file__).resolve().parents[1],creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0,start_new_session=os.name!='nt')
             close_tree=attach(process)

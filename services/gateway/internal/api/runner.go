@@ -15,11 +15,13 @@ import (
 )
 
 type Runner struct {
-	Engine  *host.Engine
-	Store   *store.Store
-	Context context.Context
-	mu      sync.Mutex
-	stopped map[string]bool
+	Engine   *host.Engine
+	Store    *store.Store
+	Context  context.Context
+	mu       sync.Mutex
+	stopped  map[string]bool
+	OnEvent  func(store.Run, string, json.RawMessage) error
+	OnFinish func(store.Run)
 }
 
 func (r *Runner) call(ctx context.Context, method, path string, input, output any) error {
@@ -66,6 +68,9 @@ func (r *Runner) Inspect(kind, source string, params json.RawMessage) error {
 }
 func (r *Runner) Start(run store.Run) {
 	go func() {
+		if r.OnFinish != nil {
+			defer r.OnFinish(run)
+		}
 		var after int64
 		fail := func(err error) {
 			p, _ := json.Marshal(map[string]string{"message": err.Error()})
@@ -109,6 +114,13 @@ func (r *Runner) Start(run store.Run) {
 				if event.Seq != after+1 {
 					fail(errors.New("engine event sequence gap"))
 					return
+				}
+				if r.OnEvent != nil {
+					if err := r.OnEvent(run, event.Type, event.Payload); err != nil {
+						_ = r.call(r.Context, "POST", "/runner/"+run.ID+"/stop", map[string]any{}, nil)
+						fail(err)
+						return
+					}
 				}
 				status := ""
 				if event.Type == "state" {

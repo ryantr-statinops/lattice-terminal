@@ -120,6 +120,12 @@ func (a *API) Routes(m *http.ServeMux) {
 				return
 			}
 		}
+		prepared := store.Run{Kind: v.Kind, Params: v.Params}
+		if err := a.prepareStrategy(&prepared); err != nil {
+			Fail(w, err)
+			return
+		}
+		v.Params = prepared.Params
 		snapshot, err := a.Workspace.Snapshot(v.Kind, v.File, v.Params)
 		if err != nil {
 			Fail(w, err)
@@ -130,7 +136,12 @@ func (a *API) Routes(m *http.ServeMux) {
 			return
 		}
 		run := store.Run{ID: host.Token(), Kind: v.Kind, File: v.File, Snapshot: snapshot, Params: v.Params}
+		if err = a.bindStrategy(run); err != nil {
+			Fail(w, err)
+			return
+		}
 		if err = a.Store.CreateRun(run); err != nil {
+			a.FinishPaper(run)
 			Fail(w, err)
 			return
 		}
