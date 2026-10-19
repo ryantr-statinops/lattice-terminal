@@ -1,6 +1,6 @@
 # Dataset, experiment và event contracts — deferred
 
-**Trạng thái:** retained from the prior hosted/Model Lab direction. Model Lab runtime and hosted experiment APIs are outside V1; do not use these contracts as current implementation requirements. Portfolio backtesting has its own local contract in [Portfolio](../07-portfolio/README.md).
+**Trạng thái:** retained from the prior hosted/Model Lab direction. Model Lab runtime and hosted experiment APIs are outside V1; do not use these contracts as current implementation requirements. Portfolio backtesting has its own local contract in [Portfolio](../../07-portfolio/README.md).
 
 
 ## Snapshot và delivery
@@ -17,7 +17,7 @@ Result gồm config hash, run ID, runtime/package versions, start/end time, samp
 
 Artifacts v1 là JSON có schema allowlist (coefficients, transforms, metrics, chart series), không deserialize pickle hoặc thực thi expression. Signed URLs ngắn hạn vẫn enforce owner và không thay object key tùy ý. Quota runtime/dataset/features/artifacts được chốt từ P02 feasibility; browser bắt đầu run chỉ sau khi config lưu thành công.
 
-Config có trạng thái `draft`; run dùng `running`, `succeeded`, `failed`, `cancelled`, `interrupted`, thống nhất [Model Lab lifecycle](../08-model-lab/experiment-lifecycle.md). Status và browser heartbeat chỉ là thông báo từ client, không có ý nghĩa chứng thực phép tính; `succeeded` chỉ có final payload hợp lệ, vẫn unverified. Hết lease không coi đang train server: hiển thị heartbeat stale/unknown rồi reconcile. Đóng tab/logout làm run interrupted; không có lời hứa resume training. Config có thể mở lại và chạy run mới, không ghi đè run trước. Progress/cancel xử lý tại Worker, API chỉ đồng bộ status/result.
+Config có trạng thái `draft`; run dùng `running`, `succeeded`, `failed`, `cancelled`, `interrupted`, thống nhất [archived Model Lab lifecycle](../model-lab-legacy/experiment-lifecycle.md). Status và browser heartbeat chỉ là thông báo từ client, không có ý nghĩa chứng thực phép tính; `succeeded` chỉ có final payload hợp lệ, vẫn unverified. Hết lease không coi đang train server: hiển thị heartbeat stale/unknown rồi reconcile. Đóng tab/logout làm run interrupted; không có lời hứa resume training. Config có thể mở lại và chạy run mới, không ghi đè run trước. Progress/cancel xử lý tại Worker, API chỉ đồng bộ status/result.
 
 ## Events và observability
 

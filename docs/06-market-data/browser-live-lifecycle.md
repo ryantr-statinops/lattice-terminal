@@ -4,7 +4,7 @@
 
 ## Connection ownership
 
-Local API/adapter process owns SSI connection and credentials. Browser connects only to a loopback endpoint with a narrow normalized contract; ConsumerID/ConsumerSecret never enter the browser. This boundary remains subject to verifying SSI's required auth/transport/connection model. Do not use the browser's direct upstream Binance WebSocket from the legacy prototype as a template for SSI.
+Target local API/adapter process owns SSI connection and credentials. Browser connects only to a loopback endpoint with a narrow normalized contract; ConsumerID/ConsumerSecret never enter the browser. This boundary remains subject to verifying SSI's required auth/transport/connection model. The prototype's browser-owned upstream stream is not the V1 design.
 
 Use SSI REST/reference/history for initial state and historical recovery; stream supports realtime display and paper simulation. Groups may include:
 

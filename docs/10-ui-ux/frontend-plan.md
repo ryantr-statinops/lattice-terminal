@@ -242,7 +242,7 @@ Bổ sung từ Lollypop/UIReady:
 | Phase | Frontend deliverable | Tokens/Components needed |
 |-------|---------------------|--------------------------|
 | **Foundation (implemented)** | Routing shell, shared layout, theme, fixture API, states and badges | Container, Button, Dialog, StatusBadge |
-| **Market view (fixture)** | BTC/ETH cards, candle table/chart, interval switcher and watchlist | Card, Table, Tabs, CandleChart |
+| **Market view (fixture)** | Synthetic instrument cards, candle table/chart, interval switcher and watchlist | Card, Table, Tabs, CandleChart |
 | **News view (fixture)** | Article cards, asset filters and provenance timestamps | ArticleCard, FilterChips |
 | **Portfolio (local prototype)** | Manual/CSV import, localStorage holdings and partial-aware P&L | ManualEntryForm, CsvImport, PartialBadge |
 | **Quality and data states (prototype)** | Loading/error/retry, source-age stale and refresh states; contrast still unmeasured | LoadingSkeleton, StaleBadge, RefreshingIndicator |

@@ -1,15 +1,7 @@
-# Market/provider comparison
+# Market and source scope
 
-**Trạng thái:** prior comparison retained as research history; product direction changed 2026-10-18 to Vietnamese market data via SSI FastConnect Data.
+**Trạng thái:** V1 market-data direction là thị trường chứng khoán Việt Nam qua SSI FastConnect Data. Capability và rights gates vẫn blocked; xem [source register](source-register.md).
 
-| Market | Previous evidence/research | Current product role |
-|---|---|---|
-| Vietnam | SSI and DNSE documentation; user selected SSI FastConnect Data direction, account/rights/coverage still unknown | First market-data MVP direction; use applicable entitled capabilities and prove each feed/field |
-| Crypto | Binance/Kraken API/archive research in [crypto review](crypto.md); old code/fixtures remain in repo | Not current V1 market scope |
-| US equities | SEC/provider work in [US equities review](us-equities.md) | Future expansion candidate |
-| FX | Broker/reference sources in [FX review](fx.md) | Future research candidate |
-| News | RSS/disclosure candidates | Separate project-built international/Vietnam news engine, integration later |
+Các thị trường/nhà cung cấp khác không thuộc V1 market adapter đã chọn. Tài liệu nghiên cứu cũ đã được dọn khỏi docs để tránh nhầm chúng là roadmap hoặc approved sources. Mở rộng provider/market cần product decision và source-rights review mới.
 
-SSI FastConnect Data docs list REST/reference/history and streaming capabilities, but user entitlement, service pricing, numerical quotas, history depth and storage/research/display terms remain unverified. See [SSI details](vn-equities.md) and [source register](source-register.md).
-
-Do not compare profitability/alpha across markets without source-eligible point-in-time data and market-specific simulator mechanics. New providers still need access, rights, data-quality and cost gates.
+News data có phạm vi riêng: engine độc lập xem xét nguồn quốc tế và Việt Nam; các ứng viên và gates được quản lý trong [source register](source-register.md#news-source-candidates--independent-engine). Không gộp quyền tin tức với quyền market data.

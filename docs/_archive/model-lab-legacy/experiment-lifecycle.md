@@ -29,7 +29,7 @@ IndexedDB keys namespace bằng account/workspace, snapshot/run ID; user data kh
 
 Server nhận cấu hình và kết quả khi người dùng lưu/đồng bộ; training arrays/working tensors ở browser, không tự upload. UI thông báo chính xác metadata/result nào được gửi; source data dùng chung vẫn đến từ server theo quyền source. Auth token không ghi vào experiment manifest hoặc logs.
 
-Offline có thể đọc local result theo session/cache policy; chưa authenticated không khôi phục private cache sau logout. Sync retry dùng run ID/idempotency để không tạo bản sao; không ghi account từ client làm authority. API lấy principal rồi kiểm tra workspace owner trên mọi read/write; xem [API index](../09-api/README.md).
+Offline có thể đọc local result theo session/cache policy; chưa authenticated không khôi phục private cache sau logout. Sync retry dùng run ID/idempotency để không tạo bản sao; không ghi account từ client làm authority. API lấy principal rồi kiểm tra workspace owner trên mọi read/write; xem [API index](../../09-api/README.md).
 
 ## Nghiệm thu
 

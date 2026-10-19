@@ -8,6 +8,6 @@ Các trang bên dưới là contract/prototype tham khảo; không định nghĩ
 
 1. [Auth and HTTP conventions](auth-and-http.md) — hosted JWT behavior is superseded.
 2. [Capability contracts](capabilities.md) — workspace/experiment endpoints are not V1 requirements.
-3. [Dataset, experiment and event contracts](datasets-experiments-events.md) — Model Lab is deferred.
+3. [Legacy dataset, experiment, and event contracts](../_archive/api-legacy/datasets-experiments-events.md) — archived; Model Lab is deferred.
 
 Nhóm capability dự kiến gồm local health/config validation, instrument/reference data, historical market data/coverage, stream session state và portfolio/backtest/paper simulation. Exact routes và password/session protections phải được thiết kế cùng local runtime; không mở public network listener mặc định.
