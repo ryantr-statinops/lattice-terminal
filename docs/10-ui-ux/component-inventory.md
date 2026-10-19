@@ -16,6 +16,7 @@ Danh sách này ghi nhận frontend prototype hiện tại và các ý tưởng 
 | `Button` | `components/ui/button.tsx` | ✅ Có | Variants: default, outline |
 | `Dialog` | `components/ui/dialog.tsx` | ✅ Có | Portal, backdrop, close |
 | `StatusBadge` | `components/ui/StatusBadge.tsx` | ✅ Có | Tones: neutral/success/warning/danger/info |
+| `PartialBadge` / `StaleBadge` / `RefreshingIndicator` | `components/ui/PartialBadge.tsx`, `StaleBadge.tsx`, `RefreshingIndicator.tsx` | ✅ Có | Fixture data-quality indicators; không chứng minh SSI quality |
 
 ## Feature components
 
@@ -54,23 +55,11 @@ Danh sách này ghi nhận frontend prototype hiện tại và các ý tưởng 
 |-----------|------|------------|
 | `AccountPage` | `features/account/AccountPage.tsx` | ✅ Có (placeholder) |
 
-## Planned components (not yet implemented)
+## Candidate extractions — not approved implementation tasks
 
-| Component | Purpose | Phase |
-|-----------|---------|-------|
-| `InstrumentCard` | Reusable asset card (extract from MarketPage) | Phase 2 polish |
-| `EmptyState` | Shared empty state | Phase 2 polish |
-| `ErrorState` | Shared error + retry | Phase 2 polish |
-| `LoadingSkeleton` | Shared skeleton | Phase 2 polish |
-| `FormField` | Label + input + error | Phase 4 polish |
-| `FileInput` | CSV file picker | Phase 4 (done inline) |
-| `HoldingsTable` | Extract from PortfolioPage | Phase 4 polish |
-| `Tooltip` | Provenance/source info | Phase 3 polish |
-| `Tabs` | Interval switcher (extract) | Phase 2 polish |
-| `Chart` wrapper | Lightweight Charts wrapper | Phase 6 (done inline) |
-| `ThemeToggle` | Extract from AppLayout | Polish |
-| `Toast` / `Alert` | Error/success/stale notifications | Phase 6 |
-| `Watchlist` panel | Dedicated watchlist view | Phase 2 polish |
+Reusable empty/error/loading UI, form fields, holdings table, instrument cards and a watchlist panel may be extracted if V1 flows need them. Existing inline file input/interval/theme controls are not missing functionality merely because they lack a separate component. `CandleChart` already exists; do not create a duplicate chart wrapper to satisfy an old phase checklist.
+
+No phase numbers or completion claims are assigned here. New components require a product need and inspection of existing primitives. V1 setup/auth, SSI quality and backtest/paper UI remain design gaps rather than approved component names.
 
 ## Component guidelines
 

@@ -60,7 +60,7 @@ Layout: `AppLayout` provides header (nav + theme toggle), footer, skip link. Pag
 - `workerAdapter.ts` defines `WorkerAdapter` interface.
 - Current implementation: `createNoopAdapter()` (synthetic result).
 - Runtime thực không thuộc MVP đầu tiên.
-- Worker must be terminated on unmount; progress split: download/runtime vs training.
+- `terminate()` là interface method của mock; chưa có worker thật để terminate/download/train. Runtime review được hoãn cùng Model Lab.
 
 ## Local storage
 
@@ -97,6 +97,10 @@ apps/web/src/
 
 - Dev: `npm run dev` → Vite on 127.0.0.1:5173
 - Proxy: `/api` → Go Gateway 8080 → FastAPI 8000
-- Build: `npm run build` → `dist/`
+- Build: `npm run build` từ root delegates web workspace → `apps/web/dist/`
 - Typecheck: `npm run typecheck`
 - Lint: `npm run lint` (eslint apps/web/src)
+
+## V1 implementation gaps
+
+Current routes/storage describe the prototype. The product [sitemap](../01-product/sitemap.md) is a target, not a second implemented router. SSI connection ownership, local auth, durable data store and portfolio simulator are pending. HTML still requests remote fonts as documented in [font delivery](../10-ui-ux/design-tokens.md#font-families); no code migration is performed by these docs.

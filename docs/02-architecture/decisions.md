@@ -1,6 +1,6 @@
 # Architecture decisions
 
-**Trạng thái:** quyết định mục tiêu, chưa triển khai; thay thế ADR rental trong Git history.
+**Trạng thái:** register quyết định hiện hành, proposals và superseded records; trạng thái implementation được ghi riêng. Một số frontend decisions đã có trong prototype, không đồng nghĩa toàn bộ V1 đã triển khai.
 
 | ID | Quyết định | Trạng thái |
 |---|---|---|
@@ -67,13 +67,13 @@ ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và 
 ### RT-ADR-016 — State management
 - **Quyết định:** TanStack Query (server state) + React state (local UI) + URL params (shareable); không Zustand nếu chưa có nhu cầu chứng minh.
 - **Rationale:** Tách rõ server cache vs local UI vs shareable state. Tránh thêm dependency chưa cần.
-- **Impact:** Cần thêm `@tanstack/react-query` khi implement data fetching (Phase 2). URL params cho filters (instrument, interval).
+- **Implementation:** `@tanstack/react-query` đã có trong `apps/web/package.json`; query config ở `src/lib/queryClient.ts`, hooks ở feature API modules. URL filter params vẫn planned; không cài lại dependency hoặc mô tả server cache như V1 API đã chốt.
 - **Trigger xem lại:** demonstrated need cho global client state (e.g., complex cross-component UI state).
 
 ### RT-ADR-017 — Charts
 - **Quyết định:** Prefer TradingView Lightweight Charts cho financial time series. Inspect existing deps/components trước khi migrate; tránh migration không cần thiết.
-- **Rationale:** Lightweight Charts tối ưu cho candlestick time series, bundle nhỏ. Hiện chưa có chart component nào, nên không có migration cost.
-- **Impact:** Thêm dependency khi implement candle chart (Phase 2). Components phải cleanup subscriptions/event handlers.
+- **Implementation:** `lightweight-charts` đã có trong web dependencies và `features/market/CandleChart.tsx` render fixture candles. Chưa có SSI chart/history integration; không cần tạo lại chart hay cài lại library.
+- **Impact:** Giữ cleanup chart/subscriptions/resize handlers; mọi migration cần lý do cụ thể và review code hiện có.
 - **Trigger xem lại:** bundle size hoặc feature gap (e.g., cần indicator overlays không support).
 
 ### RT-ADR-018 — CSS approach
