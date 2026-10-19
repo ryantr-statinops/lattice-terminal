@@ -13,6 +13,7 @@ import (
 	"kestrel-terminal/gateway/internal/store"
 	"kestrel-terminal/gateway/internal/workspace"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -52,6 +53,11 @@ func main() {
 }
 
 func run(root, data string, dev bool) error {
+	listener, err := net.Listen("tcp", "127.0.0.1:8080")
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
 	root, _ = filepath.Abs(root)
 	data, _ = filepath.Abs(data)
 	if err := os.MkdirAll(data, 0700); err != nil {
@@ -147,7 +153,7 @@ func run(root, data string, dev bool) error {
 		_ = server.Shutdown(shutdown)
 	}()
 	log.Print("Kestrel Terminal: http://127.0.0.1:8080 (fixture-only)")
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil

@@ -48,6 +48,10 @@ UPDATE runs SET status='interrupted' WHERE status IN ('queued','running','stoppi
 		db.Close()
 		return nil, err
 	}
+	if err = s.financeSchema(); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return s, nil
 }
 func (s *Store) Close() error { return s.DB.Close() }
