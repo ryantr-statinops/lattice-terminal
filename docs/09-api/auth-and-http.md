@@ -4,7 +4,9 @@
 
 ## Password-only local access
 
-The app should not require email, OAuth, hosted identity or a remote account. Before implementation, decide whether password protects one local installation or multiple local profiles, whether it encrypts data or only locks the UI, how reset/recovery works, session timeout/lock behavior and how a password change re-encrypts stored secrets. Use established password hashing and Windows secret-storage/encryption facilities after a threat-model review; never log/store plaintext passwords or SSI secrets.
+The app should not require email, OAuth, hosted identity or a remote account. Pending decisions: installation/profile boundary, password verifier, session lifetime/lock, whether the password participates in encryption, secret storage, key management and reset/recovery. Only if a password-based encryption design is chosen must password changes define key rewrapping/re-encryption. No such mechanism is selected today. Review the Windows threat model and established facilities before implementation; never persist/log plaintext passwords or SSI secrets.
+
+Memory handling must minimize secret copies/lifetime and define access after lock. Runtime garbage collection, OS and crash behavior limit guarantees; do not promise full RAM zeroization. Lock behavior for local live/paper sessions remains a separate pending policy.
 
 A local password lock does not protect files from a Windows account administrator or malicious process running as that user. Do not describe it as full-disk encryption. Local APIs bind to loopback, validate local origin/CSRF boundaries as relevant and avoid permissive CORS; localhost is not an authorization mechanism by itself.
 

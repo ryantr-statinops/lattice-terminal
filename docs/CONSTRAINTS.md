@@ -38,14 +38,14 @@
 ## 3. Bất Biến Bảo Mật & Quản Lý Thông Tin Nhạy Cảm (Security & Secrets)
 
 1. **Không Lưu Credential Trong Trình Duyệt Web (No Web Storage for Secrets):**
-   - Trình duyệt (`apps/web` React UI) tuyệt đối không được lưu `ConsumerSecret`, mật khẩu master, hay token dài hạn vào `localStorage`, `sessionStorage`, hoặc cookie không an toàn.
-   - `ConsumerSecret` chỉ được xử lý tại tiến trình local backend và được mã hóa lưu trữ an toàn.
+   - Không lưu `ConsumerSecret`, plaintext local password hoặc token dài hạn trong browser storage, frontend bundle, URL, log, fixture hay Git. Thuật ngữ local password không hàm ý đã chọn master-key/vault design.
+   - `ConsumerSecret` thuộc local service boundary; chỉ nhận credentials thật sau khi thiết kế lưu trữ/bảo vệ được review và scope sử dụng được cho phép.
 2. **Local Secret Storage:**
    - Phải chọn và review Windows secret store/encrypted vault trước khi nhập credentials thật; implementation technology chưa được chốt.
    - Không lưu plaintext credential trong file cấu hình, browser hoặc Git repository.
 3. **Xác Thực Cục Bộ (Local Authentication & Profile Lock):**
-   - Ứng dụng sử dụng cơ chế đặt mật khẩu cục bộ (Local Profile Password) để mở khóa vault giải mã cấu hình và mở phiên làm việc.
-   - Khi hết phiên (timeout) hoặc khi người dùng chủ động Khóa (Lock), toàn bộ khóa nhạy cảm trong bộ nhớ RAM phải được giải phóng (zeroize/clear).
+   - Password-only login là yêu cầu UX. Chưa quyết định mật khẩu chỉ khóa phiên hay tham gia giải mã dữ liệu; profile boundary, key management, timeout và recovery còn pending.
+   - Thiết kế phải giới hạn thời gian giữ secret trong memory và quyền truy cập khi khóa phiên. Không hứa xóa sạch mọi bản sao RAM: mức bảo vệ phải được đánh giá theo runtime/OS, không giả định zeroization tuyệt đối.
 
 ---
 

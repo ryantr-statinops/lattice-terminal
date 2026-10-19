@@ -3,8 +3,9 @@
 
 | Tình huống | Hành vi |
 |---|---|
-| Mật khẩu sai/khóa profile | Local auth xử lý; không giải mã local vault; giữ form an toàn |
-| Khóa profile/reset local | Đóng stream, ngắt worker, clear memory cache dữ liệu nhạy cảm |
+| Mật khẩu sai | Không cấp phiên; không hiển thị secret. Chưa chọn vault/encryption mechanism |
+| Khóa profile | Ngăn UI truy cập dữ liệu nhạy cảm theo thiết kế session; tác động tới live/paper còn pending, không hứa xóa sạch mọi bản sao RAM |
+| Reset local | Luồng riêng với inventory/phạm vi xóa và recovery đã review; không đồng nghĩa lock hoặc đổi mật khẩu |
 | Tab ẩn/heartbeat mất | Live paused sau grace được P02 khóa; browser có thể throttle/freeze nên không hứa timer chính xác |
 | Tab hoạt động trở lại | Xác minh session, snapshot/backfill rồi nối stream |
 | Feed ngắt/region inaccessible | Reconnecting có backoff hoặc unavailable; không silent proxy bypass |

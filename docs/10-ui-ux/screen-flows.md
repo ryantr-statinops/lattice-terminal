@@ -4,7 +4,7 @@
 
 ## Local setup and password
 
-First run hướng dẫn cấu hình SSI FastConnect Data mà không đưa credentials vào source hoặc browser. Local secret-store flow chưa được chọn; không nhập credentials thật trước khi flow an toàn được triển khai và source gate mở. Password-only local login/lock không dùng email account; reset và encryption behavior phải chốt trước implementation. Không hiển thị secret.
+First run hướng dẫn cấu hình SSI FastConnect Data qua local service, không đưa credentials vào source/browser. Secret-store flow và password/session design chưa được chọn; chỉ nhận credentials thật qua flow đã review cho đúng scope (authorized probe hoặc approved production use). Password-only login là UX requirement; chưa quyết định nó khóa UI hay tham gia encryption. Không tự hứa vault unlock, recovery hoặc hiển thị secret.
 
 ## Market research
 

@@ -30,7 +30,7 @@
 | RT-ADR-019 | Open-source/free local-first V1, clone repo và chạy localhost trên Windows; không cần installer/hosted backend | Accepted product direction; launcher/process details pending |
 | RT-ADR-020 | SSI FastConnect Data là provider direction; dùng REST/reference/stream capabilities phù hợp sau entitlement/rights gates; không dùng FastConnect Trading | Accepted direction; account, terms, quota, fields and retention not yet verified; network use remains blocked |
 | RT-ADR-021 | Dữ liệu, config, credentials, portfolio và research output ở máy người dùng | Accepted requirement; secret store, encryption, storage format, backup/delete remain pending |
-| RT-ADR-022 | Password-only local login | Accepted UX requirement; local profile model, password hashing, recovery and at-rest protection pending |
+| RT-ADR-022 | Password-only local login | Accepted UX requirement only; verifier, profiles, session/lock, password-to-encryption relationship, keys and recovery pending |
 | RT-ADR-023 | Portfolio MVP includes historical backtest and paper live trading only; no real orders | Accepted product scope; fills, fees, taxes, market sessions and corporate actions pending design |
 | RT-ADR-024 | News engine for international and Vietnam sources is a separate workstream, integrated later | Accepted sequencing; source rights/engine requirements pending |
 | RT-ADR-025 | Model Lab runtime is outside first MVP | Accepted scope |
