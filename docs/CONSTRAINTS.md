@@ -11,7 +11,8 @@
    - Không triển khai backend tập trung, không máy chủ đám mây trung gian, không dịch vụ web đa người dùng (no multi-tenancy).
 2. **Không Telemetry, Không Phân Tích Từ Xa (Zero Telemetry):**
    - Không gửi bất kỳ dữ liệu hành vi, chỉ số hiệu năng, lịch sử xem mã, hay log lỗi ra bất kỳ máy chủ nào do dự án quản lý.
-   - Kết nối mạng duy nhất được phép khởi tạo từ ứng dụng là kết nối trực tiếp từ máy người dùng đến các endpoint dịch vụ dữ liệu chính thức do người dùng cấu hình (cụ thể: SSI FastConnect Data API & Streaming Hub).
+   - V1 browser dùng loopback API và assets local; local service chỉ gọi upstream capability đã được duyệt hoặc probe được cho phép riêng. SSI market-data access cần mạng; local-first không đồng nghĩa mọi chức năng offline. Font runtime phải đóng gói local hoặc dùng system fallback, không tải từ CDN.
+   - Policy trên áp dụng runtime terminal. Git clone, dependency installation và toolchain downloads thuộc setup/development, không phải ứng dụng tự tải tài nguyên khi chạy. Operating model/network policy của news engine độc lập phải được quyết định riêng trước tích hợp.
 3. **Chủ Quyền Dữ Liệu Thuộc Về Người Dùng (Data Sovereignty):**
    - Cấu hình, dữ liệu thị trường được phép lưu, portfolio và kết quả nghiên cứu nằm trên máy người dùng; đường dẫn, backup, export, delete và recovery phải được định nghĩa trước release.
    - Xóa thư mục source hoặc một database không chứng minh toàn bộ dữ liệu đã bị xóa. Application data, browser storage, OS secret store, logs và backups/exports có lifecycle riêng theo [storage inventory](04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). Dự án không tự upload; các bản sao người dùng tạo nằm ngoài phạm vi xóa tự động chưa được thiết kế.

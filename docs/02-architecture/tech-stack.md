@@ -15,6 +15,6 @@
 
 V1 hướng clone-and-run trên Windows; không cần desktop shell, installer, managed auth, hosted database, object store hoặc cloud job runner. Chưa chốt số process hay launcher; phải đánh giá vận hành và khởi chạy local trước implementation.
 
-Không dùng cloud LLM hoặc paid data làm dependency bắt buộc. Mọi local secret storage phải có threat model cho Windows user profile, backups, logs, crashes và export. Localhost không tự thay thế authentication/encryption.
+Không dự kiến cloud LLM dependency cho MVP. Phần mềm miễn phí không bảo đảm SSI data service miễn phí; entitlement và chi phí theo tài khoản vẫn chưa xác minh. Font runtime dùng assets local hoặc system fallback. Secret storage cần threat model cho Windows profile, backups, logs, crashes và export; localhost không thay thế authentication/encryption.
 
 Các packages/tool versions đang trong lockfiles; scaffold versions trong root README mô tả prototype hiện tại, không phải cam kết V1 runtime. Thay đổi stack phải cập nhật ADR và setup guide cùng implementation.

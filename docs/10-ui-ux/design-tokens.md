@@ -61,7 +61,9 @@ Rule: color + text/icon, never color alone (accessibility).
 --font-sans: "Inter", "system-ui", -apple-system, "Segoe UI", sans-serif
 --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace
 ```
-Fallback stacks ensure offline/CI rendering. Fonts self-hosted or CDN with `font-display: swap`.
+V1 serves bundled, license-reviewed font assets from local runtime or uses system fallbacks; no runtime CDN font request. `font-display: swap` applies if bundled webfonts are selected. This permits local UI rendering without a font network dependency, not offline SSI data access.
+
+**Prototype gap:** `apps/web/index.html` currently links Google Fonts/preconnect. Those links are existing code behavior and do not satisfy this V1 policy. This docs change does not bundle fonts or modify the HTML; a later implementation change must remove the runtime external requests.
 
 ### Type scale (rem)
 ```

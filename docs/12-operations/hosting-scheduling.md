@@ -10,6 +10,14 @@ News engine quốc tế/Việt Nam là workstream độc lập trong định hư
 
 ## Run and support requirements
 
+### Runtime network boundary
+
+Browser assets/fonts and UI-to-service calls use local origins. Local services connect directly to approved upstream capabilities (or an explicitly authorized probe); no project relay or telemetry is part of V1. Clone/package/toolchain downloads are setup operations, distinct from runtime. Market refresh and live SSI feeds require network and entitlement; local-first does not promise offline availability of fresh market data.
+
+Bundle licensed fonts or use system fallbacks for V1. Prototype HTML currently uses remote Google Fonts and must be migrated in a separate code change; the policy is a target, not a verified statement that the prototype is network-isolated. News engine hosting/network policy is independently pending and is not implicitly authorized by this terminal policy.
+
+### Setup and support checklist
+
 - Setup documentation must show required tool versions, clone/configure/start/stop/update/backup/reset flows and local ports.
 - Bind APIs to loopback; do not enable LAN access by default. Restrict browser origins and request sizes.
 - Keep ConsumerID/Secret out of source, frontend bundles, command-line arguments where observable, URLs and logs. Choose Windows secret storage before enabling real credentials.

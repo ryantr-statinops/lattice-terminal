@@ -61,7 +61,7 @@ ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và 
 ### RT-ADR-015 — Typography
 - **Quyết định:** Inter cho UI, JetBrains Mono cho numeric/terminal data, với fallback stacks.
 - **Rationale:** Two-font split (Pixel Show): tabular numbers cần mono, prose/UI cần sans. Fallback stacks đảm bảo offline/CI.
-- **Impact:** Cần load fonts (self-hosted hoặc CDN với fallback). Components dùng `--font-sans` / `--font-mono`.
+- **Impact:** V1 dùng font assets đóng gói local (sau license review) hoặc system fallback; không tải font qua CDN lúc runtime. Prototype hiện có remote font links, cần migration riêng trong code trước khi đạt V1 network policy. Components dùng `--font-sans` / `--font-mono`.
 - **Trigger xem lại:** font loading performance issue.
 
 ### RT-ADR-016 — State management
