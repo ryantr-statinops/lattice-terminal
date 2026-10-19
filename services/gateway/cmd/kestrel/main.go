@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"golang.org/x/term"
+	"kestrel-terminal/gateway/internal/auth"
 	"kestrel-terminal/gateway/internal/host"
+	"kestrel-terminal/gateway/internal/secret"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -28,7 +32,16 @@ func main() {
 	root := flag.String("root", ".", "Repository root")
 	data := flag.String("data", host.DataRoot(), "Local data directory")
 	dev := flag.Bool("dev", false, "Start Vite")
+	reset := flag.Bool("reset-password", false, "Reset local password without deleting data")
+	credentials := flag.String("ssi-credentials", "", "set, status or delete Windows credentials")
 	flag.Parse()
+	if *reset || *credentials != "" {
+		if err := cli(*data, *reset, *credentials); err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(*root, *data, *dev); err != nil {
 		log.Print(err)
 		os.Exit(1)
@@ -56,6 +69,8 @@ func run(root, data string, dev bool) error {
 		defer stop()
 	}
 	mux := handler().(*http.ServeMux)
+	manager := auth.New(data)
+	manager.Routes(mux)
 	target, _ := url.Parse(engine.URL)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	base := proxy.Director
@@ -113,7 +128,7 @@ func run(root, data string, dev bool) error {
 		}
 		http.ServeFile(w, r, candidate)
 	})
-	server := &http.Server{Addr: "127.0.0.1:8080", Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	server := &http.Server{Addr: "127.0.0.1:8080", Handler: manager.Guard(mux, dev), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), 5*time.Second)
@@ -125,4 +140,53 @@ func run(root, data string, dev bool) error {
 		return err
 	}
 	return nil
+}
+
+func cli(data string, reset bool, action string) error {
+	if err := os.MkdirAll(data, 0700); err != nil {
+		return err
+	}
+	read := func(prompt string) (string, error) {
+		fmt.Fprint(os.Stderr, prompt)
+		b, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		return string(b), err
+	}
+	if reset {
+		a, err := read("New local password: ")
+		if err != nil {
+			return err
+		}
+		b, err := read("Confirm password: ")
+		if err != nil {
+			return err
+		}
+		if a != b {
+			return fmt.Errorf("passwords differ")
+		}
+		return auth.New(data).SetPassword(a, true)
+	}
+	switch action {
+	case "set":
+		id, err := read("ConsumerID: ")
+		if err != nil {
+			return err
+		}
+		value, err := read("ConsumerSecret: ")
+		if err != nil {
+			return err
+		}
+		return secret.Set(secret.Credential{ConsumerID: id, ConsumerSecret: value})
+	case "delete":
+		return secret.Delete()
+	case "status":
+		_, err := secret.Get()
+		if err != nil {
+			return fmt.Errorf("SSI credentials not available")
+		}
+		fmt.Println("SSI credentials present; capability approval unchanged")
+		return nil
+	default:
+		return fmt.Errorf("unknown credential command")
+	}
 }
