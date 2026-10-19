@@ -11,8 +11,9 @@ Data/config/ledger/results stay on the user's machine. There is no account/works
 
 ## Documents
 
-1. [Portfolio simulator contract](ledger-and-valuation.md): local portfolios, backtest and paper lifecycle; financial rules still to be completed.
-2. [Import, local storage and ownership](imports-and-ownership.md): CSV/backup/delete direction; not yet an implementation schema.
+1. [Quy tắc thị trường chứng khoán Việt Nam (VN Market Rules)](vn-market-rules.md): Khung giờ các phiên (ATO/ATC), biên độ giá, bước giá, lô chẵn, chu kỳ T+2.5 và thuế phí.
+2. [Portfolio simulator contract](ledger-and-valuation.md): local portfolios, backtest and paper lifecycle; financial rules still to be completed.
+3. [Import, local storage and ownership](imports-and-ownership.md): CSV/backup/delete direction; not yet an implementation schema.
 
 ## Contracts still needed
 
