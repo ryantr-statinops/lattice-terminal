@@ -34,6 +34,9 @@
 | RT-ADR-023 | Portfolio MVP includes historical backtest and paper live trading only; no real orders | Accepted product scope; fills, fees, taxes, market sessions and corporate actions pending design |
 | RT-ADR-024 | News engine for international and Vietnam sources is a separate workstream, integrated later | Accepted sequencing; source rights/engine requirements pending |
 | RT-ADR-025 | Model Lab runtime is outside first MVP | Accepted scope |
+| RT-ADR-026 | Cơ sở dữ liệu local: DuckDB (nến/tick time-series OLAP) + SQLite (sổ cái portfolio/orders ACID) | Accepted architecture decision |
+| RT-ADR-027 | Quản lý tiến trình Windows cục bộ: Go/PowerShell launcher 1 lệnh khởi động | Accepted architecture decision |
+| RT-ADR-028 | Bảo mật thông tin nhạy cảm SSI: Windows DPAPI / Windows Credential Manager | Accepted security decision |
 
 ## Spike và quyết định tiếp theo
 
@@ -78,3 +81,23 @@ ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và 
 - **Rationale:** Đã dùng Tailwind + CSS vars. Lock để tránh drift. Components dùng token classes (`text-primary`, `bg-surface`) không hex.
 - **Impact:** Cần migrate hardcoded hex (nếu có) sang tokens. Document token usage.
 - **Trigger xem lại:** Tailwind v4 breaking changes hoặc design tooling change.
+
+## Local Architecture ADRs (2026-10-19)
+
+### RT-ADR-026 — Local storage engine
+- **Quyết định:** Kiến trúc lưu trữ lai (Hybrid Storage): **DuckDB** lưu trữ dữ liệu chuỗi thời gian (Nến OHLCV, Tick Trades, Snapshots) + **SQLite** lưu trữ danh mục tài sản, cấu hình, và sổ lệnh giả lập (Portfolio Ledger, Paper Orders, Local Profiles).
+- **Rationale:** Dữ liệu nến và tick đòi hỏi tốc độ truy vấn phân tích (OLAP) và nén dữ liệu dạng cột vượt trội (DuckDB xử lý hàng triệu nến trong vài mili-giây, hỗ trợ đọc trực tiếp file Parquet/DuckDB local). Ngược lại, số dư tài khoản và lệnh giao dịch đòi hỏi tính toàn vẹn giao dịch (ACID transactional) đơn giản và không có overhead (SQLite). Cả hai đều là file-based cục bộ, không cần cài đặt database server riêng biệt.
+- **Impact:** Thêm DuckDB driver cho Golang/Python; SQLite file `lattice_ledger.db` và DuckDB file `lattice_market.duckdb` lưu tại thư mục dữ liệu local của người dùng.
+- **Trigger xem lại:** Kích thước file dữ liệu vượt quá 50GB hoặc vấn đề khóa file đồng thời giữa các tiến trình.
+
+### RT-ADR-027 — Windows process supervision and launcher
+- **Quyết định:** Cung cấp script launcher duy nhất (hỗ trợ `launcher.ps1` và command `go run ./cmd/lattice-terminal`) để khởi động và giám sát đồng bộ cả 3 thành phần: React Web UI, Go Market/Gateway Service, và Python Local Engine.
+- **Rationale:** Trải nghiệm người dùng desktop là "Clone & Run". Không yêu cầu người dùng phải tự mở 3 cửa sổ terminal riêng biệt. Launcher quản lý vòng đời, kiểm tra cổng mạng loopback, và tự động dọn dẹp tiến trình con khi người dùng nhấn Ctrl+C.
+- **Impact:** Cần viết `scripts/launch.ps1` chuẩn hóa và health-check endpoint cho từng service.
+- **Trigger xem lại:** Yêu cầu đóng gói thành file `.exe` cài đặt độc lập (Single-file Desktop executable).
+
+### RT-ADR-028 — Windows secret storage for SSI credentials
+- **Quyết định:** Sử dụng **Windows DPAPI (Data Protection API)** hoặc **Windows Credential Manager** để mã hóa và lưu trữ `ConsumerID`, `ConsumerSecret`, và Access Token của người dùng.
+- **Rationale:** Ứng dụng chạy trên Windows của người dùng. Tuyệt đối không lưu plaintext credentials vào file `.env` hay lưu trong trình duyệt `localStorage`. DPAPI tận dụng khóa bảo mật gắn liền với tài khoản đăng nhập Windows của người dùng, đảm bảo các phần mềm độc hại không có quyền người dùng không thể đọc trộm khóa.
+- **Impact:** Service local Go/Python gọi Windows API để mã hóa/giải mã khóa khi khởi động phiên làm việc.
+- **Trigger xem lại:** Mở rộng hỗ trợ hệ điều hành macOS/Linux.
