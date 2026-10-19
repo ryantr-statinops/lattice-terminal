@@ -7,7 +7,7 @@ from .app import create_app
 
 def main():
     config = json.loads(sys.stdin.readline())
-    app = create_app()
+    app = create_app(config['token'], config['data_root'])
     app.state.internal_token = config['token']
     app.state.data_root = config['data_root']
     sock = socket.socket()

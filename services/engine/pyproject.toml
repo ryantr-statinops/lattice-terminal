@@ -7,8 +7,8 @@ name = "kestrel-terminal-engine"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi==0.115.12",
-    "uvicorn==0.34.3",
+    "fastapi==0.148.0",
+    "uvicorn==0.54.0",
     "pydantic>=2,<3",
     "numpy>=2.5.4",
     "pandas>=3.0.6",
@@ -18,7 +18,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
+dev = [
+    "pytest>=8,<10",
+    "httpx>=0.28,<1",
+    "httpx2>=2.14.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["kestrel_engine"]
