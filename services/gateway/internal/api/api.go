@@ -124,6 +124,10 @@ func (a *API) Routes(m *http.ServeMux) {
 			Fail(w, err)
 			return
 		}
+		if err = a.validateBacktest(v.Kind, snapshot, v.Params); err != nil {
+			Fail(w, err)
+			return
+		}
 		run := store.Run{ID: host.Token(), Kind: v.Kind, File: v.File, Snapshot: snapshot, Params: v.Params}
 		if err = a.Store.CreateRun(run); err != nil {
 			Fail(w, err)
