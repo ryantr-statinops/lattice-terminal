@@ -12,7 +12,7 @@ Market screens show Vietnamese instruments/reference data supported by the user'
 
 ## Portfolio
 
-Luồng mục tiêu cho phép tạo portfolio local, chạy historical backtest và paper live sessions sau khi data source/market assumptions được duyệt. Backtest setup nêu snapshot, range/coverage, strategy, capital/currency và cost/fill assumptions. Paper live thể hiện freshness và mọi order/fill là simulated. Pause an toàn khi feed gap, stale data hoặc session state không rõ. Prototype hiện chưa có simulator; không hiển thị real-order action hay yêu cầu trading credentials.
+Luồng mục tiêu cho phép tạo portfolio local, chạy historical backtest và paper live sessions sau khi data source/market assumptions được duyệt. Backtest setup nêu snapshot, range/coverage, strategy, capital/currency và cost/fill assumptions. Paper live thể hiện freshness và mọi order/fill là simulated. Khi feed có gap/stale hoặc session state không rõ, không tạo simulated fill; pause/resume là control mục tiêu nhưng điều kiện tự động pause, lệnh đang chờ, checkpoint và quy tắc resume còn pending trong simulator contract. Prototype hiện chưa có simulator; không hiển thị real-order action hay yêu cầu trading credentials.
 
 ## News and deferred model capability
 

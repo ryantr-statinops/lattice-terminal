@@ -9,9 +9,10 @@
 | Tab ẩn/heartbeat UI mất | Browser có thể throttle/freeze rendering. Không suy ra local service đã dừng hoặc tự chốt pause paper. Subscription/render policy và stale timers cần thiết kế riêng |
 | Tab hoạt động trở lại | Xác minh session và hỏi local service về trạng thái/freshness/gaps trước khi hiển thị là live; không coi UI reconnect là upstream reconnect |
 | Người dùng stop stream/paper | Target có explicit stop action; order acceptance/ledger checkpoint và kết thúc phiên cần contract simulator. Mọi kết quả vẫn simulated |
+| Người dùng pause/resume paper | Pause/resume là control mục tiêu trong UX. Trạng thái paused, xử lý lệnh đang chờ, ledger checkpoint và điều kiện resume cần được định nghĩa trong simulator contract |
 | App/local service stop hoặc crash | Đóng subscription khi orderly shutdown; khi restart đánh dấu interrupted/unknown cho đến khi feed/ledger reconcile. Không suy diễn unseen fills |
 | Feed disconnect/quota/auth error | Phân loại lỗi; bounded retry cho transient failure, dừng theo auth/policy/quota rules. Giữ history hợp lệ và nhãn stale/partial |
-| Session đóng/halt hoặc market state không rõ | Không mô phỏng fill như đang có executable liquidity; policy chặn/pause lệnh phải được chốt trong market/simulator contract |
+| Feed gap/stale hoặc session/market state không rõ | Không mô phỏng fill như đang có executable liquidity. Điều kiện tự động pause, chặn lệnh mới, xử lý lệnh đang chờ và resume phải được chốt trong market/simulator contract |
 | Bar thiếu/trùng/provisional | Hiển thị quality state; không dùng như bar hoàn chỉnh trong backtest |
 | Backtest loading/running/cancel/error | Nêu snapshot/version và assumptions. Cancel, durable run status và interrupted recovery cần thiết kế; không giả định browser worker hoặc resume capability |
 | Valuation stale/partial | Ghi nguồn, thời điểm và phần thiếu; không trình bày tổng chưa đủ giá như valuation hoàn chỉnh |
@@ -21,7 +22,7 @@
 
 ## Pending policy và phạm vi
 
-Tab visibility, UI lock, idle timeout, lifetime của local paper session và backtest cancellation vẫn là design decisions. Không kế thừa timer/worker/sync assumptions của prototype làm V1 requirement. Local-service ownership và explicit app-stop recovery phải được giữ riêng khỏi browser rendering.
+Tab visibility, UI lock, idle timeout, lifetime của local paper session, tự động pause khi feed lỗi và backtest cancellation vẫn là design decisions. Không kế thừa timer/worker/sync assumptions của prototype làm V1 requirement. Local-service ownership và explicit app-stop recovery phải được giữ riêng khỏi browser rendering.
 
 News integration chưa thuộc terminal MVP; news engine có lifecycle riêng. Model Lab/runtime/training và hosted result sync ngoài scope; không có training/download/sync UX requirement trong bảng V1 này.
 
