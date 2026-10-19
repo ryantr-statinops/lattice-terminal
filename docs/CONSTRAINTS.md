@@ -70,5 +70,5 @@
 Các tính năng sau đây **tuyệt đối không triển khai trong V1** để giữ tập trung tối đa vào trải nghiệm Local Terminal cốt lõi:
 - ❌ **Đặt lệnh thật vào tài khoản chứng khoán (Real Order Execution).**
 - ❌ **Dịch vụ máy chủ tập trung, đồng bộ tài khoản đa thiết bị qua Cloud.**
-- ❌ **Hệ thống huấn luyện mô hình học máy phức tạp (Model Lab) — Hoãn sang V2.**
+- ❌ **Runtime Model Lab — ngoài MVP đầu tiên, phase sau chưa có lịch cam kết.**
 - ❌ **Tích hợp News Engine vào terminal trong MVP đầu tiên — engine là workstream độc lập, cần source gates và integration contract trước khi kết nối.**

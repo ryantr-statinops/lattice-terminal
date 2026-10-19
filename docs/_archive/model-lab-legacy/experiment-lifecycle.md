@@ -1,6 +1,6 @@
 # Experiment lifecycle, ownership và artifacts
 
-**Trạng thái:** contract mục tiêu; account isolation và runtime chưa triển khai.
+**Trạng thái:** archived proposal của thiết kế hosted/Model Lab cũ; không phải yêu cầu V1 hoặc contract đã triển khai. Chỉ giữ làm hồ sơ tham khảo; current product scope thuộc [Model Lab boundary](../../08-model-lab/README.md).
 
 ## Trạng thái
 
@@ -13,7 +13,7 @@
 | `cancelled` | Người dùng yêu cầu hủy, worker đã dừng |
 | `interrupted` | Reload/tab đóng/session kết thúc hoặc mất runtime; không có final result |
 
-Experiment config và run là hai identity khác nhau; rerun tạo run mới, không ghi đè provenance lần trước. Lưu config thành công trước khi bắt đầu. API không tạo training queue. Sau reload, local run không có worker active được đánh dấu interrupted; server `running` quá hạn chỉ hiển thị mất heartbeat/client status unknown rồi reconcile, không bịa kết quả. Timeout/staleness khóa trong P02.
+Experiment config và run là hai identity khác nhau; rerun tạo run mới, không ghi đè provenance lần trước. Lưu config thành công trước khi bắt đầu. API không tạo training queue. Sau reload, local run không có worker active được đánh dấu interrupted; server `running` quá hạn chỉ hiển thị mất heartbeat/client status unknown rồi reconcile, không bịa kết quả. Timeout/staleness của historical proposal này chưa được đo/chốt và không áp dụng cho V1.
 
 ## Manifest tối thiểu
 

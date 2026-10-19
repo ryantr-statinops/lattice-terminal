@@ -31,7 +31,7 @@ Ordinary deletion does not promise secure erase, removal from filesystem/OS back
 - Secret không nằm trong repository, `.env` được commit, browser localStorage/sessionStorage, URLs, logs, screenshots, telemetry hoặc crash dumps. Chọn Windows secret store/encrypted vault trước khi xin credentials.
 - Phân biệt source payload, normalized records, derived research, portfolio simulation data và logs; từng loại cần retention/export/delete policy riêng.
 - Publish snapshots atomically sau schema/quality/source gates. Incomplete write không thay snapshot cũ; manifest giữ provenance, checksums, coverage, version và policy reference.
-- Local backups/export phải bảo護 secrets independently; docs/setup phải giải thích backup, restore, reset password và delete workspace. Không giả định Windows profile backup tự an toàn.
+- Local backups/export phải bảo vệ secrets riêng; docs/setup phải giải thích backup, restore, password reset và phạm vi delete. Không giả định Windows profile backup tự an toàn.
 - Khi permission revoked/terms expire: dừng adapter, chặn serving/export bị ảnh hưởng, đánh dấu local snapshots restricted và đưa ra delete/review procedure. Immutable versioning không có nghĩa được giữ dữ liệu khi terms yêu cầu xóa.
 - Local server chỉ bind loopback; không bật network sharing, telemetry hoặc auto-upload mặc định.
 

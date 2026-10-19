@@ -6,7 +6,7 @@
 
 Raw object bất biến theo hash lưu evidence hợp lệ; parser tạo normalized revisions; serving chọn revision theo policy và mục đích. Replay cùng object+adapter version phải idempotent. Không ghi đè raw khi provider sửa file; lưu hash mới và liên kết supersedes.
 
-Các lớp dữ liệu có cùng lineage: source → ingestion run → raw object → normalized revision → snapshot → feature/experiment. Parser failure vào quarantine, không tự thay giá trị bằng zero. Snapshot publish chỉ khi schema, source eligibility và quality gate pass; publish pointer atomically để rollback được.
+Target lineage: source → ingestion run → permitted evidence → normalized revision → snapshot → research/simulation input. Raw payload retention requires explicit rights. Parser failure vào quarantine theo retention policy, không thay giá trị bằng zero. Production snapshot publish chỉ khi schema, source eligibility và quality gate pass; probe outputs không tự thành product snapshots.
 
 ## Availability-time joins
 
@@ -29,6 +29,6 @@ Bulk price history có thể phục vụ bar research với policy ghi rõ giả
 | Stale quote | Timestamp/status rõ, không định giá như live |
 | Backfill sau outage | Reconcile overlap, không append mù |
 
-Report theo source/instrument/timeframe/range: counts, gaps, duplicates, rejected rows, latest closed bar, ingestion lag và correction count. P03/P04 khóa numeric thresholds sau đo và source evidence; chưa quảng cáo latency/completeness.
+Report theo source/instrument/timeframe/range: counts, gaps, duplicates, rejected rows, latest closed bar, ingestion lag và correction count. Numeric thresholds cần baseline và source evidence; chưa quảng cáo latency/completeness.
 
-Acceptance fixtures phải bao gồm timestamp ms/µs transition, out-of-order, restart/replay, corrected archive checksum, article published trước nhưng first_seen sau cutoff, entity mapping confidence thấp và snapshot rollback. Dataset split chống leakage thuộc Model Lab nhưng dùng contract availability ở đây.
+Market/simulator acceptance fixtures cần timestamp/unit mismatch, out-of-order, replay, corrections/checksum và snapshot rollback theo adapter contract đã chọn; không kế thừa timestamp-transition assumptions từ prototype. News engine độc lập cần published-before-first-seen, late correction và uncertain mapping scenarios trước tích hợp. Model Lab split design deferred; portfolio replay vẫn phải tuân thủ availability/no-lookahead contract.

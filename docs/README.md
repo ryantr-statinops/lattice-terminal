@@ -37,3 +37,5 @@
 - Roadmap: [task/next-plan.md](../task/next-plan.md).
 
 Mỗi tài liệu cần phân biệt rõ **đã quyết định**, **mục tiêu**, **prototype hiện tại**, và **chưa xác minh/chưa triển khai**. Khi tài liệu mô tả thiết kế cũ, phải ghi trạng thái historical/deferred và không dùng làm yêu cầu V1.
+
+Quy tắc thị trường có [evidence và phạm vi riêng](07-portfolio/vn-market-rules.md); source probe có [authorization riêng](03-market-research/source-register.md#access-probes-and-operating-states), không nâng production approval. Pending security/runtime decisions và prototype gaps phải được giữ rõ khi review docs; không sửa copy để tạo cảm giác đã triển khai.
