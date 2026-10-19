@@ -78,7 +78,7 @@ ADR tiếp theo ghi owner, ngày, alternatives, rationale, evidence, impact và 
 
 ### RT-ADR-018 — CSS approach
 - **Quyết định:** Tailwind CSS + CSS variables; semantic tokens, không hardcode theme colors trong components.
-- **Rationale:** Đã dùng Tailwind + CSS vars. Lock để tránh drift. Components dùng token classes (`text-primary`, `bg-surface`) không hex.
+- **Rationale:** Đã dùng Tailwind + CSS vars. Lock để tránh drift. Components dùng token classes đã ánh xạ trong stylesheet, như `text-primary` và `bg-secondary`, không hardcode theme hex. `bg-surface` là design target, chưa được khai báo trong prototype CSS.
 - **Impact:** Cần migrate hardcoded hex (nếu có) sang tokens. Document token usage.
 - **Trigger xem lại:** Tailwind v4 breaking changes hoặc design tooling change.
 
