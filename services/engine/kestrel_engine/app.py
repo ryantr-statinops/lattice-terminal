@@ -4,12 +4,14 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from .market import MarketRepository
 from .quant import INDICATORS,calculate
+from .sources import SourceGate
 
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.internal_token = token
     root = Path(data_root) if data_root else Path('.cache/engine-test-data')
     market = MarketRepository(root,Path(__file__).resolve().parents[3]/'data/fixtures')
+    gate=SourceGate(root)
 
     @app.middleware('http')
     async def internal_auth(request: Request, call_next):
@@ -32,6 +34,9 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
 
     @app.get('/internal/v1/market/snapshots')
     def snapshots(): return market.manifests()
+
+    @app.get('/internal/v1/sources')
+    def sources(): return gate.status()
 
     @app.get('/internal/v1/market/candles')
     def candles(instrument_id:str): return market.latest_fixture(instrument_id)
