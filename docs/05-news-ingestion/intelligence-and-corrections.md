@@ -10,7 +10,7 @@ Story cluster có earliest observed evidence, member revisions và merge/split h
 
 ## Asset/entity/event mapping
 
-Map explicit BTC/Bitcoin, ETH/Ethereum cùng context; ambiguous tickers vào unresolved thay vì đoán. Event taxonomy đầu tiên: regulatory, protocol/release, security incident, exchange/market infrastructure, macro và other. Asset link, event type và sentiment nếu có đều giữ extractor version, evidence span/ref khi được phép và confidence.
+Map tên doanh nghiệp, instrument và tổ chức theo context; ambiguous names/tickers vào unresolved thay vì đoán. Candidate event taxonomy gồm regulatory, corporate action, earnings, market infrastructure, macro và other; chốt taxonomy theo use case và labeled evidence. Entity link, event type và sentiment nếu có đều giữ extractor version, evidence reference khi được phép và confidence.
 
 Event time được nguồn nói đến, article publication time và system availability là ba trường khác nhau. Sentiment của bài không đồng nghĩa expected return; không hiển thị như recommendation mua/bán. Human-labeled audit set phải có positive/negative/ambiguous cases và nguồn đa dạng; metrics cần per-class/entity reports.
 
@@ -20,4 +20,4 @@ Tin thay title/body/time tạo ArticleRevision mới. Serving mặc định hi�
 
 News cards có source, published time khi biết, first_seen/update indicator và link gốc. Không có quyền excerpt thì chỉ fields được phép; unknown timestamp/coverage phải hiện rõ. Summary hoặc translation do model là derivative processing cần source-policy approval, không mặc định được cấp bởi quyền RSS.
 
-Acceptance scenarios: cùng URL sửa nội dung; hai nguồn syndicate; article nhắc BTC trong context không liên quan; published_at timezone thiếu; source rút tin; mapping thay sau snapshot; corrections đến trễ; near-duplicate merge nhầm. Đo precision/recall trên tập nhãn trước khi dùng news feature trong Model Lab.
+Acceptance scenarios: cùng URL sửa nội dung; hai nguồn syndicate; ambiguous company/instrument name; published_at thiếu timezone; source rút tin; entity mapping đổi sau snapshot; correction đến trễ; near-duplicate merge nhầm. Đo precision/recall trên tập nhãn phù hợp trước khi phục vụ research feature hoặc tích hợp terminal.
