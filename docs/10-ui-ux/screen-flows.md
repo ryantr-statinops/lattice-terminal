@@ -20,4 +20,4 @@ News fixture screen là placeholder. News engine quốc tế/Việt Nam là work
 
 ## Local data lifecycle
 
-Explain where files are stored and how to export/backup/reset. Logout/lock behavior must be consistent with the approved local password and secret-storage design. No portfolio/news/data payload is uploaded by default.
+Explain managed application/browser/secret-store locations once selected. Preview settings reset, data deletion, secret removal and restore as distinct actions; report failures and user-owned backups/exports outside scope. Password reset is not implicit data deletion or key recovery. Follow the [storage inventory](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). No project upload is enabled by default.

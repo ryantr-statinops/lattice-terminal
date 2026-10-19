@@ -19,7 +19,7 @@ Không áp dụng tự động giả định định danh/fee/account ownership 
 
 ## Local lifecycle
 
-Store normalized portfolio events and simulation outputs with schema versions. Back up/restore with integrity checks; export user-readable records; provide a clear local reset/delete operation. Secrets, ConsumerID/ConsumerSecret, raw SSI payloads not approved for storage and private transaction content must not appear in logs, telemetry or crash reports.
+Target storage preserves versioned events/outputs and supports integrity-checked backup/restore. Settings reset, portfolio deletion, local-secret removal and restore need distinct scope under the [storage inventory](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries); exporting does not make copies automatically deletable. Do not log secrets, unapproved raw payloads or private transaction content. Ordinary deletion is not secure erase.
 
 If multiple local profiles are supported, switching profile must isolate portfolio, data, preferences and caches. Whether V1 has one local profile or multiple password-protected profiles is open. See [storage and retention](../04-data/storage-and-retention.md).
 

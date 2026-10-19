@@ -8,6 +8,24 @@ Trước SSI production integration, phải xác minh entitlement và rights cho
 
 News engine sẽ là workstream riêng. Chỉ tích hợp fields/content mà source-specific terms cho phép; link/metadata không mặc nhiên cấp quyền full-text, image, translation, ML hoặc retention. News storage/retention contract được chốt ở workstream đó.
 
+## Storage inventory and deletion boundaries
+
+Đây là inventory categories cần thiết kế, không phải các đường dẫn hoặc storage engine đã chọn. Prototype browser storage cũng cần được tính đến khi chuyển sang V1.
+
+| Location category | Data/examples | Reset/delete boundary to define |
+|---|---|---|
+| Application data | Config, market snapshots, portfolio, backtest/paper state | Resolve managed paths, version/schema and requested scope; deleting source checkout alone is insufficient |
+| Browser storage | Prototype holdings/watchlist, preferences and caches | Explicit origin/profile cleanup; a database deletion does not clear browser data |
+| OS secret store | Credentials/tokens if selected by future design | Separate secret removal and failure reporting; not removed by deleting app folders |
+| Logs/temp files | Redacted diagnostics and intermediate writes | Managed-file retention and cleanup inventory; avoid secret/personal content |
+| Backups and exports | User-created copies on selected destinations | Application cannot guarantee discovery/deletion of all copies; user must manage them |
+
+Reset application settings, delete a portfolio/dataset, remove local credentials and restore a backup are distinct operations. Each needs a preview of scope, expected result and failure/recovery behavior before implementation. Credential deletion does not revoke provider credentials; rotation/revocation is a separate action in the provider's account.
+
+Password reset must not silently erase data or imply recovery of a lost encryption key. Whether reset preserves encrypted data, requires a recovery key or creates a new profile remains pending. Restore must define compatible schema/manifest and safe behavior for missing secrets; interrupted paper sessions recover as interrupted/unknown until reconciliation.
+
+Ordinary deletion does not promise secure erase, removal from filesystem/OS backups or deletion of copies outside managed paths. Do not promise that every copy can be destroyed. No data path, deletion tool or recovery procedure is implemented by this document.
+
 ## Local data safety requirements
 
 - Secret không nằm trong repository, `.env` được commit, browser localStorage/sessionStorage, URLs, logs, screenshots, telemetry hoặc crash dumps. Chọn Windows secret store/encrypted vault trước khi xin credentials.

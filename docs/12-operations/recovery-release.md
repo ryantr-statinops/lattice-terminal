@@ -6,11 +6,11 @@
 
 - Back up local database/files with schema and manifest versions; test restore on a clean Windows profile.
 - Incomplete writes must not replace prior valid snapshot/portfolio state. Recovery reports state and the last consistent version.
-- User can export supported data and locally delete/reset the installation's workspace. Define how secrets are cleared/rotated in the SSI account separately.
+- Design separate actions for settings reset, managed data deletion, local-secret removal and backup restore using the [storage inventory](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). Exact paths/scope are pending; deleting the checkout is insufficient. Preview impact and report partial cleanup rather than claiming all copies removed.
 - App update/migration must preserve user data or provide a verified backup/rollback path.
 - Interrupted live/paper session restores as interrupted/unknown until the feed and ledger reconcile; never infer unseen fills.
 - Snapshot revisions preserve provenance and source policy. If source permission expires/revokes, stop affected access and apply the documented restrict/delete action.
-- Password recovery/reset and encryption-key recovery must be explicit; a lost password must not cause silent data loss or implied provider password reset.
+- Password reset and encryption-key recovery are separate pending contracts; neither should silently erase data or imply provider reset. Local-secret removal does not revoke a provider key. User-created backups/exports require separate user management; ordinary deletion is not secure erase.
 
 ## Release checklist
 

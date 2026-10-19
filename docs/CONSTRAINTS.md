@@ -14,7 +14,7 @@
    - Kết nối mạng duy nhất được phép khởi tạo từ ứng dụng là kết nối trực tiếp từ máy người dùng đến các endpoint dịch vụ dữ liệu chính thức do người dùng cấu hình (cụ thể: SSI FastConnect Data API & Streaming Hub).
 3. **Chủ Quyền Dữ Liệu Thuộc Về Người Dùng (Data Sovereignty):**
    - Cấu hình, dữ liệu thị trường được phép lưu, portfolio và kết quả nghiên cứu nằm trên máy người dùng; đường dẫn, backup, export, delete và recovery phải được định nghĩa trước release.
-   - Khi người dùng xóa thư mục ứng dụng hoặc xóa file cơ sở dữ liệu local, toàn bộ dữ liệu bị tiêu hủy hoàn toàn, không có bản sao lưu trên đám mây.
+   - Xóa thư mục source hoặc một database không chứng minh toàn bộ dữ liệu đã bị xóa. Application data, browser storage, OS secret store, logs và backups/exports có lifecycle riêng theo [storage inventory](04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). Dự án không tự upload; các bản sao người dùng tạo nằm ngoài phạm vi xóa tự động chưa được thiết kế.
 
 ---
 
