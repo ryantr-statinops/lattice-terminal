@@ -1,7 +1,7 @@
 # Design và accessibility
 **Trạng thái:** target.
 
-Ưu tiên đọc tin và so sánh bối cảnh, không nhồi chart/indicator mặc định. Giữ visual primitives dùng lại được sau inventory, không giữ copy/branding nhà ở. Có thể giữ Royal Blue làm token tạm thời; typography/color tokens phải kiểm contrast, không khẳng định đã restyle.
+Ưu tiên đọc tin và so sánh bối cảnh, không nhồi chart/indicator mặc định. Giữ visual primitives dùng lại được sau inventory. Màu accent đồng bộ `#21684e` theo ADR-014; typography/color tokens phải kiểm contrast.
 
 - Responsive desktop/tablet; mobile ưu tiên đọc news/portfolio/report. Training mobile chỉ bật sau browser benchmark.
 - Dùng màu cùng text/icon, không chỉ xanh/đỏ cho tăng/giảm hay lỗi.

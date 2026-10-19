@@ -5,4 +5,4 @@
 - [Security/privacy](security-privacy.md)
 - [Agent orchestration](agent-orchestration.md)
 
-[ADR](../02-architecture/decisions.md) và [roadmap](../../task/research-terminal-plan/README.md) quyết định boundaries và trạng thái.
+[ADR](../02-architecture/decisions.md) và [roadmap](../../task/next-plan.md) quyết định boundaries và trạng thái.

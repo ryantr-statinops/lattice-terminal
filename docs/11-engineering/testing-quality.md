@@ -17,4 +17,4 @@
 
 ## Chưa được kiểm chứng
 
-Managed Auth/JWT and account isolation, database constraints, source rights, real feed gaps/duplicates/backfill, browser CSP and performance, actual worker runtime/cancel, walk-forward quant validation, contrast ratios, deployment, monitoring and recovery. CI fixture tests do not approve a market/news source or prove profitability.
+Database constraints, source rights, real feed gaps/duplicates/backfill, browser CSP and performance, actual worker runtime/cancel, walk-forward quant validation, contrast ratios, deployment, monitoring and recovery. CI fixture tests do not approve a market/news source or prove profitability.
