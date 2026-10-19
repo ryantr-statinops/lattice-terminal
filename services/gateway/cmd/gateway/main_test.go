@@ -57,19 +57,19 @@ func TestRoutesAndLimits(t *testing.T) {
 
 func TestConfig(t *testing.T) {
 	for _, raw := range []string{"ftp://example.com", "https://user:secret@example.com", "https://example.com/path", "https://example.com?key=value", "http://"} {
-		t.Setenv("RT_API_BASE_URL", raw)
+		t.Setenv("KESTREL_API_BASE_URL", raw)
 		if _, err := loadConfig(); err == nil {
 			t.Errorf("accepted invalid origin")
 		}
 	}
-	t.Setenv("RT_API_BASE_URL", "")
-	t.Setenv("RT_GATEWAY_ADDR", "")
+	t.Setenv("KESTREL_API_BASE_URL", "")
+	t.Setenv("KESTREL_GATEWAY_ADDR", "")
 	cfg, err := loadConfig()
 	if err != nil || cfg.addr != "127.0.0.1:8080" {
 		t.Fatal("defaults invalid")
 	}
 	for _, addr := range []string{"invalid", "127.0.0.1:0", "127.0.0.1:65536"} {
-		t.Setenv("RT_GATEWAY_ADDR", addr)
+		t.Setenv("KESTREL_GATEWAY_ADDR", addr)
 		if _, err := loadConfig(); err == nil {
 			t.Error("accepted invalid listen address")
 		}

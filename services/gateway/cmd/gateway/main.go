@@ -29,25 +29,25 @@ type config struct {
 }
 
 func loadConfig() (config, error) {
-	addr := os.Getenv("RT_GATEWAY_ADDR")
+	addr := os.Getenv("KESTREL_GATEWAY_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
 	}
 	_, port, err := net.SplitHostPort(addr)
 	if err != nil {
-		return config{}, errors.New("RT_GATEWAY_ADDR must be host:port")
+		return config{}, errors.New("KESTREL_GATEWAY_ADDR must be host:port")
 	}
 	p, err := strconv.Atoi(port)
 	if err != nil || p < 1 || p > 65535 {
-		return config{}, errors.New("RT_GATEWAY_ADDR port must be between 1 and 65535")
+		return config{}, errors.New("KESTREL_GATEWAY_ADDR port must be between 1 and 65535")
 	}
-	raw := os.Getenv("RT_API_BASE_URL")
+	raw := os.Getenv("KESTREL_API_BASE_URL")
 	if raw == "" {
 		raw = "http://127.0.0.1:8000"
 	}
 	u, err := url.Parse(raw)
 	if err != nil || u == nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
-		return config{}, errors.New("RT_API_BASE_URL must be an HTTP(S) origin without credentials, query or path")
+		return config{}, errors.New("KESTREL_API_BASE_URL must be an HTTP(S) origin without credentials, query or path")
 	}
 	return config{addr, u}, nil
 }

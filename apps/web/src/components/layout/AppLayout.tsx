@@ -20,7 +20,7 @@ export function AppLayout() {
       <header className="border-b border-border bg-background">
         <Container className="flex flex-wrap items-center justify-between gap-4 py-4">
           <Link to="/terminal/news" className="font-semibold tracking-tight">
-            Research Terminal
+            Kestrel Terminal
           </Link>
           <nav className="flex flex-wrap items-center gap-2" aria-label="Chính">
             {NAV.map((n) => (
@@ -51,7 +51,7 @@ export function AppLayout() {
       </main>
       <footer className="border-t border-border">
         <Container className="py-6 text-sm text-muted-foreground">
-          Research Terminal · Dữ liệu tổng hợp phục vụ phát triển giao diện.
+          Kestrel Terminal · Dữ liệu tổng hợp phục vụ phát triển giao diện.
         </Container>
       </footer>
     </div>

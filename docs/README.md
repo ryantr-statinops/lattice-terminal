@@ -1,4 +1,4 @@
-# Research Terminal — Documentation Hub
+# Kestrel Terminal — Documentation Hub
 
 **Định hướng:** công cụ nghiên cứu local-first cho thị trường Việt Nam. SSI FastConnect Data là provider direction, nhưng source gate hiện chưa mở; prototype hiện tại chủ yếu dùng fixtures/mocks. Tài liệu này là bản đồ docs, không thay thế trạng thái code hoặc evidence nguồn.
 

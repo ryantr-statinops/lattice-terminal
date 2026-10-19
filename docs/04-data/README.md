@@ -1,4 +1,4 @@
-# Dữ liệu Research Terminal
+# Dữ liệu Kestrel Terminal
 
 **Trạng thái:** contract mục tiêu, chưa có schema/migration/dataset production.
 

@@ -44,7 +44,7 @@ def error_response(status: int, code: str, message: str):
 
 def create_app(fixture_root: Path | None = None) -> FastAPI:
     directory = fixture_root if fixture_root is not None else FIXTURE_ROOT
-    application = FastAPI(title="Research Terminal API", version="0.2.0",
+    application = FastAPI(title="Kestrel Terminal API", version="0.2.0",
                           responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse},
                                      500: {"model": ErrorResponse}, 503: {"model": ErrorResponse}})
 

@@ -1,6 +1,6 @@
 # Quy Định & Bất Biến Kỹ Thuật (Constraints & Invariants)
 
-**Trạng thái:** Chuẩn mực bất biến cốt lõi (Core Invariants) cho toàn bộ kiến trúc và triển khai của **Research Terminal** (Local Bloomberg Terminal cho TTCK Việt Nam). Mọi module, adapter, service và giao diện người dùng phải tuân thủ nghiêm ngặt các điều khoản trong tài liệu này.
+**Trạng thái:** Chuẩn mực bất biến cốt lõi (Core Invariants) cho toàn bộ kiến trúc và triển khai của **Kestrel Terminal** (Local Bloomberg Terminal cho TTCK Việt Nam). Mọi module, adapter, service và giao diện người dùng phải tuân thủ nghiêm ngặt các điều khoản trong tài liệu này.
 
 ---
 

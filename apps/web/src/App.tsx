@@ -21,7 +21,7 @@ export function App() {
       if (!response.ok) throw new Error("API unavailable");
       const result = await response.json();
       if (result.data?.status !== "ok" || result.data?.mode !== "fixture" ||
-          result.data?.service !== "research-terminal-api" || result.meta?.is_synthetic !== true) {
+          result.data?.service !== "kestrel-terminal-api" || result.meta?.is_synthetic !== true) {
         throw new Error("Unexpected health response");
       }
       setHealth("API đã kết nối · chế độ fixture");
@@ -37,7 +37,7 @@ export function App() {
       <a className="skip-link" href="#main">Đi đến nội dung</a>
       <header className="border-b border-border bg-background">
         <Container className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <Link to="/terminal/news" className="font-semibold tracking-tight">Research Terminal</Link>
+          <Link to="/terminal/news" className="font-semibold tracking-tight">Kestrel Terminal</Link>
           <span className="fixture-badge">SYNTHETIC · FIXTURE ONLY</span>
         </Container>
       </header>
@@ -45,7 +45,7 @@ export function App() {
         <Container className="py-12 sm:py-16">
           <p className="mb-3 text-sm font-medium text-primary">P01 / Chuẩn bị nền tảng</p>
           <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">Không gian nghiên cứu thị trường đang được xây dựng</h1>
-          <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">Đây là khung giao diện để chuẩn bị Research Terminal. Toàn bộ tin và giá hiển thị là dữ liệu tổng hợp, không phản ánh thị trường thực tế.</p>
+          <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">Đây là khung giao diện để chuẩn bị Kestrel Terminal. Toàn bộ tin và giá hiển thị là dữ liệu tổng hợp, không phản ánh thị trường thực tế.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={checkHealth} disabled={pending}>{pending ? "Đang kiểm tra…" : "Kiểm tra API local"}</Button>
             <Dialog>
@@ -88,7 +88,7 @@ export function App() {
           </section>
         </Container>
       </main>
-      <footer className="border-t border-border"><Container className="py-6 text-sm text-muted-foreground">Research Terminal · Dữ liệu tổng hợp phục vụ phát triển giao diện.</Container></footer>
+      <footer className="border-t border-border"><Container className="py-6 text-sm text-muted-foreground">Kestrel Terminal · Dữ liệu tổng hợp phục vụ phát triển giao diện.</Container></footer>
     </>
   );
 }

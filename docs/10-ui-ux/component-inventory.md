@@ -1,4 +1,4 @@
-# Component inventory — Research Terminal
+# Component inventory — Kestrel Terminal
 
 Danh sách này ghi nhận frontend prototype hiện tại và các ý tưởng planned; ✅ Có nghĩa là tồn tại trong code, không đồng nghĩa đã đáp ứng V1 hoặc production-ready.
 

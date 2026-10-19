@@ -9,7 +9,7 @@ def client():
     return TestClient(create_app())
 
 def test_health(client):
-    assert client.get("/api/v1/health").json() == {"data": {"status": "ok", "service": "research-terminal-api", "mode": "fixture"}, "meta": {"is_synthetic": True}}
+    assert client.get("/api/v1/health").json() == {"data": {"status": "ok", "service": "kestrel-terminal-api", "mode": "fixture"}, "meta": {"is_synthetic": True}}
 
 def test_market_instruments(client):
     response = client.get("/api/v1/market/instruments")

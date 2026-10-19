@@ -1,4 +1,4 @@
-# Frontend architecture — Research Terminal
+# Frontend architecture — Kestrel Terminal
 
 **Trạng thái:** tài liệu mô tả frontend prototype hiện tại; route, query và storage dưới đây không phải API/UI contract V1. V1 yêu cầu browser chỉ gọi local loopback API; SSI secrets và upstream stream thuộc local service sau khi source gates được duyệt.
 

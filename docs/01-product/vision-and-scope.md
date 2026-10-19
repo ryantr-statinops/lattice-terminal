@@ -2,7 +2,7 @@
 
 **Trạng thái:** định hướng sản phẩm được chốt ngày 2026-10-18; đây là mục tiêu, không phải mô tả tính năng đã triển khai.
 
-Research Terminal là bộ công cụ nghiên cứu mã nguồn mở, miễn phí, chạy trên máy người dùng. V1 hướng tới nhà đầu tư tự nghiên cứu thị trường Việt Nam, khởi chạy từ repository trên Windows và truy cập giao diện qua `localhost`. Sản phẩm hỗ trợ xem dữ liệu được cấp quyền, quản lý sổ cái nghiên cứu, backtest và paper trading. Không cam kết lợi nhuận và không gửi lệnh thật.
+Kestrel Terminal là bộ công cụ nghiên cứu mã nguồn mở, miễn phí, chạy trên máy người dùng. V1 hướng tới nhà đầu tư tự nghiên cứu thị trường Việt Nam, khởi chạy từ repository trên Windows và truy cập giao diện qua `localhost`. Sản phẩm hỗ trợ xem dữ liệu được cấp quyền, quản lý sổ cái nghiên cứu, backtest và paper trading. Không cam kết lợi nhuận và không gửi lệnh thật.
 
 ## Người dùng và quyền sở hữu
 

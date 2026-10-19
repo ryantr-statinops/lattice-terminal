@@ -1,4 +1,4 @@
-# Research Terminal fixture API
+# Kestrel Terminal fixture API
 
 Scaffold read-only, chưa có auth/account, business API, database hay kết nối live. Dữ liệu chỉ đọc từ `data/fixtures/`; không cần secret, không load `.env.local`. API trả 503 nếu fixture thiếu, sai schema hoặc không synthetic.
 

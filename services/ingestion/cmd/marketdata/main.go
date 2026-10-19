@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"researchterminal/ingestion/internal/marketdata"
+	"kestrelterminal/ingestion/internal/marketdata"
 )
 
 func run(args []string, output io.Writer) error {

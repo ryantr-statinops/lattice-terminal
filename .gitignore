@@ -30,7 +30,7 @@ npm-debug.log*
 # AI tool
 .cline
 
-# Research Terminal generated artifacts
+# Kestrel Terminal generated artifacts
 .cache/
 .venv-reset/
 dist/

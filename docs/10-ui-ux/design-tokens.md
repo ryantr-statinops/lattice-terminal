@@ -1,4 +1,4 @@
-# Design tokens — Research Terminal
+# Design tokens — Kestrel Terminal
 
 This page separates the **implemented prototype tokens** from **design targets**. The palette below records intended semantic design values from RT-ADR-013..018; it is not a complete inventory of CSS variables or generated Tailwind utilities in the current prototype. Components should use tokens that exist in `apps/web/src/styles.css` until a reviewed implementation adds the target aliases.
 

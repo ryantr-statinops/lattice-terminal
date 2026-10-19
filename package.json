@@ -1,13 +1,13 @@
 {
-  "name": "research-terminal", "version": "0.1.0", "private": true,
+  "name": "kestrel-terminal", "version": "0.1.0", "private": true,
   "workspaces": ["apps/web"],
   "engines": {"node": ">=22.12 <23"},
   "packageManager": "npm@10.9.8",
   "scripts": {
-    "dev": "npm run dev --workspace=@research-terminal/web",
-    "build": "npm run build --workspace=@research-terminal/web",
-    "typecheck": "npm run typecheck --workspace=@research-terminal/web",
-    "test:web": "npm run test:web --workspace=@research-terminal/web",
+    "dev": "npm run dev --workspace=@kestrel-terminal/web",
+    "build": "npm run build --workspace=@kestrel-terminal/web",
+    "typecheck": "npm run typecheck --workspace=@kestrel-terminal/web",
+    "test:web": "npm run test:web --workspace=@kestrel-terminal/web",
     "lint": "eslint apps/web/src",
     "security:env-boundaries": "node scripts/check-env-boundaries.mjs",
     "fixtures:check": "node scripts/check-fixtures.mjs",

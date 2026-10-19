@@ -7,7 +7,7 @@ Tài liệu kiến trúc cũ thiết kế cho nền tảng hosted multi-tenant �
 
 ## 1. Định Hướng Hoãn Ngoài Phạm Vi V1 (Scope Decision)
 
-Trong giai đoạn V1, mục tiêu cốt lõi của **Research Terminal** là hoàn thiện một **Local Bloomberg Terminal** chuẩn xác cho TTCK Việt Nam, tập trung vào:
+Trong giai đoạn V1, mục tiêu cốt lõi của **Kestrel Terminal** là hoàn thiện một **Local Bloomberg Terminal** chuẩn xác cho TTCK Việt Nam, tập trung vào:
 - Market/history/live data trong đúng SSI entitlement và approved field/feed scope; sổ lệnh/depth không được coi là đã cấp quyền hoặc đã triển khai.
 - Biểu đồ kỹ thuật nến và khối lượng.
 - Sổ cái quản lý danh mục (Portfolio Ledger).

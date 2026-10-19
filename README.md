@@ -1,4 +1,4 @@
-# Research Terminal
+# Kestrel Terminal
 
 Open-source, free research infrastructure for Vietnamese users. The V1 direction is to clone this repository and run it locally on Windows, opening the web interface on `localhost`. Market data is intended to come from the user's own SSI FastConnect Data configuration. The current code is still a synthetic-fixture prototype; it is not an operational market terminal and must not be used for investment decisions.
 

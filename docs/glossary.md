@@ -1,4 +1,4 @@
-# Glossary — Research Terminal
+# Glossary — Kestrel Terminal
 
 **Trạng thái:** definitions for local-first Vietnam research product; some capabilities are not implemented.
 

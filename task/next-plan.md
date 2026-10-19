@@ -2,7 +2,7 @@
 
 ## Product direction — recorded 2026-10-18
 
-Research Terminal is open-source/free research infrastructure for Vietnamese users. V1 is cloned from the repository and run locally on Windows with a localhost web UI; no installer or hosted service is required. All config, SSI credentials, data, portfolio and research output stay on the user's machine. SSI FastConnect Data is the market provider direction; aim to use all applicable REST/reference/stream capabilities after endpoint entitlement and terms are verified. Do not use FastConnect Trading or real orders.
+Kestrel Terminal is open-source/free research infrastructure for Vietnamese users. V1 is cloned from the repository and run locally on Windows with a localhost web UI; no installer or hosted service is required. All config, SSI credentials, data, portfolio and research output stay on the user's machine. SSI FastConnect Data is the market provider direction; aim to use all applicable REST/reference/stream capabilities after endpoint entitlement and terms are verified. Do not use FastConnect Trading or real orders.
 
 Portfolio MVP includes historical backtesting and paper live trading. The project's own international/Vietnam news engine is a separate workstream and will be integrated later. Model Lab is outside the first MVP.
 

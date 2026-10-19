@@ -46,7 +46,7 @@ class Meta(FixtureModel):
 
 class Health(FixtureModel):
     status: Literal["ok"] = "ok"
-    service: Literal["research-terminal-api"] = "research-terminal-api"
+    service: Literal["kestrel-terminal-api"] = "kestrel-terminal-api"
     mode: Literal["fixture"] = "fixture"
 
 class HealthResponse(FixtureModel):
