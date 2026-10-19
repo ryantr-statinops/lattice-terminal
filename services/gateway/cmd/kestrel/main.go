@@ -6,9 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"golang.org/x/term"
+	"kestrel-terminal/gateway/internal/api"
 	"kestrel-terminal/gateway/internal/auth"
 	"kestrel-terminal/gateway/internal/host"
 	"kestrel-terminal/gateway/internal/secret"
+	"kestrel-terminal/gateway/internal/store"
+	"kestrel-terminal/gateway/internal/workspace"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -71,6 +74,13 @@ func run(root, data string, dev bool) error {
 	mux := handler().(*http.ServeMux)
 	manager := auth.New(data)
 	manager.Routes(mux)
+	db, err := store.Open(data)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid}
+	application.Routes(mux)
 	target, _ := url.Parse(engine.URL)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	base := proxy.Director
