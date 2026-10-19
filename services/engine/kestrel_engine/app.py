@@ -5,6 +5,21 @@ from fastapi.responses import JSONResponse
 from .market import MarketRepository
 from .quant import INDICATORS,calculate
 from .sources import SourceGate
+from .programs import inspect_source
+from .runner import RunManager
+from .models import Record
+from typing import Any
+
+class InspectRequest(Record):
+    source:str
+    kind:str
+    selected:bool=False
+
+class RunRequest(Record):
+    id:str
+    kind:str
+    snapshot:str
+    timeout_seconds:int=120
 
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
@@ -12,6 +27,7 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     root = Path(data_root) if data_root else Path('.cache/engine-test-data')
     market = MarketRepository(root,Path(__file__).resolve().parents[3]/'data/fixtures')
     gate=SourceGate(root)
+    runs=RunManager(root)
 
     @app.middleware('http')
     async def internal_auth(request: Request, call_next):
@@ -41,6 +57,20 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     @app.get('/internal/v1/market/live-status')
     def live_status():
         return {'state':'unavailable','reason':'SSI streaming and replay capability not approved; no live transport started','source_state':gate.status(),'reconciliation_required':True}
+
+    @app.post('/internal/v1/programs/inspect')
+    def inspect(value:InspectRequest):return inspect_source(value.source,value.kind,value.selected)
+
+    @app.post('/internal/v1/runner/start',status_code=202)
+    def start_run(value:RunRequest):runs.start(value.model_dump());return {'id':value.id}
+
+    @app.get('/internal/v1/runner/{identity}/events')
+    def run_events(identity:str,after:int=0):
+        if after<0:raise ValueError('invalid cursor')
+        return runs.events(identity,after)
+
+    @app.post('/internal/v1/runner/{identity}/stop',status_code=202)
+    def stop_run(identity:str):runs.cancel(identity);return {'status':'stop_requested'}
 
     @app.get('/internal/v1/market/candles')
     def candles(instrument_id:str): return market.latest_fixture(instrument_id)

@@ -17,6 +17,7 @@ type API struct {
 	Valid     func(*http.Request) bool
 	StartRun  func(store.Run)
 	StopRun   func(string)
+	Inspect   func(string, string, json.RawMessage) error
 }
 
 func JSON(w http.ResponseWriter, status int, value any) {
@@ -106,6 +107,17 @@ func (a *API) Routes(m *http.ServeMux) {
 		}
 		if len(v.Params) == 0 {
 			v.Params = json.RawMessage(`{}`)
+		}
+		if a.Inspect != nil {
+			source, err := a.Workspace.Read(v.Kind, v.File)
+			if err != nil {
+				Fail(w, err)
+				return
+			}
+			if err = a.Inspect(v.Kind, source, v.Params); err != nil {
+				Fail(w, err)
+				return
+			}
 		}
 		snapshot, err := a.Workspace.Snapshot(v.Kind, v.File, v.Params)
 		if err != nil {

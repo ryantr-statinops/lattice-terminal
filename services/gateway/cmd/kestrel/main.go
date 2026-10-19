@@ -79,7 +79,8 @@ func run(root, data string, dev bool) error {
 		return err
 	}
 	defer db.Close()
-	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid}
+	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
+	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect}
 	application.Routes(mux)
 	target, _ := url.Parse(engine.URL)
 	proxy := httputil.NewSingleHostReverseProxy(target)
