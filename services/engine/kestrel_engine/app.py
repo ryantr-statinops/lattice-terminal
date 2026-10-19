@@ -38,6 +38,10 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     @app.get('/internal/v1/sources')
     def sources(): return gate.status()
 
+    @app.get('/internal/v1/market/live-status')
+    def live_status():
+        return {'state':'unavailable','reason':'SSI streaming and replay capability not approved; no live transport started','source_state':gate.status(),'reconciliation_required':True}
+
     @app.get('/internal/v1/market/candles')
     def candles(instrument_id:str): return market.latest_fixture(instrument_id)
 
