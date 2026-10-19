@@ -8,6 +8,7 @@ from .sources import SourceGate
 from .programs import inspect_source
 from .runner import RunManager
 from .models import Record
+from .tapes import TapeRepository
 from typing import Any
 
 class InspectRequest(Record):
@@ -50,6 +51,9 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
 
     @app.get('/internal/v1/market/snapshots')
     def snapshots(): return market.manifests()
+
+    @app.get('/internal/v1/backtest/data')
+    def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]
 
     @app.get('/internal/v1/sources')
     def sources(): return gate.status()
