@@ -1,85 +1,50 @@
-# Quy Tắc Thị Trường Chứng Khoán Việt Nam (VN Market Trading Rules)
+# Quy tắc thị trường Việt Nam — evidence và simulator requirements
 
-**Trạng thái:** tài liệu tham khảo sơ bộ cho market rules; chưa được xác minh theo quy định/venue hiện hành và không phải executable simulator specification. Phải đối chiếu nguồn chính thức, instrument class và ngày hiệu lực trước khi dùng trong backtest/paper.
+**Review date:** 2026-10-19. Đây là bản nghiên cứu có trạng thái theo từng quy tắc, chưa phải bộ quy tắc simulator đã triển khai. Instrument coverage của V1 vẫn cần chốt theo entitlement. Không áp dụng một quy chế cho mọi venue, loại chứng khoán hoặc giai đoạn lịch sử.
 
-Không được coi các con số, phiên, phí hoặc settlement details bên dưới là đã duyệt cho mọi instrument/venue. Chúng là checklist nghiên cứu để xác minh và version hóa trước khi triển khai simulator.
+## Evidence và ngày hiệu lực
 
----
+| Reference | Evidence sử dụng | Giới hạn |
+|---|---|---|
+| [VSD, Quyết định 109/110](https://vsdc.vn/vi/ad/152750) | Settlement cho instrument thuộc quy chế; hiệu lực 2022-08-29 | Không tự chứng minh mọi sửa đổi sau đó |
+| [SSC giới thiệu ATO/ATC](https://ssc.gov.vn/webcenter/portal/ubck/pages_r/l/chitit?dDocName=APPSSCGOVVN1620153649) | Bài ngày 2025-04-11 mô tả thay đổi dự kiến khi áp dụng hệ thống mới | Cần văn bản triển khai và phiên bản quy chế để chốt ngày hiệu lực cho replay |
+| [HNX FAQ](https://web02.hnx.vn/vi-vn/hoi-dap.html) | Search excerpt từ trang chính thức mô tả giờ HNX/UPCoM | Full page trả 502 khi review; ngày hiệu lực và nội dung đầy đủ chưa xác minh |
+| [HOSE đăng Quy chế VNX ngày 2025-04-18](https://www.hsx.vn/vi/van-ban-phap-quy/quy-che-niem-yet-va-giao-dich-chung-khoan-niem-yet/2372147) | Xác định tài liệu cần đối chiếu | Nội dung cần JavaScript; chưa đọc được toàn văn/attachments trong review |
 
-## 1. Khung Giờ Giao Dịch & Các Phiên Khớp Lệnh
+Rule set trước khi triển khai phải ghi venue, board/instrument class, effective_from/to, source/version và simulator interpretation. Không áp dụng luật hiện tại cho toàn bộ lịch sử; thiếu evidence thì báo unsupported/pending cho phạm vi đó.
 
-Thị trường chứng khoán Việt Nam hoạt động từ Thứ Hai đến Thứ Sáu (trừ các ngày nghỉ lễ quốc gia). Múi giờ chính thức: `Asia/Ho_Chi_Minh` (UTC+7).
+## 1. Phiên giao dịch — tách theo venue
+
+Múi giờ trình bày: `Asia/Ho_Chi_Minh`. Các mốc sau là reference từ HNX FAQ excerpt, chưa phải calendar được duyệt; ngày nghỉ, special sessions và instrument restrictions còn phải xác minh.
+
+| Venue/instrument scope | Reference session | Evidence status |
+|---|---|---|
+| HNX listed equities | Continuous 09:00–11:30 và 13:00–14:30; closing auction 14:30–14:45 | FAQ excerpt; effective date pending |
+| UPCoM equities | Continuous 09:00–11:30 và 13:00–15:00 | FAQ excerpt; effective date pending |
+| HOSE | ATO/continuous/ATC và giờ áp dụng cần xác minh từ quy chế đầy đủ | Pending; không suy ra giờ HOSE từ HNX |
+| PLO, negotiated trades, odd lots, restricted/suspended instruments | Phiên và order permissions riêng theo venue | Pending; không gộp với regular-board sessions |
 
 ```mermaid
-gantt
-    title Khung Giờ Giao Dịch Thị Trường Chứng Khoán Cơ Sở Việt Nam
-    dateFormat HH:mm
-    axisFormat %H:%M
-
-    section Sàn HOSE
-    Phiên ATO (Khớp lệnh định kỳ mở cửa)   :09:00, 15m
-    Khớp lệnh liên tục phiên Sáng          :09:15, 135m
-    Nghỉ trưa                             :11:30, 90m
-    Khớp lệnh liên tục phiên Chiều         :13:00, 90m
-    Phiên ATC (Khớp lệnh định kỳ đóng cửa) :14:30, 15m
-    Giao dịch thỏa thuận                  :14:45, 15m
-
-    section Sàn HNX
-    Khớp lệnh liên tục phiên Sáng          :09:00, 150m
-    Nghỉ trưa                             :11:30, 90m
-    Khớp lệnh liên tục phiên Chiều         :13:00, 90m
-    Phiên ATC (Khớp lệnh định kỳ đóng cửa) :14:30, 15m
-    Phiên khớp lệnh sau giờ (PLO)          :14:45, 15m
+flowchart TB
+    H["HNX reference: 09:00–11:30 continuous"] --> HB["11:30–13:00 break"]
+    HB --> HA["13:00–14:30 continuous"] --> HC["14:30–14:45 closing auction"]
+    U["UPCoM reference: 09:00–11:30 continuous"] --> UB["11:30–13:00 break"]
+    UB --> UA["13:00–15:00 continuous"]
+    P["HOSE and special sessions: pending full rulebook verification"]
 ```
 
-### 1.1. Chi Tiết Các Phiên Giao Dịch
+## 2. Auction priority, price limits và lệnh
 
-| Khung giờ | Phiên | Sàn áp dụng | Đặc điểm khớp lệnh cho Backtest/Paper |
-|---|---|---|---|
-| **09:00 - 09:15** | **ATO** (At-The-Opening) | HOSE | Khớp lệnh định kỳ xác định giá mở cửa. Không được hủy/sửa lệnh. Lệnh ATO ưu tiên khớp trước lệnh giới hạn (LO). |
-| **09:15 - 11:30** | **Khớp lệnh liên tục sáng** | HOSE, HNX, UPCOM | Lệnh được so khớp ngay khi vào hệ thống theo thứ tự: **Ưu tiên về Giá $\rightarrow$ Ưu tiên về Thời gian**. |
-| **11:30 - 13:00** | **Nghỉ trưa** | Toàn thị trường | Hệ thống dừng khớp lệnh. Lệnh đặt trong giờ nghỉ trưa nằm ở hàng đợi. |
-| **13:00 - 14:30** | **Khớp lệnh liên tục chiều** | HOSE, HNX, UPCOM | Tiếp tục khớp lệnh liên tục. |
-| **14:30 - 14:45** | **ATC** (At-The-Closing) | HOSE, HNX | Khớp lệnh định kỳ xác định giá đóng cửa. Không được hủy/sửa lệnh. Lệnh ATC ưu tiên khớp trước lệnh LO. |
-| **14:45 - 15:00** | **PLO / Sau giờ** | HNX | Khớp lệnh sau giờ ở mức giá đóng cửa phiên ATC. |
+SSC's 2025 introduction describes an exception: ATO/ATC do not take precedence over previously entered ceiling-price buy LO or floor-price sell LO. Không dùng mệnh đề “ATO/ATC luôn ưu tiên trước mọi LO”. Đây chưa phải đầy đủ thuật toán auction hoặc evidence ngày rollout; cần quy chế có hiệu lực để thiết kế matching/fill.
 
----
+Price-band percentages, reference-price construction, first-listing/relisting exceptions, rounding và auction cancel/amend restrictions **chưa xác minh đầy đủ** trong review này. Không giữ các công thức làm tròn hoặc tỷ lệ cũ như universal defaults. Adapter cần xác minh ceiling/floor/reference semantics; simulator cần bộ quy tắc được version hóa, không tự coi quote là executable price.
 
-## 2. Biên Độ Dao Động Giá (Price Bands)
+## 3. Tick size, lot size và giới hạn lệnh
 
-Giá cổ phiếu trong phiên chỉ được phép dao động trong phạm vi từ **Giá Sàn (Floor)** đến **Giá Trần (Ceiling)**, tính toán dựa trên **Giá Tham Chiếu (Reference Price)** của phiên đó:
+**Pending verification:** tick tables theo mức giá/loại chứng khoán, round/odd-lot eligibility, maximum order quantity và ảnh hưởng tới chỉ số/reference price. Trang quy chế HOSE đã được tìm thấy nhưng chưa đọc được toàn văn; không xác nhận bảng số liệu cũ chỉ dựa vào tên văn bản.
 
-$$\text{Giá Trần} = \text{Làm tròn xuống}(\text{Giá Tham Chiếu} \times (1 + \text{Biên Độ}))$$
-$$\text{Giá Sàn} = \text{Làm tròn lên}(\text{Giá Tham Chiếu} \times (1 - \text{Biên Độ}))$$
+Chưa có quyết định simulator chỉ hỗ trợ round lots hay cả odd lots. Quantity/price validation và fill rounding chỉ được khóa khi instrument scope, rule evidence và assumptions được duyệt.
 
-| Sàn Giao Dịch | Biên Độ Dao Động | Cơ Sở Giá Tham Chiếu |
-|---|---|---|
-| **HOSE** | $\pm 7.0\%$ | Giá đóng cửa (ATC) của ngày giao dịch liền trước. |
-| **HNX** | $\pm 10.0\%$ | Giá đóng cửa (ATC) của ngày giao dịch liền trước. |
-| **UPCOM** | $\pm 15.0\%$ | **Giá bình quân gia quyền** của tất cả các giao dịch khớp lệnh trong ngày giao dịch liền trước. |
-| **Ngày đầu tiên chào sàn** | HOSE: $\pm 20\%$, HNX: $\pm 30\%$, UPCOM: $\pm 40\%$ | Giá dự kiến do tổ chức niêm yết đăng ký. |
-
-*Lưu ý cho Engine mô phỏng:* Mọi lệnh đặt mua cao hơn Giá Trần hoặc đặt bán thấp hơn Giá Sàn đều bị hệ thống từ chối ngay lập tức (Lệnh không hợp lệ).
-
----
-
-## 3. Bước Giá (Tick Size) & Quy Định Lô Giao Dịch (Lot Size)
-
-### 3.1. Bước Giá (Áp dụng cho sàn HOSE đối với Cổ phiếu & Chứng quyền)
-
-| Khoảng Mức Giá Cổ Phiếu | Bước Giá Tối Thiểu (Tick Size) | Ví dụ mức giá hợp lệ |
-|---|---|---|
-| **Dưới 10,000 VNĐ** | **10 VNĐ** | 7,120; 7,130; 9,990 VNĐ |
-| **10,000 — 49,950 VNĐ** | **50 VNĐ** | 10,050; 24,150; 49,950 VNĐ |
-| **Từ 50,000 VNĐ trở lên**| **100 VNĐ** | 50,000; 85,200; 120,500 VNĐ |
-
-- **Sàn HNX & UPCOM:** Áp dụng bước giá đồng nhất là **100 VNĐ** cho mọi mức giá cổ phiếu.
-
-### 3.2. Lô Giao Dịch (Lot Size)
-- **Lô Chẵn (Round Lot):** Bội số của **100 cổ phiếu** (tối thiểu 100, 200, ..., tối đa 500,000 cổ phiếu/lệnh). Backtest Engine và Paper Trading mặc định chỉ mô phỏng khớp lệnh lô chẵn.
-- **Lô Lẻ (Odd Lot):** Khối lượng từ 1 đến 99 cổ phiếu. Khớp lệnh trên bảng riêng (không ảnh hưởng đến giá tham chiếu hay chỉ số).
-
----
 
 ## 4. Thanh toán T+2 và thời điểm tài sản khả dụng
 
@@ -108,17 +73,14 @@ flowchart LR
 
 ---
 
-## 5. Thuế Thu Nhập Cá Nhân & Biểu Phí Giao Dịch Mô Phỏng
+## 5. Phí, thuế và giả định mô phỏng
 
-Để đảm bảo kết quả Backtest và Paper Trading sát thực tế nhất, hệ thống tính toán chi phí theo công thức:
+**Pending verification/design:** thuế bán, thuế cổ tức, lưu ký và fee schedule phải có nguồn pháp lý/provider, loại nhà đầu tư/instrument và ngày hiệu lực. Review này chưa có evidence đầy đủ nên không đặt tỷ lệ thuế hay phí mặc định trong docs.
 
-$$\text{Tổng Chi Phí} = \text{Phí Môi Giới Mua} + \text{Phí Môi Giới Bán} + \text{Thuế TNCN Bán}$$
+Brokerage fee, slippage, latency, queue/depth approximation, partial fill và cost basis là simulation configuration/engine decisions; không phải quyền đặt lệnh hay thông tin số dư broker. Mỗi run phải lưu assumptions/version, reporting currency và coverage. OHLC/stream observations không chứng minh thanh khoản có thể khớp; kết quả luôn gắn nhãn simulated.
 
-1. **Thuế Thu Nhập Cá Nhân Bán Chứng Khoán (Bắt buộc theo Luật VN):**
-   - Áp dụng **0.1%** trên tổng giá trị giao dịch bán (bất kể lãi hay lỗ).
-   - $\text{Thuế Bán} = \text{Giá Khớp Bán} \times \text{Khối Lượng Bán} \times 0.001$.
-2. **Phí Giao Dịch Môi Giới (Brokerage Fee - Giả lập):**
-   - Mặc định cấu hình: **0.10%** đến **0.15%** giá trị giao dịch cho cả chiều Mua và chiều Bán (người dùng có thể tùy chỉnh thông số này trong phần cài đặt Backtest).
-3. **Phí Lưu Ký & Thuế Cổ Tức (Mở rộng):**
-   - Thuế cổ tức tiền mặt: Khấu trừ 5% tại nguồn khi nhận cổ tức.
-   - Cổ phiếu thưởng / Cổ tức cổ phiếu: Nhận thêm cổ phiếu, không trừ tiền ngay, nhưng phải chịu thuế 5% trên mệnh giá khi bán số cổ phiếu này trong tương lai.
+## Acceptance trước implementation
+
+- Chốt supported venues/classes và rule versions cho khoảng lịch sử được backtest.
+- Kiểm tra boundary phiên, ngày nghỉ/settlement, auction exceptions, tick/lot rounding, price limits và corporate actions theo evidence đã duyệt.
+- Ghi rõ unsupported/pending scope; không âm thầm áp dụng rule hoặc fee schedule khác.

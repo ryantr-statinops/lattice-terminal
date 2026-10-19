@@ -53,11 +53,10 @@
 
 1. **Mô Phỏng Thực Tế (Paper Trading Realism):**
    - Paper Trading và Backtest phải tuân thủ nghiêm ngặt các quy tắc vận hành của thị trường chứng khoán Việt Nam:
-     - Đúng khung giờ các phiên: Khớp lệnh định kỳ mở cửa (ATO), Khớp lệnh liên tục, Khớp lệnh định kỳ đóng cửa (ATC).
-     - Đúng biên độ giá trần/sàn: HOSE $\pm7\%$, HNX $\pm10\%$, UPCOM $\pm15\%$.
-     - Đúng bước giá (Tick size) và quy định lô chẵn tối thiểu (100 cổ phiếu).
+     - Session/auction rules phải tách theo venue/instrument và có ngày hiệu lực; không khẳng định ATO/ATC luôn ưu tiên trước mọi LO.
+     - Price limits, reference price, tick/lot và giới hạn lệnh cần evidence trước khi cấu hình simulator; không có universal numeric defaults.
      - Phân biệt chu kỳ thanh toán T+2 với thời điểm tài sản khả dụng; áp dụng instrument, lịch và phiên bản quy tắc đúng ngày hiệu lực theo [settlement evidence](07-portfolio/vn-market-rules.md#4-thanh-toán-t2-và-thời-điểm-tài-sản-khả-dụng).
-     - Tính toán đầy đủ thuế thu nhập cá nhân khi bán (0.1%) và phí giao dịch ước tính.
+     - Thuế/phí cần nguồn, phạm vi nhà đầu tư/instrument và ngày hiệu lực; slippage/fill là giả định mô phỏng được ghi version. Xem [market rules](07-portfolio/vn-market-rules.md).
 2. **Không Lookahead Bias Trong Backtesting:**
    - Động cơ kiểm thử chiến lược (Backtest Engine) tuyệt đối không được sử dụng dữ liệu của tương lai để tính toán tín hiệu cho quá khứ (không dùng nến chưa đóng, không dùng giá tương lai của cùng phiên để khớp lệnh hiện tại).
 3. **Cảnh Báo Rủi Ro Minh Bạch:**

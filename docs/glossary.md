@@ -18,14 +18,14 @@
 | `updated_at` | Correction/update time; does not overwrite prior availability history |
 | Dataset snapshot | Versioned local data set with manifest, source revisions, coverage and rights reference |
 | SSI FastConnect Data | SSI market-data product; separate from FastConnect Trading |
-| Phiên ATO (At-The-Opening) | Phiên khớp lệnh định kỳ xác định giá mở cửa (09:00 - 09:15 trên HOSE) |
-| Phiên ATC (At-The-Closing) | Phiên khớp lệnh định kỳ xác định giá đóng cửa (14:30 - 14:45 trên HOSE, HNX) |
+| Phiên ATO (At-The-Opening) | Phiên khớp lệnh định kỳ xác định giá mở cửa; giờ và order priority phụ thuộc rule set có hiệu lực |
+| Phiên ATC (At-The-Closing) | Phiên khớp lệnh định kỳ xác định giá đóng cửa; không suy ra giờ hoặc ưu tiên lệnh từ venue khác |
 | Khớp lệnh liên tục | Phiên giao dịch so khớp lệnh mua/bán ngay khi lệnh được nhập vào hệ thống |
 | Khớp lệnh thỏa thuận | Giao dịch khối lượng lớn thỏa thuận trực tiếp giữa các bên (Put-Through) |
 | Giá Trần / Sàn / Tham chiếu | Giá trần (Ceiling - tím), Sàn (Floor - xanh lơ), Tham chiếu (Reference - vàng) |
-| Biên độ giá (Price Band) | Biên độ dao động tối đa trong ngày: HOSE ±7%, HNX ±10%, UPCOM ±15% |
-| Bước giá (Tick Size) | Khoảng cách giá tối thiểu giữa các mức đặt lệnh (ví dụ HOSE: 10đ, 50đ, 100đ) |
-| Lô giao dịch (Lot Size) | Khối lượng tối thiểu đặt lệnh: Lô chẵn 100 cổ phiếu; Lô lẻ 1-99 cổ phiếu |
+| Biên độ giá (Price Band) | Giới hạn giá theo venue/instrument/session và trường hợp ngoại lệ; percentages cần evidence |
+| Bước giá (Tick Size) | Đơn vị chênh lệch giá hợp lệ theo instrument/mức giá và quy chế áp dụng |
+| Lô giao dịch (Lot Size) | Đơn vị khối lượng/round hoặc odd-lot eligibility theo rule set; chưa chốt hỗ trợ simulator |
 | Chu kỳ thanh toán T+2 | Với instrument thuộc quy chế VSD có hiệu lực 2022-08-29, thanh toán và phân bổ trước 13:00 T+2 để có thể giao dịch phiên chiều; xem [settlement evidence và phạm vi](07-portfolio/vn-market-rules.md#4-thanh-toán-t2-và-thời-điểm-tài-sản-khả-dụng) |
 | Khối ngoại (Foreign Flow) | Dữ liệu khối lượng và giá trị mua/bán của nhà đầu tư nước ngoài |
 | Local profile | User-owned data/config boundary on one installation; profile count and password protection are pending design |
