@@ -24,4 +24,4 @@ Production ingestion cần source approval đầy đủ. [Scoped probe](../03-ma
    - Chỉ bar đã đóng theo quy tắc nguồn/calendar đã xác minh mới đủ điều kiện backtest. Nến live/provisional được phân biệt riêng.
    - Không tự ý nội suy (forward-fill) hoặc bịa đặt nến cho các khoảng thời gian thị trường ngừng giao dịch (cuối tuần, nghỉ lễ, hoặc mã bị tạm ngừng giao dịch).
 4. **Chi Tiết Adapter Contract:**
-   - Xem chi tiết model, payload mẫu và quy tắc parse tại [ssi-adapter-contract.md](ssi-adapter-contract.md).
+   - Xem ranh giới chuẩn bị adapter, capability cần xác minh, yêu cầu chuẩn hóa và approval gates tại [ssi-adapter-contract.md](ssi-adapter-contract.md). Payload mẫu, schema cụ thể và parser rules vẫn chờ xác minh tài liệu/entitlement của nguồn.
