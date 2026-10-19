@@ -50,10 +50,11 @@ Layout: `AppLayout` provides header (nav + theme toggle), footer, skip link. Pag
 ## Streaming prototype
 
 - Prototype hiện có hook kết nối stream upstream từ browser; không dùng thiết kế này làm mẫu cho V1.
-- Reconnect with exponential backoff (cap 30s).
-- Hidden tab grace: mark stale if hidden > 30s.
-- Stale detection: no message for 60s while live.
-- Only closed candles (`k.x === true`) are considered valid data.
+- Hook chỉ hoạt động khi được bật và tab đang hiển thị. Khi tab bị ẩn, hook cleanup kết nối và timer ngay, đặt trạng thái về `idle`; không có grace period 30 giây.
+- Khi đang hoạt động, hook đánh dấu `stale` nếu quá 60 giây không có message (hoặc không có message sau khi kết nối); bộ kiểm tra chạy mỗi 15 giây.
+- Reconnect dùng exponential backoff, tối đa 30 giây.
+- Prototype chỉ kiểm tra message có timestamp dạng number, close dạng string và cờ `x` dạng boolean. Cả `true` lẫn `false` đều được chấp nhận để cập nhật trạng thái stream; hook hiện không chuyển candle vào chart hoặc portfolio.
+- Đây là trạng thái kết nối prototype, không phải xác nhận chất lượng dữ liệu hay quy tắc candle V1.
 
 ## Model Lab mock (deferred)
 
