@@ -11,7 +11,7 @@ Data/config/ledger/results stay on the user's machine. There is no account/works
 
 ## Documents
 
-1. [Quy tắc thị trường chứng khoán Việt Nam (VN Market Rules)](vn-market-rules.md): Khung giờ các phiên (ATO/ATC), biên độ giá, bước giá, lô chẵn, chu kỳ T+2.5 và thuế phí.
+1. [Quy tắc thị trường chứng khoán Việt Nam (VN Market Rules)](vn-market-rules.md): quy tắc theo venue/ngày hiệu lực, settlement T+2 và thời điểm tài sản khả dụng; mỗi mục có trạng thái evidence riêng.
 2. [Portfolio simulator contract](ledger-and-valuation.md): local portfolios, backtest and paper lifecycle; financial rules still to be completed.
 3. [Import, local storage and ownership](imports-and-ownership.md): CSV/backup/delete direction; not yet an implementation schema.
 

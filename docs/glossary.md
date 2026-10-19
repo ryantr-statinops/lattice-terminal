@@ -26,7 +26,7 @@
 | Biên độ giá (Price Band) | Biên độ dao động tối đa trong ngày: HOSE ±7%, HNX ±10%, UPCOM ±15% |
 | Bước giá (Tick Size) | Khoảng cách giá tối thiểu giữa các mức đặt lệnh (ví dụ HOSE: 10đ, 50đ, 100đ) |
 | Lô giao dịch (Lot Size) | Khối lượng tối thiểu đặt lệnh: Lô chẵn 100 cổ phiếu; Lô lẻ 1-99 cổ phiếu |
-| Chu kỳ thanh toán (T+2.5) | Cổ phiếu về tài khoản chiều ngày T+2, giao dịch được vào phiên sáng ngày T+3 |
+| Chu kỳ thanh toán T+2 | Với instrument thuộc quy chế VSD có hiệu lực 2022-08-29, thanh toán và phân bổ trước 13:00 T+2 để có thể giao dịch phiên chiều; xem [settlement evidence và phạm vi](07-portfolio/vn-market-rules.md#4-thanh-toán-t2-và-thời-điểm-tài-sản-khả-dụng) |
 | Khối ngoại (Foreign Flow) | Dữ liệu khối lượng và giá trị mua/bán của nhà đầu tư nước ngoài |
 | Local profile | User-owned data/config boundary on one installation; profile count and password protection are pending design |
 | Portfolio | Local ledger plus backtest/paper simulation state; not an SSI/broker account |

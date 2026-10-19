@@ -81,26 +81,30 @@ $$\text{Giá Sàn} = \text{Làm tròn lên}(\text{Giá Tham Chiếu} \times (1 -
 
 ---
 
-## 4. Chu Kỳ Thanh Toán & Quản Lý Số Dư (Settlement Cycle T+2.5)
+## 4. Thanh toán T+2 và thời điểm tài sản khả dụng
 
-Thị trường chứng khoán cơ sở Việt Nam áp dụng chu kỳ thanh toán bù trừ **T+2.5**:
+**Evidence reviewed 2026-10-19:** [thông báo VSD về Quyết định 109 và 110/QĐ-VSD](https://vsdc.vn/vi/ad/152750), hiệu lực từ 2022-08-29, áp dụng giao dịch cổ phiếu, chứng chỉ quỹ và chứng quyền có bảo đảm thuộc phạm vi quy chế. T là ngày giao dịch; T+2 tính theo ngày thanh toán, có xét lịch nghỉ. Không áp dụng mặc định cho trái phiếu hoặc phái sinh.
+
+Nguồn mô tả hoàn tất thanh toán thông thường trong khoảng 11:00–11:30 ngày T+2 (trường hợp được nêu trong quy chế có thể đến 12:00), thành viên lưu ký phân bổ tiền/chứng khoán trước 13:00. Nhà đầu tư có thể bán chứng khoán đã mua trong phiên chiều T+2 sau khi tài sản thực sự được phân bổ. Chu kỳ thanh toán và thời điểm số dư khả dụng là hai khái niệm riêng.
 
 ```mermaid
 flowchart LR
-    T0["Ngày T+0<br/>Khớp Lệnh Mua"] --> T1["Ngày T+1<br/>Chờ Thanh Toán"]
-    T1 --> T2["Ngày T+2<br/>16:30 - Cổ phiếu về TK"]
-    T2 --> T3["Sáng Ngày T+3 (T+2.5)<br/>Khả dụng để BÁN"]
+    T0["Ngày T: giao dịch mua"] --> Pending["Chờ thanh toán theo lịch"]
+    Pending --> T2["T+2: thanh toán và phân bổ trước 13:00"]
+    T2 --> Available["Phiên chiều T+2: có thể bán phần đã khả dụng"]
 ```
 
-### 4.1. Quy Tắc Cổ Phiếu Mua Mới (Holdings Availability)
-- Khi khớp lệnh Mua vào ngày `T`: Số dư tiền mặt bị trừ ngay lập tức (hoặc phong tỏa). Số lượng cổ phiếu chuyển vào trạng thái `shares_pending_receipt`.
-- Sau 16:30 ngày `T+2` (hết giờ giao dịch ngày T+2), cổ phiếu được chuyển sang trạng thái khả dụng `shares_available`.
-- **Nhà đầu tư chỉ có thể đặt lệnh Bán cổ phiếu này từ phiên sáng ngày `T+3` (thường được gọi là T+2.5).**
-- *Quy tắc Backtest:* Không cho phép bán cổ phiếu vừa mua trong cùng một ngày (Cấm giao dịch T+0 đối với cổ phiếu cơ sở).
+### 4.1. Holdings availability — simulator requirement
 
-### 4.2. Quy Tắc Tiền Bán Cổ Phiếu (Cash Availability)
-- Khi khớp lệnh Bán vào ngày `T`: Cổ phiếu bị trừ ngay khỏi số dư khả dụng. Số tiền bán (sau khi trừ thuế và phí) chuyển vào trạng thái `cash_pending_receipt`.
-- Tiền bán khả dụng về tài khoản vào chiều ngày `T+2` (hoặc có thể sử dụng dịch vụ ứng trước tiền bán nếu mô phỏng margin).
+- Ledger cần tách lượng chờ nhận và lượng khả dụng; chỉ cho phép simulated sell từ lượng khả dụng theo bộ quy tắc có ngày hiệu lực.
+- Không giả định số dư khả dụng chỉ vì đồng hồ đã đến một mốc khi có lỗi hoặc chậm thanh toán; simulator phải ghi giả định về phân bổ/settlement.
+- Bộ quy tắc này không chứng minh dữ liệu hoặc feed tài khoản SSI có thông tin settlement. V1 là sổ cái mô phỏng riêng.
+
+### 4.2. Cash availability — simulator requirement
+
+- Tiền bán chờ thanh toán phải tách khỏi tiền có thể sử dụng; không tự coi proceeds là cash ngay sau simulated fill.
+- Chưa chốt cash reservation, phí/thuế và policy sử dụng tiền bán trong engine. Không mặc định có ứng trước tiền bán hoặc margin.
+- Historical replay cần bộ quy tắc đúng ngày hiệu lực; evidence năm 2022 không tự xác nhận mọi thay đổi quy chế sau đó hoặc mọi giai đoạn trước đó.
 
 ---
 

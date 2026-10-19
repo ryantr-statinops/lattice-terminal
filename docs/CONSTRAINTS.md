@@ -56,7 +56,7 @@
      - Đúng khung giờ các phiên: Khớp lệnh định kỳ mở cửa (ATO), Khớp lệnh liên tục, Khớp lệnh định kỳ đóng cửa (ATC).
      - Đúng biên độ giá trần/sàn: HOSE $\pm7\%$, HNX $\pm10\%$, UPCOM $\pm15\%$.
      - Đúng bước giá (Tick size) và quy định lô chẵn tối thiểu (100 cổ phiếu).
-     - Đúng chu kỳ thanh toán chứng khoán (T+2.5) và tiền bán (T+2).
+     - Phân biệt chu kỳ thanh toán T+2 với thời điểm tài sản khả dụng; áp dụng instrument, lịch và phiên bản quy tắc đúng ngày hiệu lực theo [settlement evidence](07-portfolio/vn-market-rules.md#4-thanh-toán-t2-và-thời-điểm-tài-sản-khả-dụng).
      - Tính toán đầy đủ thuế thu nhập cá nhân khi bán (0.1%) và phí giao dịch ước tính.
 2. **Không Lookahead Bias Trong Backtesting:**
    - Động cơ kiểm thử chiến lược (Backtest Engine) tuyệt đối không được sử dụng dữ liệu của tương lai để tính toán tín hiệu cho quá khứ (không dùng nến chưa đóng, không dùng giá tương lai của cùng phiên để khớp lệnh hiện tại).

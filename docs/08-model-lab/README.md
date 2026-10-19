@@ -11,6 +11,6 @@ Trong giai đoạn V1, mục tiêu cốt lõi của **Research Terminal** là ho
 - Bảng giá & sổ lệnh thời gian thực từ SSI FastConnect Data.
 - Biểu đồ kỹ thuật nến và khối lượng.
 - Sổ cái quản lý danh mục (Portfolio Ledger).
-- Động cơ kiểm thử chiến lược giao dịch (Backtest Engine) và Giả lập giao dịch thời gian thực (Paper Trading Simulator) bám sát các quy tắc thị trường Việt Nam (ATO/ATC, T+2.5, bước giá, thuế phí).
+- Portfolio backtest và paper simulator theo bộ quy tắc có ngày hiệu lực; settlement T+2 và thời điểm khả dụng được phân biệt trong [market rules](../07-portfolio/vn-market-rules.md).
 
 Các tính năng huấn luyện mô hình học máy phức tạp, tự động tối ưu hóa tham số (Hyperparameter optimization), WebAssembly/Python in-browser training, và quản lý thử nghiệm quy mô lớn thuộc phân hệ **Model Lab** được **tạm hoãn và sẽ xem xét trong phiên bản V2** sau khi hệ thống market data và backtest V1 đã hoạt động ổn định.
