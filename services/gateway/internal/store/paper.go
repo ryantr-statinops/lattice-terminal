@@ -146,6 +146,17 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	return tx.Commit()
 }
 func (s *Store) FillPaper(fill PaperFill, key string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err = s.fillPaper(tx, fill, key); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	q, err := amount(fill.Quantity, false)
 	if err != nil {
 		return err
@@ -172,11 +183,6 @@ func (s *Store) FillPaper(fill PaperFill, key string) error {
 	if fill.SettlementDate != at.UTC().Format("2006-01-02") {
 		return errors.New("non-immediate settlement requires verified availability-time model; capability blocked")
 	}
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 	order, err := scanOrder(tx.QueryRow("SELECT * FROM paper_orders WHERE id=?", fill.OrderID))
 	if err != nil {
 		return err
@@ -244,7 +250,7 @@ func (s *Store) FillPaper(fill PaperFill, key string) error {
 	if _, err = tx.Exec("UPDATE allocations SET cash=?,reserved=? WHERE id=?", cash.String(), reserved.String(), a.ID); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 func (s *Store) CancelPaper(id, key string) error {
 	tx, err := s.DB.Begin()

@@ -87,6 +87,7 @@ func run(root, data string, dev bool) error {
 	defer db.Close()
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
 	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect}
+	application.Engine = bridge
 	bridge.OnEvent = application.PaperEvent
 	bridge.OnFinish = application.FinishPaper
 	application.Routes(mux)

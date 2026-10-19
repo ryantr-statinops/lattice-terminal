@@ -8,6 +8,7 @@ import (
 	"kestrel-terminal/gateway/internal/workspace"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,8 @@ type API struct {
 	StartRun  func(store.Run)
 	StopRun   func(string)
 	Inspect   func(string, string, json.RawMessage) error
+	Engine    *Runner
+	paperMu   sync.Mutex
 }
 
 func JSON(w http.ResponseWriter, status int, value any) {
@@ -38,6 +41,7 @@ func Read(w http.ResponseWriter, r *http.Request, v any) bool {
 func Fail(w http.ResponseWriter, err error) { JSON(w, 400, map[string]string{"error": err.Error()}) }
 func (a *API) Routes(m *http.ServeMux) {
 	a.fundRoutes(m)
+	a.paperRoutes(m)
 	m.HandleFunc("GET /api/v1/workspaces/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		files, err := a.Workspace.List(r.PathValue("kind"))
 		if err != nil {

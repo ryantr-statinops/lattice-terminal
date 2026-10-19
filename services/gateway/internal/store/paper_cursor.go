@@ -16,6 +16,17 @@ func (s *Store) PaperCursor(id string) (string, int64, error) {
 	return snapshot, seq, err
 }
 func (s *Store) AdvanceCursor(id, snapshot string, seq int64, at, symbol, bid, ask string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err = s.advanceCursor(tx, id, snapshot, seq, at, symbol, bid, ask); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+func (s *Store) advanceCursor(tx *sql.Tx, id, snapshot string, seq int64, at, symbol, bid, ask string) error {
 	when, err := time.Parse(time.RFC3339Nano, at)
 	if err != nil {
 		return err
@@ -26,11 +37,6 @@ func (s *Store) AdvanceCursor(id, snapshot string, seq int64, at, symbol, bid, a
 	if _, err = amount(ask, false); err != nil {
 		return err
 	}
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 	var old string
 	var previous int64
 	err = tx.QueryRow("SELECT snapshot,sequence FROM paper_cursors WHERE allocation_id=?", id).Scan(&old, &previous)
@@ -64,5 +70,5 @@ func (s *Store) AdvanceCursor(id, snapshot string, seq int64, at, symbol, bid, a
 			return err
 		}
 	}
-	return tx.Commit()
+	return nil
 }
