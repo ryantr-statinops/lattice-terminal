@@ -18,7 +18,7 @@
 - Không có dữ liệu market/news thật trong fixtures; mọi fixture ghi `source_id=fixture-only` và `is_synthetic=true`.
 - Prototype có thể bật upstream stream từ trang Market. Trước integration production phải có source-specific entitlement/rights cho geography, storage, display và purpose.
 - Environment boundary check chỉ cho phép `VITE_API_BASE_URL` ở frontend. Known-marker scan trên lịch sử chưa push tại thời điểm hardening không tìm thấy private key/AWS/GitHub/OpenAI token pattern; đây không thay thế managed secret scanner.
-- Không có auth/account hoặc exchange trading keys.
+- Prototype chưa có authentication/account flow hoặc route gửi lệnh thật.
 
 ## Kiểm chứng
 
