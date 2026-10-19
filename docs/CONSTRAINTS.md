@@ -28,8 +28,8 @@
    - **Tuyệt đối không tích hợp SSI FastConnect Trading** hay bất kỳ API đặt lệnh thật nào của công ty chứng khoán. Ứng dụng không có khả năng và không bao giờ yêu cầu private key / mã PIN / mã OTP đặt lệnh thật của người dùng.
 3. **Quy Tắc Source Gate (Acceptance Gate):**
    - Mọi nguồn dữ liệu phải vượt qua 4 điều kiện trước khi được kích hoạt trực tiếp trong code production:
-     `documented=true` $\rightarrow$ `access-tested=true` $\rightarrow$ `rights-confirmed=true` $\rightarrow$ `approved=true`.
-   - Khi gate chưa được duyệt hoàn toàn (`approved=false`), chỉ dùng synthetic fixtures; không gọi nguồn thật hoặc persist market payload. Không hardcode credential hay bypass gate.
+     `documented`, `access-tested`, `rights-confirmed`, `approved` là evidence flags độc lập; production capability cần đủ evidence phù hợp và approval cho đúng purpose.
+   - Default là fixture-only khi chưa được duyệt. Access probe có giới hạn cần authorization riêng theo [probe policy](03-market-research/source-register.md#access-probes-and-operating-states); không cấp quyền production hoặc lưu payload. Không hardcode credential hay bypass gate.
 4. **Ghi Nhận Bản Quyền Nguồn Minh Bạch (Explicit Attribution):**
    - Mọi dữ liệu hiển thị trên giao diện hoặc lưu trong cơ sở dữ liệu local đều phải gắn nhãn nguồn gốc xuất xứ (`SSI-FC-DATA` hoặc `SYNTHETIC-FIXTURE`) kèm timestamp chính xác. Không che giấu nguồn gốc hoặc mạo danh dữ liệu.
 

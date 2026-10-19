@@ -5,7 +5,7 @@ Coordinator khóa glossary, ADR, shared contracts, dependency board, integration
 
 ## Waves
 1. Product owner closes SSI entitlement/source gates, instrument classes, local security/persistence and portfolio simulation assumptions.
-2. Implement local Windows runtime and offline SSI adapter contracts/fixtures; no live calls before source gate.
+2. Prepare local runtime and offline SSI fixtures; product live calls require production approval. Access probes need separate scoped authorization under the source register policy.
 3. Integrate approved SSI historical/reference data, then stream reconciliation; implement portfolio backtest and paper simulation.
 4. Release/recovery review; standalone news engine and Model Lab stay separate/deferred.
 5. Review docs/code consistency, test relevant quality gates, commit small changes and send through PR.

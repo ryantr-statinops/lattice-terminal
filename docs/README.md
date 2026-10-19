@@ -6,7 +6,7 @@
 
 1. Bắt đầu từ [Vision và phạm vi](01-product/vision-and-scope.md), [Quy tắc sản phẩm](01-product/project-rules.md) và [Constraints](CONSTRAINTS.md) để hiểu mục tiêu, ranh giới và nguyên tắc.
 2. Xem [Architecture](02-architecture/README.md) và [API](09-api/README.md) để phân biệt kiến trúc mục tiêu với scaffold hiện tại.
-3. Với dữ liệu thị trường, đọc [source register](03-market-research/source-register.md), [SSI research](03-market-research/vn-equities.md) và [market-data contracts](06-market-data/README.md). Không gọi SSI hoặc lưu payload thật khi gate còn blocked.
+3. Với market data, đọc [source register](03-market-research/source-register.md), [SSI research](03-market-research/vn-equities.md) và [contracts](06-market-data/README.md). Default là fixture-only; production đang blocked. Access probe cần authorization riêng theo source register và không cấp quyền lưu/serve payload.
 4. Với portfolio simulation, xem [Portfolio](07-portfolio/README.md); backtest và paper trading là mục tiêu V1, chưa phải năng lực đã triển khai.
 5. [News engine](05-news-ingestion/README.md) là workstream độc lập cho nguồn quốc tế và Việt Nam; chưa tích hợp vào terminal.
 6. [UI/UX](10-ui-ux/README.md), [Engineering](11-engineering/README.md) và [Operations](12-operations/README.md) mô tả mục tiêu, prototype và yêu cầu phát hành.

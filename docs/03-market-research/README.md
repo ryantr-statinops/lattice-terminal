@@ -8,4 +8,4 @@
 2. [Source register and approval gates](source-register.md).
 3. [Market comparison](market-comparison.md) — background research only, not a V1 commitment.
 
-Official documentation proves documented capability, not a user's entitlement, fee, history depth, quota, storage rights or production access. `documented`, `access-tested`, `rights-confirmed` and `approved` are separate evidence flags. Do not call SSI or persist real market responses while its gate is blocked.
+Official documentation proves documented capability, not entitlement or rights. Production remains blocked; default is fixture-only. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.

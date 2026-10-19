@@ -4,7 +4,7 @@
 
 V1 giữ credentials, user config, market snapshots, portfolio, backtest artifacts và paper-trading ledger trên máy người dùng. Không có cloud sync, remote database, object storage hay dịch vụ project nhận payload. App clone/run không đồng nghĩa tất cả dữ liệu đã được mã hóa; password login không thay thế encryption-at-rest.
 
-Trước SSI network integration, phải xác minh service entitlement và terms cho đúng endpoint/fields/use case: local access, caching/retention, export, research/backtest/derived use, display, attribution và deletion. REST historical, reference and streaming rights/limits có thể khác nhau. Giữ source policy evidence và terms version/hash trong local manifests; không lưu ConsumerID/Secret hoặc account identifiers trong manifest.
+Trước SSI production integration, phải xác minh entitlement và rights cho đúng endpoint/fields/use case: access, retention, export, research/display, attribution và deletion. REST/reference/stream rights có thể khác nhau. Probe trước production approval phải theo [probe policy](../03-market-research/source-register.md#access-probes-and-operating-states), không tự có quyền lưu response body. Manifests không chứa secret/account identifiers.
 
 News engine sẽ là workstream riêng. Chỉ tích hợp fields/content mà source-specific terms cho phép; link/metadata không mặc nhiên cấp quyền full-text, image, translation, ML hoặc retention. News storage/retention contract được chốt ở workstream đó.
 
@@ -17,4 +17,4 @@ News engine sẽ là workstream riêng. Chỉ tích hợp fields/content mà sou
 - Khi permission revoked/terms expire: dừng adapter, chặn serving/export bị ảnh hưởng, đánh dấu local snapshots restricted và đưa ra delete/review procedure. Immutable versioning không có nghĩa được giữ dữ liệu khi terms yêu cầu xóa.
 - Local server chỉ bind loopback; không bật network sharing, telemetry hoặc auto-upload mặc định.
 
-Đến khi rights gate pass: chỉ dùng synthetic fixtures, không gọi SSI, không cache/persist market payload thật. [Source register](../03-market-research/source-register.md) sở hữu evidence/approval; data docs không tự nâng source status.
+Default là synthetic fixtures; hiện không có probe authorization hoặc production approval. Probe authorization không cấp quyền cache/persist market payload. [Source register](../03-market-research/source-register.md) sở hữu evidence/approval; data docs không tự nâng trạng thái nguồn.

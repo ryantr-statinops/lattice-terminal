@@ -20,7 +20,19 @@ Các flags độc lập. `false` nghĩa là chưa có evidence trong register, k
 
 Official capability references: [REST API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [streaming data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming), [service registration](https://guide.ssi.com.vn/ssi-products/service-registration), [general information](https://guide.ssi.com.vn/ssi-products/general-information). These links establish documentation references only. User entitlement, fees, coverage, quota, exact schema, geography and local-use rights remain unverified.
 
-**Gate decision:** BLOCKED for live calls and persistence of real market payload. Safe preparation is limited to synthetic fixtures, offline parsers/normalizers and local security design. To open a gate, record account-specific access evidence and written/contractual rights for local access, storage, export, research/backtest, display, attribution, retention/deletion and permitted audience. Approve REST APIs and stream groups separately where their terms/capabilities differ.
+**Current decision:** production capabilities BLOCKED; no access probe is authorized or performed by this docs change. Both SSI rows remain unchanged. Account-specific access evidence and rights for the exact production purpose are still missing.
+
+## Access probes and operating states
+
+| State | Permitted behavior | Required record |
+|---|---|---|
+| Fixture-only (current) | Offline fixtures and parsers; no live source calls | Source inventory and pending evidence |
+| Scoped probe authorized | A bounded access/schema check outside the product serving path | Owner authorization for the exact endpoint/feed, entitlement and terms permitting the test, request/range/subscription limits, timeout and secret-handling design |
+| Production capability approved | Only the approved fields, audience, storage and research/display use | Access evidence plus rights, quality and operational review; `approved=true` for that exact capability/purpose |
+
+A probe can occur before production approval. It requires a separate recorded authorization; this is not a new production evidence flag or permission to bypass terms. Review entitlement and terms before probing. Use a secure local credential flow, bounded quota, redacted logs and an explicit stop condition. No credentials in docs or fixtures. Do not persist response bodies, caches or screenshots unless probe retention rights are separately confirmed; retain only permitted schema/status/timing evidence.
+
+Probe success may support `access-tested=true` after review. It does not imply storage, research, display or redistribution rights and never automatically changes `rights-confirmed` or `approved`. Probe failure/revocation stops the test without enabling product serving. Approve REST APIs and stream groups separately when terms/coverage differ. No probe or live integration is executed as part of this documentation work.
 
 ## News source candidates — independent engine
 

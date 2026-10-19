@@ -9,7 +9,7 @@
 - Local API binds loopback only. Validate origins/CSRF as relevant, bound requests, and do not expose LAN listener by default. Localhost is not a trusted security boundary against other processes under the same Windows user.
 - Source rights and entitlement separately govern access, local persistence, export, research/backtest, display and retention. Do not infer rights from public docs or user-supplied credentials.
 - No secret or personal portfolio/raw CSV content in logs. Support diagnostics must redact and preview before export. Never add credentials or real user market data to fixtures/tests.
-- Use synthetic fixtures for development until gates pass. Clearly label synthetic/partial/stale/unavailable state.
+- Use synthetic fixtures for product development until approval. A bounded access test needs separate [probe authorization](../03-market-research/source-register.md#access-probes-and-operating-states), reviewed entitlement/terms, secure credentials, limits and redacted evidence; it does not authorize production serving or payload retention.
 - News engine evaluates each source's metadata/full-text/image/translation/model/retention permissions separately before integration.
 - Paper simulation remains local and cannot issue real orders. Any future broker execution requires a separate product/security/legal review and is out of current scope.
 

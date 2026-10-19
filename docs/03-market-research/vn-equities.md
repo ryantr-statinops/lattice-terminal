@@ -45,7 +45,7 @@ Chưa có account/entitlement của người dùng để xác minh giá, phí, e
 
 Official docs describe capabilities and registration flow; they do not grant project-wide rights or prove a user's account entitlement. Review service terms and separately verify local access, caching/retention, export, research/backtest, derived metrics, display/audience, attribution, deletion and commercial status. A user-provided key does not imply redistribution rights.
 
-Source register keeps SSI REST and streaming separate. Both currently have `documented=true`, `access-tested=false`, `rights-confirmed=false`, `approved=false`. Until the gates are evidenced, implementation preparation is fixture-only: do not call endpoints or persist real market responses.
+Source register keeps SSI REST and streaming separate. Both currently have `documented=true`, `access-tested=false`, `rights-confirmed=false`, `approved=false`. Default preparation is fixture-only. A bounded access test requires separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states); its success does not grant production/storage rights.
 
 ## Yêu cầu market contract cần chốt
 

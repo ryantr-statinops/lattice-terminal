@@ -6,7 +6,7 @@
 
 ## 1. Mục Tiêu V1 Với SSI FastConnect Data
 
-Khi cổng kết nối SSI được duyệt đầy đủ trong [Source Register](../03-market-research/source-register.md):
+Production ingestion cần source approval đầy đủ. [Scoped probe](../03-market-research/source-register.md#access-probes-and-operating-states) là kiểm tra riêng có giới hạn; không tạo production snapshot hoặc ngầm cấp quyền lưu history. Khi production capability được duyệt trong [Source Register](../03-market-research/source-register.md):
 1. Đánh giá daily OHLC, intraday OHLC và reference data trong đúng entitlement.
 2. Chốt supported instruments, intervals, history depth, adjustment semantics, fields và quota dựa trên evidence tài khoản và API.
 3. Chỉ ingest/persist dữ liệu sau khi quyền lưu trữ, research use và retention được xác nhận.

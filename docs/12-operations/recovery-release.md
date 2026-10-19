@@ -23,4 +23,4 @@
 - [ ] Accessibility and Vietnamese source/freshness/session/partial labels reviewed.
 - [ ] News engine remains independently scoped and is not silently integrated into terminal MVP; Model Lab remains deferred.
 
-If a gate is missing, keep that capability disabled or fixture-only; do not present it as complete by editing copy.
+If a production gate is missing, keep product serving disabled or fixture-only. A separately authorized probe is evidence gathering, not a release or approval; never present it as a completed product integration.

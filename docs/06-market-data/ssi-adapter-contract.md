@@ -1,13 +1,13 @@
 # SSI FastConnect Data — adapter preparation contract
 
-**Trạng thái:** implementation preparation only. This document is not an approved production specification. SSI REST and streaming gates remain blocked (`access-tested=false`, `rights-confirmed=false`, `approved=false`). No SSI calls or real-payload persistence are permitted while blocked.
+**Trạng thái:** implementation preparation only. SSI production capabilities remain blocked (`access-tested=false`, `rights-confirmed=false`, `approved=false`). Current mode is fixture-only; a separately authorized bounded probe may precede production approval under the [probe policy](../03-market-research/source-register.md#access-probes-and-operating-states). No probe is authorized by this document.
 
 ## Boundary mục tiêu
 
 - React UI communicates only with a local loopback API.
 - A local adapter owns SSI authentication, bounded requests, quota handling, normalization and stream lifecycle.
 - Credentials and provider tokens stay outside browser storage, URLs, logs, fixtures and Git.
-- Synthetic fixtures are the only permitted development input until each source/feed gate is approved.
+- Product development/serving uses synthetic fixtures until production approval; probe outputs are not product datasets or reusable fixtures.
 - FastConnect Trading and real order routing are excluded.
 
 The specific local process, secret store, database and transport between UI and local service are not yet selected. See [architecture decisions](../02-architecture/decisions.md).
@@ -43,4 +43,4 @@ See the [SSI capability review](../03-market-research/vn-equities.md) and [sourc
 
 ## Approval gate before live adapter work
 
-For each REST API and stream group, record account entitlement, access test (date/region/schema/quota), rights for local access/storage/export/research/display, fields, retention/deletion, attribution, terms version, expiry/review date and disable procedure. Only the source register owner may change the gate. Until then, use offline fixtures and parsers that cannot contact SSI.
+For each REST API and stream group, record entitlement, reviewed access evidence, rights for the exact local access/storage/export/research/display use, fields, retention/deletion, attribution, terms version, review expiry and disable procedure. Only the source register owner may approve that production purpose. Offline work remains the default; scoped access tests require separate probe authorization and must not feed production serving.

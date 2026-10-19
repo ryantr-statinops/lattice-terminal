@@ -4,7 +4,7 @@
 
 V1 does not use Vercel, hosted APIs, managed auth, shared database/object storage, cloud scheduler or remote relay. The browser interface runs on localhost and local services bind to loopback only. Exact one-command startup, process supervisor, Windows supported versions and shutdown behavior remain implementation decisions.
 
-SSI access will be opt-in only after the user's FastConnect Data entitlement, terms, quota and local storage permissions are documented. Historical refresh/backfill starts as an explicit local action with bounded ranges; no hidden scheduled task/background Windows service in first MVP. Realtime streaming runs only while the user starts an eligible live/paper session and stops with the local service.
+Product SSI access is opt-in after entitlement, terms, quota and exact use/storage rights are approved. Before production approval, a bounded access probe needs a separate record under the [probe policy](../03-market-research/source-register.md#access-probes-and-operating-states); no probe is authorized here. History refresh/backfill is explicit and bounded; no hidden scheduler/service in MVP. Eligible live/paper sessions stop when their local service stops.
 
 News engine quốc tế/Việt Nam là workstream độc lập trong định hướng hiện tại; scheduler và operating model của engine chưa quyết định. Không cài như remote service hoặc bật trong terminal trước integration approval.
 
