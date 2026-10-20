@@ -7,7 +7,7 @@ App.tsx provides current routes. TanStack Query manages server state; React stat
 
 Workspace.tsx shares presentation, not the Backtest/Strategy execution contract. Separate wrappers supply different configuration/SDKs. Sidebar files, center Monaco, right logs/results/history, resizable panes; no file tabs. In-memory buffers survive route changes, not browser shutdown. Saves and frozen runs differ.
 
-Monaco/worker and Plotly 2D load lazily/local. AST syntax/entry diagnostics exist; no full Python language server, debugger, package installer or terminal. Lightweight Charts handles candles. Large lazy editor/Plotly chunks remain a bundle-size concern.
+Monaco/worker and Plotly 2D load lazily/local. Market candles use tree-shaken Apache ECharts modules with local Canvas rendering, Vietnamese date labels, crosshair OHLC tooltips and inside zoom; no TradingView attribution logo is used. AST syntax/entry diagnostics exist; no full Python language server, debugger, package installer or terminal. Large lazy editor/Plotly chunks remain a bundle-size concern.
 
 Dark/light uses data-theme and kestrel.theme preference; chart/editor themes update locally. Fonts use system fallback. Keyboard/a11y, richer reporting and dense-layout polish remain work. [Inventory](../10-ui-ux/component-inventory.md).
 

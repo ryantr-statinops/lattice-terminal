@@ -20,7 +20,7 @@ Accepted rebuild: 2026-10-19. Implementation status reviewed 2026-10-20; this is
 | RT-ADR-014 | Accent #21684e separate from market colors | Current palette |
 | RT-ADR-015 | Inter + JetBrains Mono stacks, local/system fallback | No runtime CDN; packaged fonts not added |
 | RT-ADR-016 | TanStack Query server state + React local state | Already installed; URL filter sharing limited |
-| RT-ADR-017 | Lightweight Charts price; Plotly basic 2D reports | No 3D renderer yet |
+| RT-ADR-017 | Apache ECharts 6.1.0 Market candles; Plotly basic 2D reports | ECharts attribution notices retained in repository; no TradingView chart logo; no 3D renderer yet |
 | RT-ADR-018 | Tailwind/CSS variables | Current small token set; consolidation remains |
 | RT-ADR-021 | User-owned local storage with explicit recovery boundaries | Offline ZIP, new-root restore, separate OS secrets/browser/copies |
 | RT-ADR-024 | News independent workstream | No current news runtime route |

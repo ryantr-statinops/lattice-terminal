@@ -1,15 +1,91 @@
 import {useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {ColorType,createChart,type UTCTimestamp} from 'lightweight-charts';
+import {init,use} from 'echarts/core';
+import type {EChartsOption} from 'echarts';
+import {CandlestickChart} from 'echarts/charts';
+import {AxisPointerComponent,DataZoomInsideComponent,GridComponent,TooltipComponent} from 'echarts/components';
+import {CanvasRenderer} from 'echarts/renderers';
 import {request,type Candle,type Instrument,type Snapshot} from './api';
 import {useTheme} from './theme';
+
+use([CandlestickChart,AxisPointerComponent,DataZoomInsideComponent,GridComponent,TooltipComponent,CanvasRenderer]);
+
+const vietnamDate=new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
+const vietnamPrice=new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2});
+
+function chartOption(candles:Candle[],theme:'dark'|'light'):EChartsOption{
+ const light=theme==='light';
+ const labels=candles.map(candle=>vietnamDate.format(new Date(candle.open_time)));
+ const values=candles.map(candle=>[
+  Number(candle.open),
+  Number(candle.close),
+  Number(candle.low),
+  Number(candle.high),
+ ]);
+ return {
+  animation:false,
+  backgroundColor:light?'#f5f8fa':'#0b1017',
+  grid:{left:64,right:24,top:24,bottom:36,containLabel:false},
+  tooltip:{
+   trigger:'axis',
+   axisPointer:{type:'cross',lineStyle:{color:light?'#697b8b':'#91a4b8'}},
+   backgroundColor:light?'#ffffff':'#151e29',
+   borderColor:light?'#cbd5de':'#344252',
+   textStyle:{color:light?'#364657':'#dbe6f2'},
+   formatter:(raw)=>{
+    const item=Array.isArray(raw)?raw[0]:raw;
+    if(!item||typeof item!=='object')return '';
+    const row=item as {axisValueLabel?:string;value?:unknown;data?:unknown};
+    const source=row.value??row.data;
+    const ohlc=Array.isArray(source)?source:source&&typeof source==='object'&&'value'in source?(source as {value?:unknown}).value:undefined;
+    if(!Array.isArray(ohlc)||ohlc.length<4)return row.axisValueLabel??'';
+    const [open,close,low,high]=ohlc.map(Number);
+    return `${row.axisValueLabel??''}<br/>Open: ${vietnamPrice.format(open)}<br/>High: ${vietnamPrice.format(high)}<br/>Low: ${vietnamPrice.format(low)}<br/>Close: ${vietnamPrice.format(close)}`;
+   },
+  },
+  xAxis:{
+   type:'category',
+   data:labels,
+   boundaryGap:true,
+   axisLine:{lineStyle:{color:light?'#aab7c2':'#344252'}},
+   axisTick:{show:false},
+   axisLabel:{color:light?'#536678':'#91a4b8',hideOverlap:true},
+  },
+  yAxis:{
+   type:'value',
+   scale:true,
+   axisLine:{show:false},
+   axisTick:{show:false},
+   axisLabel:{color:light?'#536678':'#91a4b8',formatter:(value:number)=>vietnamPrice.format(value)},
+   splitLine:{lineStyle:{color:light?'#d7e0e6':'#1b2532'}},
+  },
+  dataZoom:[{type:'inside',xAxisIndex:0,zoomOnMouseWheel:true,moveOnMouseMove:true,moveOnMouseWheel:false}],
+  series:[{
+   type:'candlestick',
+   name:'OHLC',
+   data:values,
+   itemStyle:{color:'#61c6a6',color0:'#ee8391',borderColor:'#61c6a6',borderColor0:'#ee8391',borderWidth:1},
+  }],
+ };
+}
 
 function Chart({candles}:{candles:Candle[]}){
  const container=useRef<HTMLDivElement>(null);
  const theme=useTheme();
- useEffect(()=>{if(!container.current)return;const chart=createChart(container.current,{height:360,layout:{background:{type:ColorType.Solid,color:theme==='light'?'#f5f8fa':'#0b1017'},textColor:theme==='light'?'#364657':'#91a4b8'},grid:{vertLines:{color:theme==='light'?'#d7e0e6':'#1b2532'},horzLines:{color:theme==='light'?'#d7e0e6':'#1b2532'}}});const series=chart.addCandlestickSeries({upColor:'#61c6a6',downColor:'#ee8391',borderVisible:false,wickUpColor:'#61c6a6',wickDownColor:'#ee8391'});series.setData(candles.map(v=>({time:Math.floor(Date.parse(v.open_time)/1000) as UTCTimestamp,open:Number(v.open),high:Number(v.high),low:Number(v.low),close:Number(v.close)})));chart.timeScale().fitContent();const resize=new ResizeObserver(([entry])=>chart.applyOptions({width:entry.contentRect.width}));resize.observe(container.current);return()=>{resize.disconnect();chart.remove()}},[candles,theme]);
- return <div role="img" aria-label="Biểu đồ nến tổng hợp; bảng dữ liệu ở dưới" ref={container}/>;
+ useEffect(()=>{
+  const element=container.current;
+  if(!element)return;
+  const chart=init(element,undefined,{renderer:'canvas'});
+  chart.setOption(chartOption(candles,theme));
+  const resize=new ResizeObserver(([entry])=>{
+   if(entry.contentRect.width>0)chart.resize({width:entry.contentRect.width});
+  });
+  resize.observe(element);
+  return()=>{resize.disconnect();chart.dispose()};
+ },[candles,theme]);
+ return <div role="img" aria-label="Biểu đồ nến tổng hợp; bảng dữ liệu ở dưới" ref={container} style={{height:360,width:'100%'}}/>;
 }
+
 export function Market(){
  const instruments=useQuery({queryKey:['instruments'],queryFn:()=>request<Instrument[]>('/engine/market/instruments')});
  const [selected,setSelected]=useState('');
