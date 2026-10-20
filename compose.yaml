@@ -1,0 +1,35 @@
+services:
+  kestrel:
+    image: kestrel-terminal:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m
+    environment:
+      KESTREL_LISTEN_ADDR: 0.0.0.0:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - type: bind
+        source: ${KESTREL_DATA_DIR:?Set KESTREL_DATA_DIR to an existing absolute host directory}
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - /app/services/engine/.venv/bin/python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v1/ready', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    stop_grace_period: 30s
