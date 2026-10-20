@@ -59,8 +59,8 @@ func (m *Manager) Initialized() bool { _, err := os.Stat(m.path); return !os.IsN
 func (m *Manager) SetPassword(password string, reset bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(password) < 12 || len(password) > 1024 {
-		return errors.New("password must contain 12–1024 bytes")
+	if len(password) < 6 || len(password) > 1024 {
+		return errors.New("password must contain 6–1024 bytes")
 	}
 	if m.Initialized() && !reset {
 		return errors.New("profile already initialized")
