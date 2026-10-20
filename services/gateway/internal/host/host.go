@@ -33,6 +33,33 @@ func DataRoot() string {
 	return filepath.Join(d, "KestrelTerminal")
 }
 
+// ListenAddress is loopback by default. Container deployments can opt in to a
+// container-interface bind while keeping the host port published on loopback.
+func ListenAddress() string {
+	if v := os.Getenv("KESTREL_LISTEN_ADDR"); v != "" {
+		return v
+	}
+	return "127.0.0.1:8080"
+}
+
+func EnginePython(root string) string {
+	if v := os.Getenv("KESTREL_ENGINE_PYTHON"); v != "" {
+		return v
+	}
+	python := filepath.Join(root, "services", "engine", ".venv", "bin", "python")
+	if runtime.GOOS == "windows" {
+		python = filepath.Join(root, "services", "engine", ".venv", "Scripts", "python.exe")
+	}
+	return python
+}
+
+func ViteHost() string {
+	if v := os.Getenv("KESTREL_VITE_HOST"); v != "" {
+		return v
+	}
+	return "127.0.0.1"
+}
+
 type Engine struct {
 	URL, Token string
 	cmd        *exec.Cmd
@@ -54,10 +81,7 @@ func (e *Engine) Close() {
 }
 
 func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
-	python := filepath.Join(root, "services", "engine", ".venv", "bin", "python")
-	if runtime.GOOS == "windows" {
-		python = filepath.Join(root, "services", "engine", ".venv", "Scripts", "python.exe")
-	}
+	python := EnginePython(root)
 	if _, err := os.Stat(python); err != nil {
 		return nil, errors.New("Python environment missing; run scripts/setup.ps1")
 	}
@@ -138,7 +162,7 @@ func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
 }
 
 func StartVite(ctx context.Context, root string) (func(), error) {
-	cmd := exec.CommandContext(ctx, "node", filepath.Join(root, "node_modules", "vite", "bin", "vite.js"), "--host", "127.0.0.1", "--port", "5173", "--strictPort")
+	cmd := exec.CommandContext(ctx, "node", filepath.Join(root, "node_modules", "vite", "bin", "vite.js"), "--host", ViteHost(), "--port", "5173", "--strictPort")
 	cmd.Dir = filepath.Join(root, "apps", "web")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

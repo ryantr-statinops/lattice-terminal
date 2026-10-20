@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 	if *backup != "" || *restore != "" || *reset || *credentials != "" {
-		lock, err := net.Listen("tcp", "127.0.0.1:8080")
+		lock, err := net.Listen("tcp", host.ListenAddress())
 		if err != nil {
 			log.Print("Stop Kestrel Terminal before offline maintenance")
 			os.Exit(1)
@@ -88,7 +88,8 @@ func main() {
 }
 
 func run(root, data string, dev bool) error {
-	listener, err := net.Listen("tcp", "127.0.0.1:8080")
+	listenAddress := host.ListenAddress()
+	listener, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		return err
 	}
@@ -182,7 +183,10 @@ func run(root, data string, dev bool) error {
 		return err
 	}
 	defer os.Remove(statePath)
-	dist := filepath.Join(root, "apps", "web", "dist")
+	dist := os.Getenv("KESTREL_WEB_DIST")
+	if dist == "" {
+		dist = filepath.Join(root, "apps", "web", "dist")
+	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			http.NotFound(w, r)
@@ -210,7 +214,7 @@ func run(root, data string, dev bool) error {
 		}
 		http.ServeFile(w, r, candidate)
 	})
-	server := &http.Server{Addr: "127.0.0.1:8080", Handler: manager.Guard(mux, dev), ReadHeaderTimeout: 5 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
+	server := &http.Server{Addr: listenAddress, Handler: manager.Guard(mux, dev), ReadHeaderTimeout: 5 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
 	shutdownDone := make(chan struct{})
 	go func() {
 		defer close(shutdownDone)
