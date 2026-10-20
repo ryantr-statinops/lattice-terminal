@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 )
@@ -20,8 +21,13 @@ func (s *Store) ManualStep(id, snapshot string, after, seq int64, at, symbol, bi
 	}
 	var cursor int64
 	err = tx.QueryRow("SELECT sequence FROM paper_cursors WHERE allocation_id=?", id).Scan(&cursor)
-	if err != nil {
+	if err == sql.ErrNoRows {
 		cursor = 0
+	} else if err != nil {
+		return err
+	}
+	if a.Status != "stopped" {
+		return errors.New("reconcile interrupted allocation before advancing")
 	}
 	if cursor != after || seq != after+1 {
 		return errors.New("paper cursor advanced; refresh state")

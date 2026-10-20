@@ -5,14 +5,20 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/fs"
+	"kestrel-terminal/gateway/internal/fileutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 )
 
 type Workspace struct{ Root, Repository string }
+
+var mutation sync.Mutex
+
 type File struct {
 	Path      string `json:"path"`
 	Directory bool   `json:"directory"`
@@ -30,7 +36,7 @@ func (w Workspace) Path(kind, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if !fs.ValidPath(name) || name == "." || strings.ContainsAny(name, ":\\") || strings.HasPrefix(name, ".trash") {
+	if !fileutil.SafeRelative(name) || strings.HasPrefix(name, ".trash") {
 		return "", errors.New("invalid workspace path")
 	}
 	p := filepath.Join(root, filepath.FromSlash(name))
@@ -106,6 +112,8 @@ func (w Workspace) Read(kind, name string) (string, error) {
 	return string(b), err
 }
 func (w Workspace) Write(kind, name, content string, directory bool) error {
+	mutation.Lock()
+	defer mutation.Unlock()
 	p, err := w.Path(kind, name)
 	if err != nil {
 		return err
@@ -127,9 +135,11 @@ func (w Workspace) Write(kind, name, content string, directory bool) error {
 	if err = os.WriteFile(tmp, []byte(content), 0600); err != nil {
 		return err
 	}
-	return os.Rename(tmp, p)
+	return fileutil.Rename(tmp, p)
 }
 func (w Workspace) Rename(kind, from, to string) error {
+	mutation.Lock()
+	defer mutation.Unlock()
 	p, err := w.Path(kind, from)
 	if err != nil {
 		return err
@@ -144,6 +154,8 @@ func (w Workspace) Rename(kind, from, to string) error {
 	return os.Rename(p, q)
 }
 func (w Workspace) Delete(kind, name string) error {
+	mutation.Lock()
+	defer mutation.Unlock()
 	p, err := w.Path(kind, name)
 	if err != nil {
 		return err
@@ -170,6 +182,12 @@ func (w Workspace) Delete(kind, name string) error {
 	return os.Rename(p, q)
 }
 func (w Workspace) Snapshot(kind, entry string, params json.RawMessage) (string, error) {
+	mutation.Lock()
+	defer mutation.Unlock()
+	var object map[string]any
+	if json.Unmarshal(params, &object) != nil || object == nil {
+		return "", errors.New("snapshot parameters must be an object")
+	}
 	if _, err := w.Path(kind, entry); err != nil {
 		return "", err
 	}
@@ -200,7 +218,11 @@ func (w Workspace) Snapshot(kind, entry string, params json.RawMessage) (string,
 	if err != nil {
 		return "", err
 	}
-	manifest := map[string]any{"kind": kind, "entry": entry, "params": params, "files": contents, "dependency_lock": string(lock)}
+	engine, err := engineHash(filepath.Join(w.Repository, "services", "engine", "kestrel_engine"))
+	if err != nil {
+		return "", err
+	}
+	manifest := map[string]any{"kind": kind, "entry": entry, "params": params, "files": contents, "dependency_lock": string(lock), "engine_sha256": engine}
 	b, _ := json.Marshal(manifest)
 	hash := sha256.Sum256(b)
 	id := hex.EncodeToString(hash[:])
@@ -214,6 +236,7 @@ func (w Workspace) Snapshot(kind, entry string, params json.RawMessage) (string,
 	if err != nil {
 		return "", err
 	}
+	defer os.RemoveAll(tmp)
 	for name, text := range contents {
 		p := filepath.Join(tmp, "files", filepath.FromSlash(name))
 		os.MkdirAll(filepath.Dir(p), 0700)
@@ -224,5 +247,33 @@ func (w Workspace) Snapshot(kind, entry string, params json.RawMessage) (string,
 	if err = os.WriteFile(filepath.Join(tmp, "manifest.json"), b, 0600); err != nil {
 		return "", err
 	}
-	return id, os.Rename(tmp, dir)
+	return id, fileutil.Rename(tmp, dir)
+}
+func engineHash(root string) (string, error) {
+	files := []string{}
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(p, ".py") {
+			files = append(files, p)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	sort.Strings(files)
+	hash := sha256.New()
+	for _, p := range files {
+		rel, _ := filepath.Rel(root, p)
+		io.WriteString(hash, filepath.ToSlash(rel)+"\x00")
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return "", err
+		}
+		hash.Write(b)
+		hash.Write([]byte{0})
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

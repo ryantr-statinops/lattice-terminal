@@ -1,13 +1,16 @@
-# Local API contracts
+# API contracts
 
-**Trạng thái:** V1 should use loopback APIs between the local web UI and local service. Current Go Gateway/FastAPI contracts are fixture scaffold and older hosted/multi-account target; they do not describe an implemented user API.
+**Tóm tắt:** UI chỉ gọi Go. Có kiểm tra drift cho routes/response DTO và internal OpenAPI, nhưng chưa có bộ request OpenAPI/SDK TypeScript sinh tự động đầy đủ.
 
-The V1 API must not require a remote business service, managed auth or cloud database. SSI credentials are used only by a local adapter and must never be sent from browser to SSI. The browser talks to an allowlisted localhost origin; the local process owns upstream auth, source quota and data normalization.
 
-Các trang bên dưới là contract/prototype tham khảo; không định nghĩa wire schema V1 đã chốt:
+Browser uses Go `/api/v1` and session/Host/Origin checks. Python `/internal/v1` is loopback bearer-authenticated. Browser proxy does not expose internal runner/finance endpoints.
 
-1. [Auth and HTTP conventions](auth-and-http.md) — hosted JWT behavior is superseded.
-2. [Capability contracts](capabilities.md) — workspace/experiment endpoints are not V1 requirements.
-3. [Legacy dataset, experiment, and event contracts](../_archive/api-legacy/datasets-experiments-events.md) — archived; Model Lab is deferred.
+- [Auth / HTTP](auth-and-http.md)
+- [Frontend contract](frontend-data-contracts.md)
+- [Capabilities](capabilities.md)
+- [Generated routes](../../contracts/gateway-routes.json)
+- [Gateway response DTO schemas](../../contracts/gateway.schema.json)
+- [Internal OpenAPI](../../contracts/engine.openapi.json)
+- [Market models](../../contracts/market.schema.json)
 
-Nhóm capability dự kiến gồm local health/config validation, instrument/reference data, historical market data/coverage, stream session state và portfolio/backtest/paper simulation. Exact routes và password/session protections phải được thiết kế cùng local runtime; không mở public network listener mặc định.
+CI checks route/response/internal-schema drift. Go response schemas are not complete external request OpenAPI or generated TS clients. Semantic consumer review and tests remain necessary. Contracts do not approve unavailable sources/rules.

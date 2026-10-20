@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"kestrel-terminal/gateway/internal/host"
 	"kestrel-terminal/gateway/internal/store"
 	"kestrel-terminal/gateway/internal/workspace"
@@ -36,6 +37,10 @@ func Read(w http.ResponseWriter, r *http.Request, v any) bool {
 		JSON(w, 400, map[string]string{"error": "invalid request"})
 		return false
 	}
+	if decoder.Decode(new(any)) != io.EOF {
+		JSON(w, 400, map[string]string{"error": "request must contain one JSON value"})
+		return false
+	}
 	return true
 }
 func Fail(w http.ResponseWriter, err error) { JSON(w, 400, map[string]string{"error": err.Error()}) }
@@ -43,6 +48,9 @@ func (a *API) Routes(m *http.ServeMux) {
 	a.fundRoutes(m)
 	a.paperRoutes(m)
 	a.portfolioRoutes(m)
+	a.recoveryRoutes(m)
+	a.artifactRoutes(m)
+	a.reportRoutes(m)
 	m.HandleFunc("GET /api/v1/workspaces/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		files, err := a.Workspace.List(r.PathValue("kind"))
 		if err != nil {
@@ -113,6 +121,11 @@ func (a *API) Routes(m *http.ServeMux) {
 		}
 		if len(v.Params) == 0 {
 			v.Params = json.RawMessage(`{}`)
+		}
+		var object map[string]any
+		if json.Unmarshal(v.Params, &object) != nil || object == nil {
+			JSON(w, 400, map[string]string{"error": "parameters must be an object"})
+			return
 		}
 		if a.Inspect != nil {
 			source, err := a.Workspace.Read(v.Kind, v.File)
@@ -207,7 +220,7 @@ func (a *API) events(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		if run.Status == "completed" || run.Status == "failed" || run.Status == "cancelled" || run.Status == "interrupted" {
+		if len(events) < 200 && (run.Status == "completed" || run.Status == "failed" || run.Status == "cancelled" || run.Status == "interrupted") {
 			return
 		}
 		select {

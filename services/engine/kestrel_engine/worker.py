@@ -11,6 +11,7 @@ from datetime import date,datetime
 from decimal import Decimal
 from pathlib import Path
 from .programs import inspect_source
+from .version import engine_hash
 
 def encode(value):
     if isinstance(value,(Decimal,datetime,date)):return str(value)
@@ -35,6 +36,7 @@ class Context:
         directory=self.data_root/'artifacts'/self.run_id;directory.mkdir(parents=True,exist_ok=True)
         basename=re.sub('[^a-zA-Z0-9_-]','_',str(name))[:80] or 'table'
         path=directory/(basename+'.parquet');temp=path.with_suffix('.parquet.tmp')
+        if path.exists():raise ValueError('artifact name already published; choose a unique table name')
         pq.write_table(pa.Table.from_pylist([dict(zip(columns,row)) for row in rows]),temp)
         temp.replace(path)
         self.emit('artifact',{'name':basename+'.parquet','path':str(path.relative_to(self.data_root).as_posix()),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
@@ -67,6 +69,7 @@ def main():
     if hashlib.sha256(raw).hexdigest()!=snapshot:raise ValueError('code manifest checksum mismatch')
     manifest=json.loads(raw)
     if manifest['kind']!=config['kind']:raise ValueError('snapshot kind mismatch')
+    if manifest.get('engine_sha256')!=engine_hash():raise ValueError('engine implementation differs from frozen run snapshot')
     for name,text in manifest['files'].items():
         path=directory/'files'/name
         if not path.resolve().is_relative_to((directory/'files').resolve()):raise ValueError('snapshot path escape')

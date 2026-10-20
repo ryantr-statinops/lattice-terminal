@@ -1,31 +1,18 @@
-# Trạng thái và lifecycle V1
+# Runtime lifecycle / States
 
-**Trạng thái:** UX/service requirements, chưa triển khai đầy đủ. SSI connection thuộc target local service; tab browser không phải lifecycle owner của toàn bộ ứng dụng.
+**Tóm tắt:** Khóa giao diện, ẩn tab hay đổi file không dừng job. Stop dịch vụ, crash và restore cần trạng thái interrupted và xử lý rõ ràng.
 
-| Tình huống | Hành vi/decision boundary |
+
+| Event | Job / paper behavior |
 |---|---|
-| Sai mật khẩu | Không cấp phiên; không hiển thị secret. Password-to-encryption design vẫn pending |
-| UI lock | Ngăn UI truy cập dữ liệu nhạy cảm theo thiết kế session. Local stream/paper có tiếp tục hay pause còn pending; không hứa vault unlock hoặc full RAM zeroization |
-| Tab ẩn/heartbeat UI mất | Browser có thể throttle/freeze rendering. Không suy ra local service đã dừng hoặc tự chốt pause paper. Subscription/render policy và stale timers cần thiết kế riêng |
-| Tab hoạt động trở lại | Xác minh session và hỏi local service về trạng thái/freshness/gaps trước khi hiển thị là live; không coi UI reconnect là upstream reconnect |
-| Người dùng stop stream/paper | Target có explicit stop action; order acceptance/ledger checkpoint và kết thúc phiên cần contract simulator. Mọi kết quả vẫn simulated |
-| Người dùng pause/resume paper | Pause/resume là control mục tiêu trong UX. Trạng thái paused, xử lý lệnh đang chờ, ledger checkpoint và điều kiện resume cần được định nghĩa trong simulator contract |
-| App/local service stop hoặc crash | Đóng subscription khi orderly shutdown; khi restart đánh dấu interrupted/unknown cho đến khi feed/ledger reconcile. Không suy diễn unseen fills |
-| Feed disconnect/quota/auth error | Phân loại lỗi; bounded retry cho transient failure, dừng theo auth/policy/quota rules. Giữ history hợp lệ và nhãn stale/partial |
-| Feed gap/stale hoặc session/market state không rõ | Không mô phỏng fill như đang có executable liquidity. Điều kiện tự động pause, chặn lệnh mới, xử lý lệnh đang chờ và resume phải được chốt trong market/simulator contract |
-| Bar thiếu/trùng/provisional | Hiển thị quality state; không dùng như bar hoàn chỉnh trong backtest |
-| Backtest loading/running/cancel/error | Nêu snapshot/version và assumptions. Cancel, durable run status và interrupted recovery cần thiết kế; không giả định browser worker hoặc resume capability |
-| Valuation stale/partial | Ghi nguồn, thời điểm và phần thiếu; không trình bày tổng chưa đủ giá như valuation hoàn chỉnh |
-| Local write/export/restore lỗi | Báo scope và last consistent state; không báo thành công hoặc thay bản tốt bằng partial write |
-| Reset/delete | Preview scope theo storage inventory; không đồng nghĩa lock, password reset hay secure erase |
-| Synthetic fixtures | Nhãn xuyên suốt; không trình bày là dữ liệu SSI thật hoặc current market |
+| File switch, browser hidden/closed | Continues with local services; view changes only |
+| UI lock / expiry | Requires login to view; jobs continue |
+| Explicit job Stop | Worker tree stops; cancelled terminal state; inspect/reconcile book |
+| Completed Strategy replay | Cancel open remainder, preserve positions/cash, book stopped |
+| Service stop/crash | Active jobs interrupted; no inferred missing fills |
+| Restart/restore | No auto-resume; restored paper books interrupted |
+| Market gap/stale | No fills from unavailable/unreconciled observations |
 
-## Pending policy và phạm vi
+Run states: queued/running/stopping (reserved transition)/completed/failed/cancelled/interrupted. Current Stop requests cancel; don't assume instantaneous completion. Timeout fails with reason. Unknown metrics aren't zeros.
 
-Tab visibility, UI lock, idle timeout, lifetime của local paper session, tự động pause khi feed lỗi và backtest cancellation vẫn là design decisions. Không kế thừa timer/worker/sync assumptions của prototype làm V1 requirement. Local-service ownership và explicit app-stop recovery phải được giữ riêng khỏi browser rendering.
-
-News integration chưa thuộc terminal MVP; news engine có lifecycle riêng. Model Lab/runtime/training và hosted result sync ngoài scope; không có training/download/sync UX requirement trong bảng V1 này.
-
-## Acceptance scenarios trước implementation release
-
-Rà wrong-password/lock, hidden/resumed tab khi local service vẫn chạy, upstream failure độc lập UI failure, explicit stop, app crash/restart, stale/partial data, interrupted backtest/paper và failed local write. Mỗi scenario phải dựa trên policy đã được quyết định, không biến pending behavior thành kiểm thử đã pass.
+Train/Test is chronological evaluation, not model training. Model Lab/browser training workers/remote result synchronization are deferred. Workers are local Python processes, not browser Web Workers.

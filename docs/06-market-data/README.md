@@ -1,12 +1,7 @@
-# Market data — SSI FastConnect Data
+# Market data
 
-**Trạng thái:** SSI FastConnect Data là provider direction cho local-first V1. Entitlement/access, rights, schema mapping và production integration chưa xác nhận/triển khai. Default fixture-only; access probe cần authorization riêng theo [probe policy](../03-market-research/source-register.md#access-probes-and-operating-states), không đồng nghĩa production approval.
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [ssi-adapter-contract.md](ssi-adapter-contract.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
 
-V1 target đánh giá REST historical/reference và streaming feeds phù hợp với research + paper simulation. Khi được triển khai, SSI access/credentials thuộc local process và UI gọi local API. Historical data và stream cần reconciliation; stream không thay thế lịch sử. Đây là target architecture, chưa phải implementation.
-
-1. [SSI FastConnect Data adapter technical contract](ssi-adapter-contract.md)
-2. [SSI FastConnect Data scope, source gate and required contracts](../03-market-research/vn-equities.md)
-3. [Dữ liệu lịch sử thị trường (Historical Ingestion)](historical-ingestion.md)
-4. [SSI local stream lifecycle target](browser-live-lifecycle.md)
-
-Scope instrument classes, markets, intervals, field retention and permission are still to be confirmed with the user's entitlement and reviewed terms. See [source register](../03-market-research/source-register.md), [data model](../04-data/data-model.md), and [architecture decisions](../02-architecture/decisions.md).
+- [browser live lifecycle](browser-live-lifecycle.md)
+- [historical ingestion](historical-ingestion.md)
+- [ssi adapter contract](ssi-adapter-contract.md)

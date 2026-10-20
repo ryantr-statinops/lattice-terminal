@@ -1,9 +1,7 @@
-# Dữ liệu Kestrel Terminal
+# Data
 
-**Trạng thái:** contract mục tiêu, chưa có schema/migration/dataset production.
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [data-model.md](data-model.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
 
-1. [Entities, ERD và dictionary](data-model.md)
-2. [Availability, snapshots và quality](lifecycle-and-quality.md)
-3. [Storage, retention và quyền](storage-and-retention.md)
-
-Đọc cùng [glossary](../glossary.md), [source register](../03-market-research/source-register.md) và [ADRs](../02-architecture/decisions.md). Account/portfolio/experiment contracts được sở hữu bởi domain tương ứng; tài liệu này sở hữu dữ liệu thị trường dùng chung và provenance.
+- [data model](data-model.md)
+- [lifecycle and quality](lifecycle-and-quality.md)
+- [storage and retention](storage-and-retention.md)

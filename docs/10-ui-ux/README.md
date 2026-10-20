@@ -1,7 +1,10 @@
-# UI/UX
-**Trạng thái:** UX target; implementation hiện tại là prototype fixture/mock và chưa khớp đầy đủ V1.
-- [Screen flows](screen-flows.md)
-- [Design và accessibility](design-accessibility.md)
-- [Lifecycle và degraded states](states-lifecycle.md)
+# UI / UX
 
-[Product](../01-product/README.md) sở hữu scope; [source register](../03-market-research/source-register.md) sở hữu quyền nguồn; [API](../09-api/README.md) mô tả contract; [Model Lab](../08-model-lab/README.md) là scope deferred.
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [component-inventory.md](component-inventory.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
+
+- [component inventory](component-inventory.md)
+- [design accessibility](design-accessibility.md)
+- [design tokens](design-tokens.md)
+- [frontend plan](frontend-plan.md)
+- [screen flows](screen-flows.md)
+- [states lifecycle](states-lifecycle.md)

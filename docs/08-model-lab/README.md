@@ -1,5 +1,8 @@
 # Model Lab — Nghiên Cứu Mô Hình Định Lượng
 
+> Historical/deferred design, not current runtime. Former code was replaced; see [rebuild status](../13-rebuild/progress.md).
+
+
 **Trạng thái:** ngoài MVP đầu tiên; chỉ xem xét ở phase sau, chưa cam kết lịch V2.
 Tài liệu kiến trúc cũ thiết kế cho nền tảng hosted multi-tenant đã được lưu trữ tại [`docs/_archive/model-lab-legacy/experiment-lifecycle.md`](../_archive/model-lab-legacy/experiment-lifecycle.md).
 

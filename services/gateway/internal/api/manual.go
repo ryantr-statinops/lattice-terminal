@@ -1,8 +1,8 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
-	"kestrel-terminal/gateway/internal/host"
 	"kestrel-terminal/gateway/internal/store"
 	"net/http"
 )
@@ -47,13 +47,24 @@ func (a *API) paperRoutes(m *http.ServeMux) {
 			Fail(w, errors.New("choose a manual allocation and explicit fixture-replay; SSI live blocked"))
 			return
 		}
+		if previous, lookup := a.Store.PaperOrderRequest(input.Key); lookup == nil {
+			if previous.AllocationID != id || previous.Side != input.Side || previous.Price != input.Price || previous.Quantity != input.Quantity {
+				Fail(w, errors.New("idempotency key reused for different order"))
+				return
+			}
+			JSON(w, 201, previous)
+			return
+		} else if lookup != sql.ErrNoRows {
+			Fail(w, lookup)
+			return
+		}
 		snapshot, sequence, err := a.Store.PaperCursor(id)
 		if err != nil || snapshot != input.Snapshot {
 			Fail(w, errors.New("advance selected fixture clock first"))
 			return
 		}
 		var order store.PaperOrder
-		err = a.Engine.call(r.Context(), "POST", "/paper/prepare", map[string]any{"snapshot": snapshot, "sequence": sequence, "id": host.Token(), "side": input.Side, "limit_price": input.Price, "quantity": input.Quantity}, &order)
+		err = a.Engine.call(r.Context(), "POST", "/paper/prepare", map[string]any{"snapshot": snapshot, "sequence": sequence, "id": eventKey(id, "manual-order", []byte(input.Key)), "side": input.Side, "limit_price": input.Price, "quantity": input.Quantity}, &order)
 		if err != nil {
 			Fail(w, err)
 			return

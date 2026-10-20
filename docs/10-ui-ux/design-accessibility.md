@@ -6,7 +6,7 @@
 - Responsive desktop/tablet cho research; ở màn nhỏ giữ source/quality labels, bảng và report đọc được. Không đặt mobile training hoặc news-first workflow làm yêu cầu V1.
 - Dùng màu cùng text/icon, không chỉ xanh/đỏ cho tăng/giảm hay lỗi.
 - Keyboard navigation, focus rõ, semantic labels, error summaries và screen-reader-friendly tables.
-- Number formatting tiếng Việt; CSV/API dùng canonical decimals. Ghi rõ currency đã chốt (reporting currency vẫn pending) và timezone UTC/Asia/Ho_Chi_Minh.
+- Number formatting tiếng Việt; CSV/API dùng canonical decimals. Ghi rõ currency VND đã chốt và timezone UTC/Asia/Ho_Chi_Minh.
 - Chart có table/summary thay thế; giảm animation khi prefers-reduced-motion.
 - Price updates không làm focus nhảy hoặc screen reader đọc từng tick.
 - Loading, data stale và permission/source unavailable là các trạng thái khác nhau.

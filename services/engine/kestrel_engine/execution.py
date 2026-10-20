@@ -9,6 +9,7 @@ from .stream import MarketEvent
 class RulePack(Record):
     id:str
     venue:str
+    board:str='REGULAR'
     instrument_class:Literal['equity']='equity'
     effective_from:date
     effective_to:date
@@ -70,6 +71,8 @@ class Fill(Record):
 
 def validate_order(order:Order,rules:RulePack,day:date):
     rules.check(day)
+    parts=order.instrument_id.split(':')
+    if len(parts)!=4 or parts[:3]!=[rules.venue,rules.board,rules.instrument_class]:raise ValueError('instrument venue/board/class does not match rule pack')
     if order.order_type not in rules.order_types:raise ValueError('order type unsupported for venue/rules')
     if order.order_type!='LO':raise ValueError('auction/market-order fill capability not yet verified or implemented')
     if Decimal(order.limit_price)%Decimal(rules.tick)!=0 or Decimal(order.quantity)%Decimal(rules.lot)!=0:raise ValueError('tick/lot violation')

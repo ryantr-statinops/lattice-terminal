@@ -1,26 +1,34 @@
-# Recovery và release gates
+# Recovery, backup and release
 
-**Trạng thái:** local release direction; recovery has not been rehearsed and no real SSI data is approved/loaded.
+**Tóm tắt:** Dừng terminal trước khi backup; restore vào thư mục mới, tạo lại mật khẩu và không tự chạy lại Strategy/Paper. Xóa secret không thu hồi khóa tại SSI.
 
-## Recovery requirements
 
-- Back up local database/files with schema and manifest versions; test restore on a clean Windows profile.
-- Incomplete writes must not replace prior valid snapshot/portfolio state. Recovery reports state and the last consistent version.
-- Design separate actions for settings reset, managed data deletion, local-secret removal and backup restore using the [storage inventory](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). Exact paths/scope are pending; deleting the checkout is insufficient. Preview impact and report partial cleanup rather than claiming all copies removed.
-- App update/migration must preserve user data or provide a verified backup/rollback path.
-- Interrupted live/paper session restores as interrupted/unknown until the feed and ledger reconcile; never infer unseen fills.
-- Snapshot revisions preserve provenance and source policy. If source permission expires/revokes, stop affected access and apply the documented restrict/delete action.
-- Password reset and encryption-key recovery are separate pending contracts; neither should silently erase data or imply provider reset. Local-secret removal does not revoke a provider key. User-created backups/exports require separate user management; ordinary deletion is not secure erase.
+## Offline Windows maintenance
 
-## Release checklist
+Stop first. Maintenance reserves port 8080 and refuses if a terminal is active. Use the same -data root when customized.
 
-- [ ] SSI REST/stream access and rights gates approved separately for exact account, endpoints, fields, geography, local retention and research/paper use.
-- [ ] Local secret management, loopback binding, password protection, storage encryption/recovery, export/delete and no-telemetry behavior reviewed.
-- [ ] SSI schema mapping, history/stream reconciliation, timestamp/session rules, quality and partial/unavailable states tested.
-- [ ] Backtest anti-lookahead, market calendar/mechanics, fees/taxes/slippage and reproducibility reviewed.
-- [ ] Paper mode has no real-order route or trading credentials; simulated fills are clearly labeled and recover safely after restart/gaps.
-- [ ] Windows clone/start/stop/update/recovery guide verified; supported toolchain and ports documented.
-- [ ] Accessibility and Vietnamese source/freshness/session/partial labels reviewed.
-- [ ] News engine remains independently scoped and is not silently integrated into terminal MVP; Model Lab remains deferred.
+```powershell
+# Existing backup parent, outside app data; output must not exist:
+./.cache/bin/kestrel.exe -backup D:/Backups/kestrel.zip
+# Destination must not exist; parent must exist:
+./.cache/bin/kestrel.exe -restore D:/Backups/kestrel.zip -data D:/Research/KestrelRestored
+./scripts/start.ps1 -DataDir D:/Research/KestrelRestored
+# New root requires first-run password; no session restored.
+./.cache/bin/kestrel.exe -reset-password
+./.cache/bin/kestrel.exe -ssi-credentials delete
+./.cache/bin/kestrel.exe -diagnostics
+```
 
-If a production gate is missing, keep product serving disabled or fixture-only. A separately authorized probe is evidence gathering, not a release or approval; never present it as a completed product integration.
+Backup uses SQLite VACUUM INTO, then checksums workspaces/trash, code snapshots, market snapshots and artifacts. Excludes profile verifier/runtime sessions/control tokens/source policy/OS secrets/service logs. ZIP is **unencrypted** and may contain sensitive scripts/output. Restore only trusted copies.
+
+Restore checks paths/Windows aliases/links/duplicate or case collisions/checksums/SQLite integrity/schema/size; stages beside a new destination and publishes after validation. Never overwrites an existing root. Bounds: 256 MiB/file, 2 GiB total, 50,000 files. Larger migrations aren't implemented.
+
+## Interrupted state
+
+Restart marks active jobs interrupted; restore marks all paper allocations interrupted with no controller. Never auto-resume. Inspect ledger/cursor/positions; Assets Reconcile acknowledges cancellation of open remainder, retains cash/positions/cursor and infers no missing fills. Reserved/unsettled inconsistencies block reconciliation and need investigation. Immediate synthetic settlement is not real-market recovery.
+
+Password reset preserves records/invalidates sessions, not disk decryption. Credential deletion doesn't revoke provider keys. App reset/browser cleanup/data/OS secrets/backups/exports are separate [boundaries](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). No secure erase or automatic whole-data wipe.
+
+## Release gates
+
+Fixture development build only. Local acceptance/clean setup aren't production approval. SSI transport/entitlement/rights/coverage, effective rules/actions/settlement and deeper operational recovery remain blocked. Remote CI needs a later authorized push. [Progress](../13-rebuild/progress.md).

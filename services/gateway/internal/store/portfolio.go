@@ -56,6 +56,10 @@ func PreviewCSV(fund, text string) ImportPreview {
 		if err == io.EOF {
 			break
 		}
+		if index > 5001 || len(result.Errors) >= 50 {
+			result.Errors = append(result.Errors, "maximum 5000 rows / 50 row errors per preview")
+			break
+		}
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("row %d: invalid CSV width or quoting", index))
 			continue
@@ -111,6 +115,10 @@ func (s *Store) RecordTrades(fund string, trades []RecordedTrade) error {
 		}
 	}
 	trades = append([]RecordedTrade(nil), trades...)
+	for i := range trades {
+		stamp, _ := time.Parse(time.RFC3339Nano, trades[i].Time)
+		trades[i].Time = stamp.UTC().Format(time.RFC3339Nano)
+	}
 	sort.SliceStable(trades, func(i, j int) bool {
 		a, _ := time.Parse(time.RFC3339Nano, trades[i].Time)
 		b, _ := time.Parse(time.RFC3339Nano, trades[j].Time)

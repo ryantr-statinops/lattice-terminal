@@ -10,9 +10,10 @@ import (
 )
 
 type codeManifest struct {
-	Entry string            `json:"entry"`
-	Files map[string]string `json:"files"`
-	Lock  string            `json:"dependency_lock"`
+	Entry  string            `json:"entry"`
+	Files  map[string]string `json:"files"`
+	Lock   string            `json:"dependency_lock"`
+	Engine string            `json:"engine_sha256"`
 }
 
 func (a *API) manifest(id string) (codeManifest, error) {

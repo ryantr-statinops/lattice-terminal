@@ -1,11 +1,9 @@
-# Kiến trúc
+# Architecture
 
-**Trạng thái:** local-first product direction được chốt; process boundaries và persistence chưa quyết định. Hiện có React/Vite fixture, Go Gateway, FastAPI và CLI; chưa có SSI integration, local auth hay persistence production.
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [system-architecture.md](system-architecture.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
 
-- [System architecture](system-architecture.md)
-- [Tech stack](tech-stack.md)
-- [Repository structure](folder-structure.md)
-- [ADR](decisions.md)
-- [Glossary](../glossary.md)
-
-V1 clone-and-run trên Windows, config/data thuộc local installation. SSI credentials chỉ được xử lý tại local service sau khi secret storage được thiết kế; browser chỉ gọi loopback API. Các lựa chọn cụ thể về process, storage, password security và launcher vẫn pending cho tới khi ADR được chấp nhận.
+- [decisions](decisions.md)
+- [folder structure](folder-structure.md)
+- [frontend architecture](frontend-architecture.md)
+- [system architecture](system-architecture.md)
+- [tech stack](tech-stack.md)

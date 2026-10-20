@@ -1,6 +1,6 @@
 # Success metrics
 
-**Trạng thái:** khung đo lường; chưa có tích hợp SSI thật, baseline simulator hay pilot người dùng.
+**Trạng thái:** khung đo lường; đã có fixture simulator/tests; chưa có tích hợp SSI thật, baseline thị trường thật hoặc pilot người dùng.
 
 ## Local setup and privacy
 

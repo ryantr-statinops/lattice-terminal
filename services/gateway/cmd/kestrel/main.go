@@ -6,9 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"golang.org/x/term"
+	"io"
 	"kestrel-terminal/gateway/internal/api"
 	"kestrel-terminal/gateway/internal/auth"
+	"kestrel-terminal/gateway/internal/fileutil"
 	"kestrel-terminal/gateway/internal/host"
+	"kestrel-terminal/gateway/internal/recovery"
 	"kestrel-terminal/gateway/internal/secret"
 	"kestrel-terminal/gateway/internal/store"
 	"kestrel-terminal/gateway/internal/workspace"
@@ -19,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -38,8 +42,39 @@ func main() {
 	dev := flag.Bool("dev", false, "Start Vite")
 	reset := flag.Bool("reset-password", false, "Reset local password without deleting data")
 	credentials := flag.String("ssi-credentials", "", "set, status or delete Windows credentials")
+	backup := flag.String("backup", "", "Offline backup ZIP outside the data directory")
+	restore := flag.String("restore", "", "Restore ZIP into a new -data directory")
+	diagnostics := flag.Bool("diagnostics", false, "Print redacted runtime configuration; no payloads")
 	flag.Parse()
-	if *reset || *credentials != "" {
+	if *diagnostics {
+		fmt.Println(`{"product":"Kestrel Terminal","storage_schema":1,"source_mode":"fixture-only","secrets":"Windows Credential Manager (not inspected)","auto_resume":false}`)
+		return
+	}
+	if *backup != "" || *restore != "" || *reset || *credentials != "" {
+		lock, err := net.Listen("tcp", "127.0.0.1:8080")
+		if err != nil {
+			log.Print("Stop Kestrel Terminal before offline maintenance")
+			os.Exit(1)
+		}
+		defer lock.Close()
+		if *backup != "" || *restore != "" {
+			if *backup != "" && *restore != "" {
+				log.Print("Choose backup or restore")
+				os.Exit(1)
+			}
+			var err error
+			if *backup != "" {
+				err = recovery.Backup(*data, *backup)
+			} else {
+				err = recovery.Restore(*restore, *data)
+			}
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
+			}
+			fmt.Println("Offline maintenance complete; no sessions resumed; backup files are not encrypted")
+			return
+		}
 		if err := cli(*data, *reset, *credentials); err != nil {
 			log.Print(err)
 			os.Exit(1)
@@ -86,6 +121,7 @@ func run(root, data string, dev bool) error {
 	}
 	defer db.Close()
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
+	defer func() { cancel(); bridge.Wait() }()
 	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect}
 	application.Engine = bridge
 	bridge.OnEvent = application.PaperEvent
@@ -100,7 +136,16 @@ func run(root, data string, dev bool) error {
 		r.Header.Del("Cookie")
 		r.Header.Set("Authorization", "Bearer "+engine.Token)
 	}
-	mux.Handle("/api/v1/engine/", proxy)
+	mux.Handle("/api/v1/engine/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/api/v1/engine")
+		allowed := r.Method == "GET" && (path == "/market/instruments" || path == "/market/snapshots" || path == "/market/candles" || path == "/market/live-status" || path == "/quant/indicators" || path == "/quant/calculate" || path == "/backtest/data" || path == "/sources")
+		allowed = allowed || (r.Method == "POST" && path == "/programs/inspect")
+		if !allowed {
+			http.NotFound(w, r)
+			return
+		}
+		proxy.ServeHTTP(w, r)
+	}))
 	mux.HandleFunc("GET /api/v1/ready", func(w http.ResponseWriter, r *http.Request) {
 		req, _ := http.NewRequestWithContext(r.Context(), "GET", engine.URL+"/internal/v1/health", nil)
 		req.Header.Set("Authorization", "Bearer "+engine.Token)
@@ -119,7 +164,16 @@ func run(root, data string, dev bool) error {
 			http.Error(w, "unauthorized", 401)
 			return
 		}
+		if _, err := io.Copy(io.Discard, http.MaxBytesReader(w, r.Body, 4096)); err != nil {
+			http.Error(w, "invalid stop body", 400)
+			return
+		}
+		w.Header().Set("Content-Length", "0")
+		w.Header().Set("Connection", "close")
 		w.WriteHeader(202)
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
 		cancel()
 	})
 	state, _ := json.Marshal(map[string]any{"pid": os.Getpid(), "stop_token": stopToken})
@@ -130,16 +184,24 @@ func run(root, data string, dev bool) error {
 	defer os.Remove(statePath)
 	dist := filepath.Join(root, "apps", "web", "dist")
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
 		if r.Method != "GET" && r.Method != "HEAD" {
 			http.Error(w, "method not allowed", 405)
 			return
 		}
-		name := strings.TrimPrefix(filepath.Clean(r.URL.Path), string(filepath.Separator))
-		if name == "." {
+		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+		if name == "." || name == "" {
 			name = "index.html"
 		}
+		if !fileutil.SafeRelative(name) {
+			http.NotFound(w, r)
+			return
+		}
 		candidate := filepath.Join(dist, name)
-		if _, err := os.Stat(candidate); err != nil {
+		if info, err := os.Stat(candidate); err != nil || info.IsDir() {
 			if filepath.Ext(name) != "" {
 				http.NotFound(w, r)
 				return
@@ -148,15 +210,21 @@ func run(root, data string, dev bool) error {
 		}
 		http.ServeFile(w, r, candidate)
 	})
-	server := &http.Server{Addr: "127.0.0.1:8080", Handler: manager.Guard(mux, dev), ReadHeaderTimeout: 5 * time.Second}
+	server := &http.Server{Addr: "127.0.0.1:8080", Handler: manager.Guard(mux, dev), ReadHeaderTimeout: 5 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), 5*time.Second)
 		defer done()
 		_ = server.Shutdown(shutdown)
 	}()
 	log.Print("Kestrel Terminal: http://127.0.0.1:8080 (fixture-only)")
-	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+	err = server.Serve(listener)
+	cancel()
+	<-shutdownDone
+	_ = server.Close()
+	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil

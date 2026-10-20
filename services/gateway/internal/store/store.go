@@ -60,7 +60,8 @@ func (s *Store) CreateRun(v Run) error {
 	if v.Kind != "research" && v.Kind != "backtest" && v.Kind != "strategy" {
 		return errors.New("invalid run kind")
 	}
-	if !json.Valid(v.Params) {
+	var params map[string]any
+	if json.Unmarshal(v.Params, &params) != nil || params == nil {
 		return errors.New("invalid parameters")
 	}
 	_, err := s.DB.Exec("INSERT INTO runs VALUES(?,?,?,?,?,?,?)", v.ID, v.Kind, v.File, v.Snapshot, "queued", Now(), string(v.Params))
@@ -124,6 +125,13 @@ func (s *Store) Append(id string, event Event, status string) error {
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
+		var kind, payload string
+		if err = tx.QueryRow("SELECT type,payload FROM run_events WHERE run_id=? AND seq=?", id, event.Seq).Scan(&kind, &payload); err != nil {
+			return err
+		}
+		if kind != event.Type || payload != string(event.Payload) {
+			return errors.New("conflicting duplicate run event")
+		}
 		return nil
 	}
 	if !transition(old, status) {
@@ -131,6 +139,23 @@ func (s *Store) Append(id string, event Event, status string) error {
 	}
 	if status != "" {
 		if _, err = tx.Exec("UPDATE runs SET status=? WHERE id=?", status, id); err != nil {
+			return err
+		}
+	}
+	if event.Type == "artifact" {
+		var artifact Artifact
+		if json.Unmarshal(event.Payload, &artifact) != nil || !validArtifact(id, artifact) {
+			return errors.New("invalid artifact reference")
+		}
+		var oldHash string
+		err = tx.QueryRow("SELECT hash FROM artifacts WHERE run_id=? AND name=?", id, artifact.Name).Scan(&oldHash)
+		if err == nil && oldHash != artifact.Hash {
+			return errors.New("artifact name already published with different content")
+		}
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if _, err = tx.Exec("INSERT OR IGNORE INTO artifacts VALUES(?,?,?,?)", id, artifact.Name, artifact.Path, artifact.Hash); err != nil {
 			return err
 		}
 	}

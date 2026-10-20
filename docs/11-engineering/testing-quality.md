@@ -1,20 +1,18 @@
-# Testing và quality
+# Testing & quality gates
 
-**Trạng thái:** prototype regression coverage đang chạy local và trong CI; production integration/quant suites vẫn là yêu cầu tương lai.
+**Tóm tắt:** Chỉ ghi nhận kết quả đã chạy. Test fixture không chứng minh quyền SSI, tính đúng của luật thật hoặc kết quả CI trên remote.
 
-## Checks hiện có
 
-- Frontend: `npm run test:web`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run security:env-boundaries`, `npm run fixtures:check`, `npm run test:tooling`.
-- Vitest/jsdom covers routing + fixture rendering, portfolio valuation/CSV/persistence, mocked WebSocket lifecycle, Model Lab mock labeling, data age, refresh success/failure and stale data preservation.
-- GitHub Actions runs frontend, FastAPI/OpenAPI drift, research inspection, Go gateway and fixture ingestion checks. Changes to `main` require PR review and required status checks.
+- npm run typecheck / lint / test:web / build.
+- go -C services/gateway test ./...
+- uv run --project services/engine pytest
+- node scripts/check-docs.mjs: relative Markdown paths/headings.
+- node scripts/contracts.mjs: Go response DTO/route drift.
+- uv run --project services/engine python scripts/export-engine-contracts.py --check
+- uv run --project services/engine python scripts/smoke-windows.py (Windows, after setup/build).
 
-## Scenarios đã có regression tests
+Coverage includes decimal/idempotent/concurrent finance, immutable snapshots, interruptions, source gates, causal indicators, detailed quote time/freshness, separate contracts, worker timeout, backup integrity/path bounds, CSV and missing valuation. Frontend tests are components/contracts, not full browser automation.
 
-- Portfolio: complete/partial/missing prices, zero cost basis, candles out of order/open, strict decimals, unsupported assets, CSV BOM/CRLF/quotes/header/row widths, atomic import, overlapping FileReader results, corrupt storage, partial persisted rows and quota write failure.
-- Stream: fake WebSocket subscription, malformed/valid messages, no-message stale timeout, reconnect backoff, visibility pause/resume, StrictMode and teardown.
-- Refresh: initial loading vs background refresh, cache data during refresh, error with previous data, source timestamp age and retry controls.
-- Model Lab: placeholder result remains `simulated`/`mock` and configuration does not change mock metrics.
+Windows smoke covers auth/routes/Market/Quant/research artifacts/Train-Test, wrong-kind rejection, Manual/Strategy, lock, CSV, >200 SSE events, stop/restart and backup/restore/new profile. CI config exists; local results don't prove remote CI ran because changes aren't pushed.
 
-## Chưa được kiểm chứng
-
-Database constraints, source rights, real feed gaps/duplicates/backfill, browser CSP and performance, actual worker runtime/cancel, walk-forward quant validation, contrast ratios, deployment, monitoring and recovery. CI fixture tests do not approve a market/news source or prove profitability.
+No test authorizes SSI or proves real-market fills. Actual provider pagination/gaps, calendars/actions/settlement and rights need evidence and new tests. Exact outcomes/warnings: [progress](../13-rebuild/progress.md).

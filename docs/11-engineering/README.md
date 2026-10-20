@@ -1,8 +1,9 @@
 # Engineering
-**Trạng thái:** các trang mô tả workflow và quality gates của prototype; chưa có full V1 setup/runtime.
-- [Development workflow](development-workflow.md)
-- [Testing và quality](testing-quality.md)
-- [Security/privacy](security-privacy.md)
-- [Agent orchestration](agent-orchestration.md)
 
-[ADR](../02-architecture/decisions.md) và [roadmap](../../task/next-plan.md) quyết định boundaries và trạng thái.
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [testing-quality.md](testing-quality.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
+
+- [agent orchestration](agent-orchestration.md)
+- [development workflow](development-workflow.md)
+- [evaluation report](evaluation-report.md)
+- [security privacy](security-privacy.md)
+- [testing quality](testing-quality.md)

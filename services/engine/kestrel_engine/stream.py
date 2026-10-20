@@ -1,7 +1,7 @@
 """Per-feed reconciliation state, independent of browser lifetime."""
 from collections import deque
 from datetime import datetime,timedelta
-from pydantic import AwareDatetime,Field
+from pydantic import AwareDatetime,Field,field_validator
 from .models import Record,decimal_text
 
 class MarketEvent(Record):
@@ -22,6 +22,9 @@ class MarketEvent(Record):
     ask_size:str|None=None
     price:str|None=None
     size:str|None=None
+    @field_validator('bid','ask','bid_size','ask_size','price','size')
+    @classmethod
+    def numbers(cls,value):return decimal_text(value) if value is not None else None
 
 class Reconciler:
     def __init__(self,max_age:timedelta):

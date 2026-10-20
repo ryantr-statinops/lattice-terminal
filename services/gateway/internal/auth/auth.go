@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"golang.org/x/crypto/argon2"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +19,7 @@ import (
 type record struct{ Salt, Hash, Generation string }
 type session struct {
 	Last       time.Time
+	Expires    time.Time
 	Generation string
 }
 type Manager struct {
@@ -97,7 +100,7 @@ func (m *Manager) Login(password string) (string, error) {
 	}
 	m.failures = 0
 	token := random()
-	m.sessions[token] = session{Last: now, Generation: v.Generation}
+	m.sessions[token] = session{Last: now, Expires: now.Add(30 * time.Minute), Generation: v.Generation}
 	return token, nil
 }
 func (m *Manager) Valid(r *http.Request) bool {
@@ -112,7 +115,7 @@ func (m *Manager) Valid(r *http.Request) bool {
 		return false
 	}
 	v, err := m.read()
-	if err != nil || v.Generation != s.Generation || time.Since(s.Last) > 30*time.Minute {
+	if err != nil || v.Generation != s.Generation || time.Now().After(s.Expires) || time.Since(s.Last) > 30*time.Minute {
 		delete(m.sessions, cookie.Value)
 		return false
 	}
@@ -141,6 +144,18 @@ func (m *Manager) Guard(next http.Handler, dev bool) http.Handler {
 				http.Error(w, "invalid origin", 403)
 				return
 			}
+		}
+		// Consume the bounded wire body before handlers can respond/stop. Leaving
+		// unread POST bytes can reset Windows TCP connections during close.
+		if r.Body != nil && r.Body != http.NoBody {
+			body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4*1024*1024))
+			if err != nil {
+				http.Error(w, "request body exceeds limit", 413)
+				return
+			}
+			r.Body.Close()
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			r.ContentLength = int64(len(body))
 		}
 		public := r.URL.Path == "/api/v1/health" || r.URL.Path == "/api/v1/ready" || r.URL.Path == "/api/v1/auth/status" || r.URL.Path == "/api/v1/auth/login" || r.URL.Path == "/api/v1/auth/setup" || r.URL.Path == "/api/v1/runtime/stop"
 		if len(r.URL.Path) >= 8 && r.URL.Path[:8] == "/api/v1/" && !public && !m.Valid(r) {

@@ -51,11 +51,14 @@ UPDATE allocations SET status='interrupted',controller='' WHERE status='running'
 	return err
 }
 func amount(value string, zero bool) (decimal.Decimal, error) {
+	if len(value) > 80 || strings.ContainsAny(value, "eE+") {
+		return decimal.Zero, errors.New("use a plain decimal string of at most 80 characters")
+	}
 	v, err := decimal.NewFromString(value)
 	if err != nil || v.IsNegative() || (!zero && v.IsZero()) {
 		return decimal.Zero, errors.New("positive finite decimal required")
 	}
-	if len(value) > 80 || v.Exponent() < -8 {
+	if v.Exponent() < -8 || v.Exponent() > 40 {
 		return decimal.Zero, errors.New("decimal precision exceeds supported range")
 	}
 	return v, nil

@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestProfileResetAndLock(t *testing.T) {
@@ -35,6 +38,54 @@ func TestProfileResetAndLock(t *testing.T) {
 	m.Lock()
 	if m.Valid(r) {
 		t.Fatal("lock failed")
+	}
+}
+
+type wireBody struct {
+	*strings.Reader
+	closed bool
+}
+
+func (b *wireBody) Close() error { b.closed = true; return nil }
+func TestGuardConsumesWireBodyBeforeAHandlerResponds(t *testing.T) {
+	m := New(t.TempDir())
+	body := &wireBody{Reader: strings.NewReader(`{}`)}
+	request := httptest.NewRequest("POST", "http://127.0.0.1:8080/api/v1/auth/login", nil)
+	request.Header.Set("Origin", "http://127.0.0.1:8080")
+	request.Body = body
+	handler := m.Guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if body.Len() != 0 || !body.closed {
+			t.Error("wire body left unread before response")
+		}
+		b, err := io.ReadAll(r.Body)
+		if err != nil || string(b) != "{}" {
+			t.Error("handler lost request body")
+		}
+		w.WriteHeader(204)
+	}), false)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != 204 {
+		t.Fatal(response.Code)
+	}
+}
+func TestActiveStreamCannotExtendAbsoluteSessionLifetime(t *testing.T) {
+	m := New(t.TempDir())
+	if err := m.SetPassword("test password only 123", false); err != nil {
+		t.Fatal(err)
+	}
+	token, err := m.Login("test password only 123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := m.sessions[token]
+	v.Expires = time.Now().Add(-time.Second)
+	v.Last = time.Now()
+	m.sessions[token] = v
+	r := httptest.NewRequest("GET", "/api/v1/runs/r/events", nil)
+	r.AddCookie(Cookie(token))
+	if m.Valid(r) {
+		t.Fatal("active SSE extended expired session")
 	}
 }
 func TestGuardOriginAndHost(t *testing.T) {

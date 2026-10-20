@@ -18,7 +18,7 @@ One local password-locked profile, Argon2id verifier, HttpOnly session cookie. P
 
 ## Milestones and truthful status
 
-All milestones begin pending; only verification recorded with the relevant implementation commit establishes completion.
+Milestones 1–22 have local implementation commits; milestone 22 records recovery/local fixture acceptance. [Progress](progress.md) distinguishes fixture delivery from blocked production work; do not infer SSI pagination, real transport or exchange-rule completion from the milestone names.
 
 1. Branding/specification/MIT.
 2. Baseline/reset and buildable skeleton.

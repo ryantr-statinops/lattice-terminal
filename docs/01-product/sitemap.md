@@ -1,16 +1,14 @@
-# Sitemap
+# Sitemap / Navigation
 
-**Trạng thái:** route direction only; current routes belong to prototype.
+| Route | Area | Current state |
+|---|---|---|
+| `/market` | Market | Synthetic daily chart/watchlist |
+| `/quant` | Quant | Indicators / 2D analysis |
+| `/quant/research` | Research | File tree/editor/run history |
+| `/backtest` | Backtest | Separate historical contract / Train/Test |
+| `/strategies` | Strategies | Separate callbacks / paper allocations |
+| `/assets` | Assets / Quỹ | Funds, budgets, Manual replay, reconciliation |
+| `/portfolio` | Portfolio | Local books / settled tracking CSV |
+| `/settings` | Settings | Evidence / CLI guidance |
 
-| Area | V1 function |
-|---|---|
-| `/` | Local app landing/status, setup and data/security limits |
-| `/login` | Local password-only lock/login; recovery contract pending |
-| `/settings/data` | Local SSI FastConnect Data configuration and entitlement/connection status |
-| `/market` | SSI-supported instruments, reference/history/chart and data quality states |
-| `/portfolio` | Local portfolio overview and simulated ledger |
-| `/portfolio/backtest` | Historical snapshot selection, assumptions, replay and results |
-| `/portfolio/paper` | Start/stop/pause paper live session and inspect simulated orders/fills |
-| `/news` | Tích hợp sau khi news engine độc lập và source gates sẵn sàng |
-
-Không có hosted `/auth`, public demo account, server workspace hay cloud portfolio API trong hướng V1. Tên route có thể đổi khi triển khai; local data flow và simulated-only trading boundary là yêu cầu sản phẩm.
+`/` redirects to Market. Setup/login is a local session gate. No file-tab strip or news/Model Lab routes. SSI live is blocked. Theme is a local dark/light preference.

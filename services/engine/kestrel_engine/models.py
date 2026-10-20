@@ -1,12 +1,15 @@
 """Versioned domain records. Money never crosses a boundary as a float."""
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+import re
 from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator, model_validator
 
 def decimal_text(value: str) -> str:
     if not isinstance(value, str):
         raise ValueError('decimal fields must be strings')
+    if len(value)>80 or not re.fullmatch(r'-?\d+(?:\.\d+)?',value):
+        raise ValueError('use a plain finite decimal string of at most 80 characters')
     try:
         number = Decimal(value)
     except InvalidOperation as error:
@@ -17,6 +20,13 @@ def decimal_text(value: str) -> str:
 
 class Record(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    @field_validator('*',mode='after')
+    @classmethod
+    def utc_instants(cls,value):
+        if isinstance(value,datetime):
+            if value.tzinfo is None:raise ValueError('timezone required')
+            return value.astimezone(timezone.utc)
+        return value
 
 class Instrument(Record):
     id: str

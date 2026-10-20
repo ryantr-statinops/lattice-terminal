@@ -16,6 +16,10 @@ def calculate(name:str,candles:list[Candle],period:int=14,benchmark:list[Candle]
     if any(not bar.is_closed for bar in candles): raise ValueError('closed bars required')
     if candles!=sorted(candles,key=lambda b:b.open_time): raise ValueError('bars must be chronological')
     if len({b.open_time for b in candles})!=len(candles): raise ValueError('duplicate candle time')
+    if len({(b.instrument_id,b.interval) for b in candles})>1:raise ValueError('one instrument/interval required')
+    if benchmark is not None:
+        if any(not b.is_closed for b in benchmark) or benchmark!=sorted(benchmark,key=lambda b:b.open_time):raise ValueError('benchmark requires chronological closed bars')
+        if len({b.open_time for b in benchmark})!=len(benchmark):raise ValueError('duplicate benchmark time')
     if annualization is not None and not 1<=annualization<=10000: raise ValueError('invalid annualization')
     close=np.array([float(v.close) for v in candles],dtype=np.float64)
     if len(close)==0:return {'indicator':name,'series':[],'warnings':['empty_dataset']}
@@ -52,4 +56,5 @@ def calculate(name:str,candles:list[Candle],period:int=14,benchmark:list[Candle]
             if name=='correlation':result=returns.rolling(period,min_periods=period).corr(base)
             else:result=returns.rolling(period,min_periods=period).cov(base)/base.rolling(period,min_periods=period).var(ddof=1).replace(0,np.nan)
             output={name:result.to_numpy()}
-    return {'indicator':name,'parameters':{'period':period,'annualization':annualization},'times':[v.close_time.isoformat() for v in candles],'series':[{'name':key,'values':clean(value)} for key,value in output.items()],'warnings':warnings,'library_version':talib.__version__,'convention':'closed-bars/right-aligned/no-fill; floats are analytics-only'}
+    parameters={'fast_period':12,'slow_period':26,'signal_period':9} if name=='macd' else {'period':period,'annualization':annualization}
+    return {'indicator':name,'parameters':parameters,'times':[v.close_time.isoformat() for v in candles],'series':[{'name':key,'values':clean(value)} for key,value in output.items()],'warnings':warnings,'library_version':talib.__version__,'convention':'closed-bars/right-aligned/no-fill; floats are analytics-only'}

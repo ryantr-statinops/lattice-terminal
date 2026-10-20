@@ -4,7 +4,7 @@
 
 | Term | Standard definition |
 |---|---|
-| Asset | Economic asset/security category; distinct from a trading instrument or ticker |
+| Assets / Quỹ | Named VND funds with separate Manual/Strategy allocations; distinct from economic asset classes |
 | Instrument | Tradable/listed product identified by venue, board/market type, instrument class, native symbol and lifecycle |
 | Venue / board | Exchange and board/market label such as HOSE, HNX, UPCOM; DER/BOND require distinct product semantics |
 | Candle / OHLC | Time-bucketed open/high/low/close and volume/value with source, interval, session/time fields and closed/provisional state |
@@ -28,10 +28,14 @@
 | Lô giao dịch (Lot Size) | Đơn vị khối lượng/round hoặc odd-lot eligibility theo rule set; chưa chốt hỗ trợ simulator |
 | Chu kỳ thanh toán T+2 | Với instrument thuộc quy chế VSD có hiệu lực 2022-08-29, thanh toán và phân bổ trước 13:00 T+2 để có thể giao dịch phiên chiều; xem [settlement evidence và phạm vi](07-portfolio/vn-market-rules.md#4-thanh-toán-t2-và-thời-điểm-tài-sản-khả-dụng) |
 | Khối ngoại (Foreign Flow) | Dữ liệu khối lượng và giá trị mua/bán của nhà đầu tư nước ngoài |
-| Local profile | User-owned data/config boundary on one installation; profile count and password protection are pending design |
+| Local profile | Single local profile; Argon2id session password, not whole-disk encryption |
 | Portfolio | Local ledger plus backtest/paper simulation state; not an SSI/broker account |
 | Model Lab | Later experiment/model runtime, outside first MVP |
 | News engine | Workstream độc lập cho nguồn quốc tế và Việt Nam; tích hợp sau khi source/integration gates sẵn sàng |
+
+| Strategy | Separate paper callback contract, not a Backtest file |
+| Train/Test | Ordered research/evaluation ranges; not AI training |
+| Tracking fund | Settled user records, not paper fills |
 
 ## Invariants
 

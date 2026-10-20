@@ -83,7 +83,7 @@ class MarketRepository:
         parquet=path/'candles.parquet'
         if hashlib.sha256(parquet.read_bytes()).hexdigest()!=manifest['parquet_sha256']: raise ValueError('snapshot checksum mismatch')
         with duckdb.connect(':memory:') as connection:
-            table=connection.execute('SELECT * FROM read_parquet(?) ORDER BY open_time',[str(parquet)]).fetch_arrow_table()
+            table=connection.execute('SELECT * FROM read_parquet(?) ORDER BY open_time',[str(parquet)]).to_arrow_table()
         rows=[]
         for row in table.to_pylist():
             for field in ['open','high','low','close','volume']:

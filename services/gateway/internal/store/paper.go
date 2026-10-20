@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/shopspring/decimal"
 	"time"
@@ -113,6 +114,9 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	if a.Mode == "manual" && controller != "" {
 		return errors.New("strategy cannot control manual allocation")
 	}
+	if a.Mode == "manual" && a.Status != "stopped" {
+		return errors.New("reconcile interrupted manual allocation first")
+	}
 	if a.Mode != "manual" && a.Mode != "strategy" {
 		return errors.New("not a paper allocation")
 	}
@@ -144,6 +148,20 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 		return err
 	}
 	return tx.Commit()
+}
+func (s *Store) PaperOrderRequest(key string) (PaperOrder, error) {
+	var kind, raw string
+	var order PaperOrder
+	if err := s.DB.QueryRow("SELECT kind,payload FROM ledger WHERE request_key=?", key).Scan(&kind, &raw); err != nil {
+		return order, err
+	}
+	if kind != "paper_order" {
+		return order, errors.New("idempotency key belongs to another operation")
+	}
+	if err := json.Unmarshal([]byte(raw), &order); err != nil {
+		return order, err
+	}
+	return order, nil
 }
 func (s *Store) FillPaper(fill PaperFill, key string) error {
 	tx, err := s.DB.Begin()
@@ -258,6 +276,12 @@ func (s *Store) CancelPaper(id, key string) error {
 		return err
 	}
 	defer tx.Rollback()
+	if err = s.cancelPaper(tx, id, key); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+func (s *Store) cancelPaper(tx *sql.Tx, id, key string) error {
 	order, err := scanOrder(tx.QueryRow("SELECT * FROM paper_orders WHERE id=?", id))
 	if err != nil {
 		return err
@@ -294,5 +318,5 @@ func (s *Store) CancelPaper(id, key string) error {
 	if _, err = tx.Exec("UPDATE paper_orders SET status='cancelled',remaining='0' WHERE id=?", id); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }

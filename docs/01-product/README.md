@@ -1,9 +1,9 @@
-# Sản phẩm
-**Trạng thái:** target, chưa triển khai.
-- [Vision và scope](vision-and-scope.md)
-- [Quy tắc sản phẩm](project-rules.md)
-- [Journeys](user-journeys.md)
-- [Sitemap](sitemap.md)
-- [Success metrics](success-metrics.md)
+# Product
 
-Định nghĩa thuật ngữ theo [glossary](../glossary.md); nguồn và tính khả thi theo [market research](../03-market-research/README.md).
+Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [vision-and-scope.md](vision-and-scope.md). SSI production remains blocked. [Progress](../13-rebuild/progress.md).
+
+- [project rules](project-rules.md)
+- [sitemap](sitemap.md)
+- [success metrics](success-metrics.md)
+- [user journeys](user-journeys.md)
+- [vision and scope](vision-and-scope.md)

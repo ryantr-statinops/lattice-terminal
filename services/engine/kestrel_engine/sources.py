@@ -7,15 +7,15 @@ from .models import Record
 CAPABILITIES=['SSI-FC-DATA-REST','SSI-FC-DATA-STREAM']
 class SourceBlocked(ValueError):pass
 class Scope(Record):
-    endpoints:list[str]
-    purposes:list[str]
-    fields:list[str]
+    endpoints:list[str]=Field(min_length=1)
+    purposes:list[str]=Field(min_length=1)
+    fields:list[str]=Field(min_length=1)
     request_limit:int=Field(gt=0)
     timeout_seconds:int=Field(gt=0,le=120)
     retention_allowed:bool=False
     export_allowed:bool=False
-    terms_reference:str
-    entitlement_reference:str
+    terms_reference:str=Field(min_length=1)
+    entitlement_reference:str=Field(min_length=1)
     expires_at:AwareDatetime
 
 class Evidence(Record):

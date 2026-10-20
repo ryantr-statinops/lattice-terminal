@@ -19,6 +19,7 @@ type Runner struct {
 	Store    *store.Store
 	Context  context.Context
 	mu       sync.Mutex
+	wg       sync.WaitGroup
 	stopped  map[string]bool
 	OnEvent  func(store.Run, string, json.RawMessage) error
 	OnFinish func(store.Run)
@@ -67,7 +68,10 @@ func (r *Runner) Inspect(kind, source string, params json.RawMessage) error {
 	return r.call(r.Context, "POST", "/programs/inspect", map[string]any{"kind": kind, "source": source, "selected": p["kind_detection"] == "selected"}, nil)
 }
 func (r *Runner) Start(run store.Run) {
+	r.wg.Add(1)
 	go func() {
+		defer r.wg.Done()
+		defer func() { r.mu.Lock(); delete(r.stopped, run.ID); r.mu.Unlock() }()
 		if r.OnFinish != nil {
 			defer r.OnFinish(run)
 		}
@@ -144,12 +148,14 @@ func (r *Runner) Start(run store.Run) {
 			}
 			select {
 			case <-r.Context.Done():
+				fail(errors.New("local service stopped; run interrupted"))
 				return
 			case <-time.After(100 * time.Millisecond):
 			}
 		}
 	}()
 }
+func (r *Runner) Wait() { r.wg.Wait() }
 func (r *Runner) Stop(id string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

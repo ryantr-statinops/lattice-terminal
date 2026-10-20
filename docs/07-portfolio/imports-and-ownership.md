@@ -1,33 +1,17 @@
-# Portfolio data, import and local ownership
+# Settled tracking records / CSV
 
-**Trạng thái:** local-only requirement accepted; import and persistence contracts pending.
+**Tóm tắt:** Preview CSV trước khi ghi toàn bộ giao dịch đã thanh toán; lỗi bất kỳ dòng nào làm rollback. Sửa lịch sử bằng quỹ tracking mới và nhập lại theo thời gian.
 
-Portfolio files belong to the local installation/user profile. V1 does not upload them or scope them by hosted account/workspace/JWT. Local password login is an access-control request, not proof that disk data is encrypted. The storage and secret design must define profile isolation, encryption, backup, export, delete and password recovery before real personal data is persisted.
 
-## CSV direction
+Tracking funds accept user-confirmed settled trades, separate from paper fills. They do not query broker balances. Portfolio supports manual entry and UTF-8 CSV preview/import/export.
 
-CSV import/export is a candidate local workflow, not yet a locked schema. Before implementation, define:
+```csv
+trade_id,event_time,instrument_id,side,quantity,price,fee,tax,settled
+example-1,2026-10-01T02:00:00Z,HOSE:REGULAR:equity:SYN01,buy,1,100,0,0,true
+```
 
-- UTF-8 header/version and canonical instrument identity (venue, board, market type, instrument class, native symbol).
-- Decimal separator, quantity/price scale, currency, fees/taxes and timezone requirements.
-- Event types for initial cash/positions, simulated orders/fills, deposits/withdrawals, dividends/corporate actions and corrections.
-- Duplicate/idempotency rules and row-level preview/errors.
-- Atomic import: either all accepted rows are committed or none are; do not silently discard/rewrite rows.
-- Export format plus manifest for source, snapshot, strategy, simulation assumptions and application version.
+Exact header, max 2 MiB/5,000 validated rows. IDs use safe ASCII identifiers, not formula prefixes. Explicit offset/UTC time; positive quantity/price, explicit nonnegative fee/tax and settled=true. Costs are user assertions, not verified market defaults.
 
-Không áp dụng tự động giả định định danh/fee/account ownership của prototype cho instrument Việt Nam.
+Preview checks syntax; Apply recomputes hash and validates cash/settled shares in one transaction. Any failure rolls back all rows. Stable trade IDs prevent duplicates; changed content with same ID fails. New rows cannot predate existing history. Correct/reorder via a new tracking fund and chronological reimport, not silent edits.
 
-## Local lifecycle
-
-Target storage preserves versioned events/outputs and supports integrity-checked backup/restore. Settings reset, portfolio deletion, local-secret removal and restore need distinct scope under the [storage inventory](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries); exporting does not make copies automatically deletable. Do not log secrets, unapproved raw payloads or private transaction content. Ordinary deletion is not secure erase.
-
-If multiple local profiles are supported, switching profile must isolate portfolio, data, preferences and caches. Whether V1 has one local profile or multiple password-protected profiles is open. See [storage and retention](../04-data/storage-and-retention.md).
-
-## Acceptance direction
-
-- Bad schema/timezone/decimal/identity is reported before import.
-- Duplicate imports are detectable and safe to retry.
-- Failed/partial import does not corrupt existing portfolio state.
-- Export then import preserves event order, decimal values, source references and simulation labels.
-- No transaction/credential content is sent to a remote service.
-- Wrong password/recovery/reset behavior is defined and does not silently expose or erase local data.
+Export includes recorded trades only. Transaction price is not inferred as a current valuation mark. Missing price stays unavailable. User-created copies require separate cleanup.

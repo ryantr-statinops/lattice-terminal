@@ -1,0 +1,393 @@
+{
+  "DataQuality": {
+    "additionalProperties": false,
+    "properties": {
+      "adjustment": {
+        "default": "synthetic-unadjusted",
+        "enum": [
+          "synthetic-unadjusted",
+          "unknown"
+        ],
+        "title": "Adjustment",
+        "type": "string"
+      },
+      "calendar": {
+        "default": "synthetic-weekdays-not-exchange-calendar",
+        "title": "Calendar",
+        "type": "string"
+      },
+      "gaps": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "title": "Gaps",
+        "type": "array"
+      },
+      "provisional_count": {
+        "default": 0,
+        "title": "Provisional Count",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "fixture",
+          "complete",
+          "partial",
+          "stale",
+          "unavailable"
+        ],
+        "title": "State",
+        "type": "string"
+      }
+    },
+    "required": [
+      "state"
+    ],
+    "title": "DataQuality",
+    "type": "object"
+  },
+  "Instrument": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "title": "Board",
+        "type": "string"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "instrument_class": {
+        "const": "equity",
+        "default": "equity",
+        "title": "Instrument Class",
+        "type": "string"
+      },
+      "is_synthetic": {
+        "const": true,
+        "default": true,
+        "title": "Is Synthetic",
+        "type": "boolean"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "native_symbol": {
+        "title": "Native Symbol",
+        "type": "string"
+      },
+      "source_id": {
+        "const": "SYNTHETIC-FIXTURE",
+        "default": "SYNTHETIC-FIXTURE",
+        "title": "Source Id",
+        "type": "string"
+      },
+      "venue": {
+        "enum": [
+          "HOSE",
+          "HNX",
+          "UPCOM"
+        ],
+        "title": "Venue",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "venue",
+      "board",
+      "native_symbol",
+      "name"
+    ],
+    "title": "Instrument",
+    "type": "object"
+  },
+  "MarketSnapshot": {
+    "$defs": {
+      "Candle": {
+        "additionalProperties": false,
+        "properties": {
+          "available_at": {
+            "format": "date-time",
+            "title": "Available At",
+            "type": "string"
+          },
+          "close": {
+            "title": "Close",
+            "type": "string"
+          },
+          "close_time": {
+            "format": "date-time",
+            "title": "Close Time",
+            "type": "string"
+          },
+          "high": {
+            "title": "High",
+            "type": "string"
+          },
+          "instrument_id": {
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "interval": {
+            "enum": [
+              "1d",
+              "1m"
+            ],
+            "title": "Interval",
+            "type": "string"
+          },
+          "is_closed": {
+            "title": "Is Closed",
+            "type": "boolean"
+          },
+          "low": {
+            "title": "Low",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "string"
+          },
+          "open_time": {
+            "format": "date-time",
+            "title": "Open Time",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "session": {
+            "title": "Session",
+            "type": "string"
+          },
+          "source_id": {
+            "const": "SYNTHETIC-FIXTURE",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume"
+          }
+        },
+        "required": [
+          "instrument_id",
+          "interval",
+          "open_time",
+          "close_time",
+          "available_at",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "is_closed",
+          "revision",
+          "session",
+          "source_id"
+        ],
+        "title": "Candle",
+        "type": "object"
+      },
+      "DataQuality": {
+        "additionalProperties": false,
+        "properties": {
+          "adjustment": {
+            "default": "synthetic-unadjusted",
+            "enum": [
+              "synthetic-unadjusted",
+              "unknown"
+            ],
+            "title": "Adjustment",
+            "type": "string"
+          },
+          "calendar": {
+            "default": "synthetic-weekdays-not-exchange-calendar",
+            "title": "Calendar",
+            "type": "string"
+          },
+          "gaps": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "provisional_count": {
+            "default": 0,
+            "title": "Provisional Count",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "fixture",
+              "complete",
+              "partial",
+              "stale",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "DataQuality",
+        "type": "object"
+      },
+      "Instrument": {
+        "additionalProperties": false,
+        "properties": {
+          "board": {
+            "title": "Board",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "instrument_class": {
+            "const": "equity",
+            "default": "equity",
+            "title": "Instrument Class",
+            "type": "string"
+          },
+          "is_synthetic": {
+            "const": true,
+            "default": true,
+            "title": "Is Synthetic",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "native_symbol": {
+            "title": "Native Symbol",
+            "type": "string"
+          },
+          "source_id": {
+            "const": "SYNTHETIC-FIXTURE",
+            "default": "SYNTHETIC-FIXTURE",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "venue": {
+            "enum": [
+              "HOSE",
+              "HNX",
+              "UPCOM"
+            ],
+            "title": "Venue",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "venue",
+          "board",
+          "native_symbol",
+          "name"
+        ],
+        "title": "Instrument",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "candles": {
+        "items": {
+          "$ref": "#/$defs/Candle"
+        },
+        "title": "Candles",
+        "type": "array"
+      },
+      "instrument": {
+        "$ref": "#/$defs/Instrument"
+      },
+      "quality": {
+        "$ref": "#/$defs/DataQuality"
+      },
+      "schema_version": {
+        "const": "1",
+        "default": "1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "snapshot_id": {
+        "title": "Snapshot Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "snapshot_id",
+      "instrument",
+      "quality",
+      "candles"
+    ],
+    "title": "MarketSnapshot",
+    "type": "object"
+  },
+  "SourceCapability": {
+    "additionalProperties": false,
+    "properties": {
+      "access_tested": {
+        "title": "Access Tested",
+        "type": "boolean"
+      },
+      "approved": {
+        "title": "Approved",
+        "type": "boolean"
+      },
+      "documented": {
+        "title": "Documented",
+        "type": "boolean"
+      },
+      "id": {
+        "title": "Id",
+        "type": "string"
+      },
+      "operating_state": {
+        "enum": [
+          "fixture-only",
+          "scoped-probe",
+          "approved"
+        ],
+        "title": "Operating State",
+        "type": "string"
+      },
+      "reason": {
+        "title": "Reason",
+        "type": "string"
+      },
+      "rights_confirmed": {
+        "title": "Rights Confirmed",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "documented",
+      "access_tested",
+      "rights_confirmed",
+      "approved",
+      "operating_state",
+      "reason"
+    ],
+    "title": "SourceCapability",
+    "type": "object"
+  }
+}

@@ -1,0 +1,568 @@
+{
+  "$defs": {
+    "Allocation": {
+      "additionalProperties": false,
+      "properties": {
+        "cash": {
+          "type": "string"
+        },
+        "controller_run_id": {
+          "type": "string"
+        },
+        "fund_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "net_contributed": {
+          "type": "string"
+        },
+        "reserved": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "unsettled": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fund_id",
+        "name",
+        "mode",
+        "net_contributed",
+        "cash",
+        "reserved",
+        "unsettled",
+        "status",
+        "controller_run_id"
+      ],
+      "type": "object"
+    },
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "type",
+        "payload",
+        "created_at"
+      ],
+      "type": "object"
+    },
+    "Fund": {
+      "additionalProperties": false,
+      "properties": {
+        "archived": {
+          "type": "boolean"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unallocated_cash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "currency",
+        "unallocated_cash",
+        "archived"
+      ],
+      "type": "object"
+    },
+    "FundValue": {
+      "additionalProperties": false,
+      "properties": {
+        "allocations": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "cash": {
+                "type": "string"
+              },
+              "controller_run_id": {
+                "type": "string"
+              },
+              "fund_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "net_contributed": {
+                "type": "string"
+              },
+              "reserved": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "unsettled": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "fund_id",
+              "name",
+              "mode",
+              "net_contributed",
+              "cash",
+              "reserved",
+              "unsettled",
+              "status",
+              "controller_run_id"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "known_subtotal": {
+          "type": "string"
+        },
+        "missing_prices": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "nav": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net_external_flows": {
+          "type": "string"
+        },
+        "pnl": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unallocated_cash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "currency",
+        "unallocated_cash",
+        "archived",
+        "known_subtotal",
+        "nav",
+        "net_external_flows",
+        "pnl",
+        "missing_prices",
+        "allocations"
+      ],
+      "type": "object"
+    },
+    "ImportPreview": {
+      "additionalProperties": false,
+      "properties": {
+        "errors": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "rows": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "event_time": {
+                "type": "string"
+              },
+              "fee": {
+                "type": "string"
+              },
+              "instrument_id": {
+                "type": "string"
+              },
+              "price": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "string"
+              },
+              "settled": {
+                "type": "boolean"
+              },
+              "side": {
+                "type": "string"
+              },
+              "tax": {
+                "type": "string"
+              },
+              "trade_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "trade_id",
+              "event_time",
+              "instrument_id",
+              "side",
+              "quantity",
+              "price",
+              "fee",
+              "tax",
+              "settled"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "hash",
+        "rows",
+        "errors"
+      ],
+      "type": "object"
+    },
+    "PaperFill": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "event_time": {
+          "type": "string"
+        },
+        "fee": {
+          "type": "string"
+        },
+        "instrument_id": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "order_id": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "rule_pack_id": {
+          "type": "string"
+        },
+        "settlement_date": {
+          "type": "string"
+        },
+        "side": {
+          "type": "string"
+        },
+        "simulated": {
+          "type": "boolean"
+        },
+        "tax": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_id",
+        "instrument_id",
+        "side",
+        "quantity",
+        "price",
+        "fee",
+        "tax",
+        "event_id",
+        "event_time",
+        "settlement_date",
+        "rule_pack_id",
+        "simulated",
+        "model"
+      ],
+      "type": "object"
+    },
+    "PaperOrder": {
+      "additionalProperties": false,
+      "properties": {
+        "allocation_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "instrument_id": {
+          "type": "string"
+        },
+        "limit_price": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "remaining": {
+          "type": "string"
+        },
+        "reserve_rate": {
+          "type": "string"
+        },
+        "side": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "allocation_id",
+        "instrument_id",
+        "side",
+        "limit_price",
+        "quantity",
+        "remaining",
+        "reserve_rate",
+        "status",
+        "created_at"
+      ],
+      "type": "object"
+    },
+    "PositionValue": {
+      "additionalProperties": false,
+      "properties": {
+        "allocation_id": {
+          "type": "string"
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "average_cost": {
+          "type": "string"
+        },
+        "instrument_id": {
+          "type": "string"
+        },
+        "market_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "price": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "sell_reserved": {
+          "type": "string"
+        },
+        "settled_quantity": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "allocation_id",
+        "instrument_id",
+        "quantity",
+        "settled_quantity",
+        "average_cost",
+        "sell_reserved",
+        "price",
+        "market_value",
+        "as_of",
+        "source"
+      ],
+      "type": "object"
+    },
+    "RecordedTrade": {
+      "additionalProperties": false,
+      "properties": {
+        "event_time": {
+          "type": "string"
+        },
+        "fee": {
+          "type": "string"
+        },
+        "instrument_id": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "settled": {
+          "type": "boolean"
+        },
+        "side": {
+          "type": "string"
+        },
+        "tax": {
+          "type": "string"
+        },
+        "trade_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "trade_id",
+        "event_time",
+        "instrument_id",
+        "side",
+        "quantity",
+        "price",
+        "fee",
+        "tax",
+        "settled"
+      ],
+      "type": "object"
+    },
+    "Run": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object"
+        },
+        "snapshot": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "file",
+        "snapshot",
+        "status",
+        "created_at",
+        "params"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kestrel gateway response DTOs"
+}

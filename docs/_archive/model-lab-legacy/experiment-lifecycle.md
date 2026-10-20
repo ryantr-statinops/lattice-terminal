@@ -1,5 +1,8 @@
 # Experiment lifecycle, ownership và artifacts
 
+> Historical/deferred design, not current runtime. Former code was replaced; see [rebuild status](../../13-rebuild/progress.md).
+
+
 **Trạng thái:** archived proposal của thiết kế hosted/Model Lab cũ; không phải yêu cầu V1 hoặc contract đã triển khai. Chỉ giữ làm hồ sơ tham khảo; current product scope thuộc [Model Lab boundary](../../08-model-lab/README.md).
 
 ## Trạng thái
