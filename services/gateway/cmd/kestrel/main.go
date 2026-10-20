@@ -38,8 +38,9 @@ func handler() http.Handler {
 	return mux
 }
 func main() {
-	root := flag.String("root", ".", "Repository root")
-	data := flag.String("data", host.DataRoot(), "Local data directory")
+	root := flag.String("root", "", "Repository root (auto-detected)")
+	data := flag.String("data", "", "Override .env local data directory")
+	printData := flag.Bool("print-data-dir", false, "Print resolved data directory without credentials")
 	dev := flag.Bool("dev", false, "Start Vite")
 	reset := flag.Bool("reset-password", false, "Reset local password without deleting data")
 	credentials := flag.String("ssi-credentials", "", "set, status or delete OS keyring credentials")
@@ -49,8 +50,25 @@ func main() {
 	restore := flag.String("restore", "", "Restore ZIP into a new -data directory")
 	diagnostics := flag.Bool("diagnostics", false, "Print redacted runtime configuration; no payloads")
 	flag.Parse()
+	if *reset {
+		fmt.Println("Edit KESTREL_LOCAL_USERNAME and KESTREL_LOCAL_PASSWORD in repository .env, save, then restart Kestrel. No profile file was changed.")
+		return
+	}
 	if *diagnostics {
 		fmt.Println(`{"product":"Kestrel Terminal","storage_schema":1,"source_mode":"fixture-only","secrets":"Windows Credential Manager (not inspected)","auto_resume":false}`)
+		return
+	}
+	resolvedRoot, configErr := host.RepositoryRoot(*root)
+	if configErr != nil {
+		log.Fatal(configErr)
+	}
+	config, configErr := host.ReadLocal(resolvedRoot, *data, false)
+	if configErr != nil {
+		log.Fatal(configErr)
+	}
+	*root, *data = resolvedRoot, config.DataDir
+	if *printData {
+		fmt.Println(*data)
 		return
 	}
 	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret {

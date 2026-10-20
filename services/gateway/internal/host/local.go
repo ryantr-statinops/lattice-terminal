@@ -11,6 +11,26 @@ import (
 
 type LocalConfig struct{ Username, Password, DataDir string }
 
+// RepositoryRoot supports scripts and binaries in .cache/bin from any cwd.
+func RepositoryRoot(explicit string) (string, error) {
+	if explicit != "" {
+		return filepath.Abs(explicit)
+	}
+	cwd, _ := os.Getwd()
+	executable, _ := os.Executable()
+	for _, start := range []string{cwd, filepath.Dir(executable)} {
+		for dir := start; dir != ""; dir = filepath.Dir(dir) {
+			if _, err := os.Stat(filepath.Join(dir, "services", "gateway", "go.mod")); err == nil {
+				return dir, nil
+			}
+			if filepath.Dir(dir) == dir {
+				break
+			}
+		}
+	}
+	return "", errors.New("repository root not found; pass -root explicitly")
+}
+
 // ReadLocal reads the repository file, never process credential variables.
 // No interpolation is performed: $ and # inside quotes are literal.
 func ReadLocal(root, override string, credentials bool) (LocalConfig, error) {
