@@ -19,7 +19,6 @@ coverage
 data/
 *.sqlite-wal
 *.sqlite-shm
-*.zip
 *.log
 *.pem
 *.key

@@ -41,6 +41,7 @@ func main() {
 	root := flag.String("root", "", "Repository root (auto-detected)")
 	data := flag.String("data", "", "Override .env local data directory")
 	printData := flag.Bool("print-data-dir", false, "Print resolved data directory without credentials")
+	checkConfig := flag.Bool("check-config", false, "Validate local account configuration without displaying it")
 	dev := flag.Bool("dev", false, "Start Vite")
 	reset := flag.Bool("reset-password", false, "Show how to change the account in .env")
 	credentials := flag.String("ssi-credentials", "", "set, status or delete OS keyring credentials")
@@ -62,13 +63,17 @@ func main() {
 	if configErr != nil {
 		log.Fatal(configErr)
 	}
-	config, configErr := host.ReadLocal(resolvedRoot, *data, false)
+	config, configErr := host.ReadLocal(resolvedRoot, *data, *checkConfig)
 	if configErr != nil {
 		log.Fatal(configErr)
 	}
 	*root, *data = resolvedRoot, config.DataDir
 	if *printData {
 		fmt.Println(*data)
+		return
+	}
+	if *checkConfig {
+		fmt.Println("Local account configuration is valid")
 		return
 	}
 	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret {

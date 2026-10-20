@@ -39,7 +39,6 @@ data/
 *.sqlite-shm
 *.db-wal
 *.db-shm
-*.zip
 .venv-reset/
 dist/
 coverage/
