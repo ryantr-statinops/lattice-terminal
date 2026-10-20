@@ -12,3 +12,5 @@
 
 /* Keep dense desktop controls contained as panels narrow on tablets. */
 .toolbar>input,.toolbar>select{max-width:100%;min-width:0;flex-shrink:1}.form-grid>*{min-width:0}.field input[type=datetime-local]{min-width:0;max-width:100%}.status-label{max-width:100%;overflow-wrap:anywhere}.table-scroll,.workspace-layout{overscroll-behavior-x:contain}.results-pane .field{padding:8px;margin:0}.panel-content>.table-scroll{max-width:100%}
+
+p.numeric{overflow-wrap:anywhere}.run-output pre{font-size:inherit}
