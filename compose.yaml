@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
+    user: "${KESTREL_UID:-10001}:${KESTREL_GID:-10001}"
     init: true
     read_only: true
     security_opt:
