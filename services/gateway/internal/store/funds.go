@@ -83,7 +83,15 @@ func once(tx *sql.Tx, key, kind, fund, allocation string, payload any) (bool, er
 	return true, err
 }
 func (s *Store) Funds() ([]Fund, error) {
-	rows, err := s.DB.Query("SELECT id,name,kind,currency,cash,archived FROM funds ORDER BY name")
+	return listFunds(s.DB)
+}
+
+type queryer interface {
+	Query(string, ...any) (*sql.Rows, error)
+}
+
+func listFunds(db queryer) ([]Fund, error) {
+	rows, err := db.Query("SELECT id,name,kind,currency,cash,archived FROM funds ORDER BY name")
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +231,10 @@ func (s *Store) Allocation(id string) (Allocation, error) {
 	return scanAllocation(s.DB.QueryRow("SELECT * FROM allocations WHERE id=?", id))
 }
 func (s *Store) Allocations() ([]Allocation, error) {
-	rows, err := s.DB.Query("SELECT * FROM allocations ORDER BY name")
+	return listAllocations(s.DB)
+}
+func listAllocations(db queryer) ([]Allocation, error) {
+	rows, err := db.Query("SELECT * FROM allocations ORDER BY name")
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +339,10 @@ func (s *Store) EndController(id, run, status string) error {
 	return err
 }
 func (s *Store) Positions() ([]Position, error) {
-	rows, err := s.DB.Query("SELECT * FROM positions ORDER BY allocation_id,instrument_id")
+	return listPositions(s.DB)
+}
+func listPositions(db queryer) ([]Position, error) {
+	rows, err := db.Query("SELECT * FROM positions ORDER BY allocation_id,instrument_id")
 	if err != nil {
 		return nil, err
 	}

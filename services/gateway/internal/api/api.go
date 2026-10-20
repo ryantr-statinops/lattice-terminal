@@ -42,6 +42,7 @@ func Fail(w http.ResponseWriter, err error) { JSON(w, 400, map[string]string{"er
 func (a *API) Routes(m *http.ServeMux) {
 	a.fundRoutes(m)
 	a.paperRoutes(m)
+	a.portfolioRoutes(m)
 	m.HandleFunc("GET /api/v1/workspaces/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		files, err := a.Workspace.List(r.PathValue("kind"))
 		if err != nil {
