@@ -1,6 +1,6 @@
 # Recovery, backup and release
 
-**Tóm tắt:** Dừng terminal trước khi backup; restore vào thư mục mới, tạo lại mật khẩu và không tự chạy lại Strategy/Paper. Xóa secret không thu hồi khóa tại SSI.
+**Tóm tắt:** Dừng terminal trước khi backup; restore vào thư mục mới và dùng tài khoản hiện có trong `.env`. Jobs/Strategy/Paper không tự chạy lại.
 
 
 ## Compose start/stop and data location
@@ -23,13 +23,13 @@ Stop the Compose stack or native service first. Maintenance reserves port 8080 a
 # Destination must not exist; parent must exist:
 ./.cache/bin/kestrel.exe -restore D:/Backups/kestrel.zip -data D:/Research/KestrelRestored
 ./scripts/start.ps1 -DataDir D:/Research/KestrelRestored
-# New root requires first-run password; no session restored.
+# The repository .env account is used after restore; no session is restored.
 ./.cache/bin/kestrel.exe -reset-password
 ./.cache/bin/kestrel.exe -ssi-credentials delete
 ./.cache/bin/kestrel.exe -diagnostics
 ```
 
-Backup uses SQLite VACUUM INTO, then checksums workspaces/trash, code snapshots, market snapshots and artifacts. Excludes profile verifier/runtime sessions/control tokens/source policy/OS secrets/service logs. ZIP is **unencrypted** and may contain sensitive scripts/output. Restore only trusted copies.
+Backup uses SQLite VACUUM INTO, then checksums workspaces/trash, code snapshots, market snapshots and artifacts. Excludes .env, profile verifier/runtime sessions/control tokens/source policy/OS secrets/service logs. ZIP is **unencrypted** and may contain sensitive scripts/output. Restore only trusted copies.
 
 Restore checks paths/Windows aliases/links/duplicate or case collisions/checksums/SQLite integrity/schema/size; stages beside a new destination and publishes after validation. Never overwrites an existing root. Bounds: 256 MiB/file, 2 GiB total, 50,000 files. Larger migrations aren't implemented.
 
@@ -37,7 +37,7 @@ Restore checks paths/Windows aliases/links/duplicate or case collisions/checksum
 
 Restart marks active jobs interrupted; restore marks all paper allocations interrupted with no controller. Never auto-resume. Inspect ledger/cursor/positions; Assets Reconcile acknowledges cancellation of open remainder, retains cash/positions/cursor and infers no missing fills. Reserved/unsettled inconsistencies block reconciliation and need investigation. Immediate synthetic settlement is not real-market recovery.
 
-Password reset preserves records/invalidates sessions, not disk decryption. Credential deletion doesn't revoke provider keys. Windows uses Credential Manager, macOS uses Keychain, and Linux uses Secret Service when an OS keyring service is available. Compose secret export creates a plaintext temporary host file with restricted permissions; a read-only container mount does not encrypt it, and cleanup is not secure erase. The app currently does not consume the mounted secret and SSI remains blocked. App reset/browser cleanup/data/OS secrets/backups/exports are separate [boundaries](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). No secure erase or automatic whole-data wipe.
+Editing .env and restarting changes the local account; it preserves application records but does not encrypt or decrypt data. Credential deletion doesn't revoke provider keys. Windows uses Credential Manager, macOS uses Keychain, and Linux uses Secret Service when an OS keyring service is available. Compose secret export creates a plaintext temporary host file with restricted permissions; a read-only container mount does not encrypt it, and cleanup is not secure erase. The app currently does not consume the mounted secret and SSI remains blocked. App reset/browser cleanup/data/OS secrets/backups/exports are separate [boundaries](../04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries). No secure erase or automatic whole-data wipe.
 
 ## Release gates
 

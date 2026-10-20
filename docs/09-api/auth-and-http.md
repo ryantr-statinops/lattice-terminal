@@ -1,6 +1,6 @@
 # Authentication / HTTP
 
-Single local profile: first-run auth/setup, password auth/login, auth/status and auth/lock under /api/v1. Argon2id verifier, HttpOnly SameSite=Strict cookie, 30-minute session lifetime (including active SSE). Password is not disk encryption. Stopped-service CLI reset preserves data and invalidates sessions.
+Single local account configured by username/password in repository .env. API exposes auth/login, auth/status and auth/lock under /api/v1; there is no browser setup route. Argon2id verifier is held in memory; HttpOnly SameSite=Strict cookie, 30-minute session lifetime (including active SSE). Edit .env and restart to change credentials. Password is not disk encryption.
 
 Go binds 127.0.0.1:8080, accepts localhost/127.0.0.1:8080 Host and requires allowed loopback Origin on mutating browser requests; dev allows 127.0.0.1:5173. Stop requires a local control token. Health/readiness/setup/status/login are public; private APIs need session auth. Headers: no-store/nosniff/no-referrer.
 

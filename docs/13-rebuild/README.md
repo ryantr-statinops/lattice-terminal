@@ -6,7 +6,7 @@ Approved 2026-10-19. This document supersedes prototype implementation descripti
 
 Docker Compose local runtime on Windows/macOS/Linux, local-first, MIT. Stocks HOSE/HNX/UPCoM first. News is independent. Expansion: factor research, parameter surfaces/3D, derivatives, then ETFs. AI training and parameter optimization remain deferred.
 
-React/TypeScript/Vite/Tailwind/React Router/TanStack Query UI; Go gateway owns auth, jobs, workspaces, SQLite and funds/ledger; Python FastAPI owns SSI, Parquet/DuckDB, analytics and workers. NumPy/pandas/TA-Lib for verified indicators. Monaco ESM and chart assets are local. Windows data root: `%LOCALAPPDATA%/KestrelTerminal`.
+React/TypeScript/Vite/Tailwind/React Router/TanStack Query UI; Go gateway owns auth, jobs, workspaces, SQLite and funds/ledger; Python FastAPI owns SSI, Parquet/DuckDB, analytics and workers. NumPy/pandas/TA-Lib for verified indicators. Monaco ESM and chart assets are local. Local account comes from ignored repository `.env`; data defaults to repository `data/`.
 
 Backtest and Strategies have separate files, contracts and runs. Navigation is a sidebar file tree, editor in the center, results/logs on the right; no file tab strip. Research scripts have their own contract. Literal `KESTREL_KIND` is inspected with AST, never executed for discovery. Every run snapshots entrypoint/helper files, params, dataset and dependency versions.
 

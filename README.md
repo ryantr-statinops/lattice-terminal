@@ -22,6 +22,21 @@ Open `http://127.0.0.1:8080`. Enter the configured local account to unlock the s
 
 Stop with `docker compose down`. The host data directory persists across stop/start. Do not use `down -v` as a routine stop command; it removes the development cache volumes (not the bind-mounted host data).
 
+## Run the local Windows build
+
+1. Copy `.env.example` to `.env` if needed, then enter your local username and password.
+2. Run the setup command:
+
+```powershell
+./scripts/setup.ps1
+```
+
+3. Start with `./scripts/start.ps1` and stop with `./scripts/stop.ps1`.
+
+The app reads the repository `.env` on each start. Its default SQLite database is
+`data\kestrel.sqlite`; Settings shows the resolved data directory. To change a
+forgotten password, edit `KESTREL_LOCAL_PASSWORD` in `.env` and restart.
+
 ### Web development mode
 
 Use the Compose override for Vite hot reload:

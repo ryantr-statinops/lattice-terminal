@@ -4,11 +4,11 @@
 
 Docker Compose local runtime on Windows/macOS/Linux, loopback UI, no hosted backend, telemetry or automatic upload. Browser calls Go `/api/v1`; Go calls authenticated local Python inside the container. Only `127.0.0.1:8080` is published by default. Fonts/editor/assets are local/system fallback, no runtime CDN. Building needs network; real SSI would require upstream access, so local-first does not promise an offline live market.
 
-Default data `%LOCALAPPDATA%/KestrelTerminal`; deleting source is not deleting data. Separate [storage boundaries](04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries) cover app/browser/OS secrets/backups/exports. No secure-erase claim.
+Default data is repository `data/` configured by `.env`; deleting source can delete data. Separate [storage boundaries](04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries) cover app/browser/OS secrets/backups/exports. No secure-erase claim.
 
 ## Security and programs
 
-One profile, Argon2id verifier, HttpOnly SameSite cookie, 30-minute session lifetime (including active SSE) and explicit lock. Password locks a session, not disk encryption. Stopped-service CLI reset preserves records and invalidates sessions. SSI secrets use the OS keyring via CLI; Compose secret export is a temporary plaintext host file, mounted read-only, and is not consumed by the current app. No browser/Git/log credentials or guaranteed all-RAM zeroization.
+One local username/password comes from ignored repository `.env`. The Argon2id verifier exists only in memory; edit `.env` and restart to change credentials. HttpOnly SameSite cookie, 30-minute session lifetime (including active SSE) and explicit lock. Password locks a session, not disk encryption. SSI secrets use the OS keyring via CLI; Compose secret export is a temporary plaintext host file, mounted read-only, and is not consumed by the current app. No browser/Git/log credentials or guaranteed all-RAM zeroization.
 
 Trusted Python runs with the container user's filesystem/network permissions in a separate process, **not a sandbox**. Built-in networking remains capability-gated. Lock, closing browser tabs or switching files does not stop jobs; service stop interrupts them. Restart/restore never auto-runs Strategy/Paper.
 

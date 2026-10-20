@@ -9,7 +9,8 @@ SQLite is Go-owned; Python owns Parquet. No shared writable DuckDB/remote databa
 
 | Location | Contents | Cleanup boundary |
 |---|---|---|
-| Compose `KESTREL_DATA_DIR` bind mount; native Windows default `%LOCALAPPDATA%/KestrelTerminal` or `-data` root | SQLite/WAL/SHM, profile verifier, runtime state, optional source policy | Stop services first; one DB/source deletion is not full reset |
+| Repository `data/` by default, configured through `KESTREL_DATA_DIR`; explicit `-data` for isolated runs | SQLite/WAL/SHM, runtime state, optional source policy | Stop services first; one DB/source deletion is not full reset |
+| Repository `.env` | Local username and plaintext password | Git ignored; edit and restart to change |
 | `workspaces/` | saved research/backtest/strategy; `.trash` | UI file deletion moves to trash; folder delete requires empty |
 | `code-snapshots/` | frozen entry/helpers/params/lock | No automatic purge |
 | `market/snapshots/` | synthetic Parquet/manifests | Real source retention remains gated |
