@@ -15,8 +15,11 @@
 | Assets.tsx | Named funds, budgets, Manual, interrupted-book reconciliation |
 | Portfolio.tsx | Flows/NAV/positions, settled trade/CSV preview/apply/export |
 | Settings.tsx | Evidence / CLI guidance |
-| theme.ts | Dark/light preference and chart/editor updates |
+| theme/ | Semantic palettes, validated preferences, browser store, packaged fonts |
+| appearance/ | Presets, font controls, grouped colors, contrast, preview and reset |
+| ui/ | Shell/login, controls, panels, semantic tables, feedback, dialogs and pane resize |
+| workspace/ | File tree, toolbar, history/output, isolated SSE lifecycle |
 
-No file tabs, debugger, embedded shell/package installer, AI training or 3D renderer. Keyboard/a11y/dense-layout and report visualization needs further polish. [Verification](../13-rebuild/progress.md) is separate from inventory.
+No file tabs, debugger, embedded shell/package installer, AI training or 3D renderer. Terminal styling, scoped keyboard interactions and async dialogs are implemented; richer report visualization and broader assistive-technology coverage remain. [Verification](../13-rebuild/progress.md) is separate from inventory.
 
 Basic side-by-side Backtest report comparison is implemented via RunComparison.tsx, with run/code/data/rule provenance and unavailable metrics. It is not a statistical significance test.

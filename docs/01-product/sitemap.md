@@ -11,4 +11,4 @@
 | `/portfolio` | Portfolio | Local books / settled tracking CSV |
 | `/settings` | Settings | Evidence / CLI guidance |
 
-`/` redirects to Market. Setup/login is a local session gate. No file-tab strip or news/Model Lab routes. SSI live is blocked. Theme is a local dark/light preference.
+`/` redirects to Market. Setup/login is a local session gate. No file-tab strip or news/Model Lab routes. SSI live is blocked. Settings contains local dark-only Appearance presets, color roles and typography controls.

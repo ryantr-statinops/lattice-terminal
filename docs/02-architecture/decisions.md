@@ -16,12 +16,12 @@ Accepted rebuild: 2026-10-19. Implementation status reviewed 2026-10-20; this is
 | RT-ADR-008 / 022 / 028 | Single profile, session password, Argon2id; OS keyring CLI | Not whole-data encryption; Compose secret export is temporary plaintext plumbing, not app SSI access |
 | RT-ADR-009 / 023 | Separate historical Backtest and paper Strategy; no real orders | Detailed synthetic LO only; real rules/settlement blocked |
 | RT-ADR-011 / 019 | Local-first Compose on Windows/macOS/Linux; no hosted deployment | Compose fixture runtime, dev override and native Windows scripts |
-| RT-ADR-013 | Dark default, light supported | Local theme toggle; visual/a11y polish remains |
-| RT-ADR-014 | Accent #21684e separate from market colors | Current palette |
-| RT-ADR-015 | Inter + JetBrains Mono stacks, local/system fallback | No runtime CDN; packaged fonts not added |
+| RT-ADR-013 | Dark-only terminal presets and Appearance | Owner revision 2026-10-20; immediate versioned local preferences |
+| RT-ADR-014 | Editable semantic color roles, accent separate from market colors | Terminal Black accent #4DB5FF; Graphite/Midnight presets |
+| RT-ADR-015 | IBM Plex Mono default, JetBrains Mono optional | Licensed WOFF2 bundled locally with Vietnamese glyphs; no runtime CDN |
 | RT-ADR-016 | TanStack Query server state + React local state | Already installed; URL filter sharing limited |
 | RT-ADR-017 | Apache ECharts 6.1.0 Market candles; Plotly basic 2D reports | ECharts attribution notices retained in repository; no TradingView chart logo; no 3D renderer yet |
-| RT-ADR-018 | Tailwind/CSS variables | Current small token set; consolidation remains |
+| RT-ADR-018 | Semantic CSS variables and shared React primitives | Theme/UI/feature layers; existing chart and execution contracts retained |
 | RT-ADR-021 | User-owned local storage with explicit recovery boundaries | Offline ZIP, new-root restore, separate OS secrets/browser/copies |
 | RT-ADR-024 | News independent workstream | No current news runtime route |
 | RT-ADR-029 | Three separate program kinds; sidebar files, no file tabs | Research run / Backtest replay / Strategy callbacks, distinct runs |

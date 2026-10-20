@@ -69,3 +69,7 @@ News remains independent. Model Lab/AI training/optimization, factor research, 3
 ## Handoff / Bàn giao
 
 Tracked working tree is clean after the final commit. Build/test caches and the isolated local validation clone remain ignored under .cache. Test services are stopped; no user default profile/credentials were used. No push performed.
+
+## Terminal UI redesign — 2026-10-20
+
+Owner-approved terminal styling, offline monospace fonts, Appearance, shared controls/dialogs and workspace interaction polish are implemented locally on main. No push. See the [UI review report](../10-ui-ux/terminal-review.md) for the current frontend checks, screenshots and commit-by-commit review record. Earlier checks above are historical rebuild evidence, not results rerun for this UI change.

@@ -8,3 +8,6 @@ Current fixture rebuild / Bản fixture ngày 2026-10-20. Start with [component-
 - [frontend plan](frontend-plan.md)
 - [screen flows](screen-flows.md)
 - [states lifecycle](states-lifecycle.md)
+
+- [terminal redesign](terminal-redesign.md)
+- [terminal implementation review](terminal-review.md)
