@@ -1,1 +1,1 @@
-declare module 'plotly.js-basic-dist-min' {const plotly:{react:(element:HTMLElement,data:Record<string,unknown>[],layout:Record<string,unknown>,config:Record<string,unknown>)=>Promise<void>;purge:(element:HTMLElement)=>void};export default plotly}
+declare module 'plotly.js-basic-dist-min' {const plotly:{react:(element:HTMLElement,data:Record<string,unknown>[],layout:Record<string,unknown>,config:Record<string,unknown>)=>Promise<void>;Plots:{resize:(element:HTMLElement)=>void};purge:(element:HTMLElement)=>void};export default plotly}
