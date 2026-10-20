@@ -1,0 +1,10 @@
+services:
+  kestrel:
+    environment:
+      KESTREL_SSI_SECRET_FILE: /run/secrets/ssi_credentials
+    secrets:
+      - ssi_credentials
+
+secrets:
+  ssi_credentials:
+    file: ${KESTREL_SSI_SECRET_FILE:?Prepare the OS-keyring Compose secret first}

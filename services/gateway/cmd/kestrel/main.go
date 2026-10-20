@@ -42,7 +42,9 @@ func main() {
 	data := flag.String("data", host.DataRoot(), "Local data directory")
 	dev := flag.Bool("dev", false, "Start Vite")
 	reset := flag.Bool("reset-password", false, "Reset local password without deleting data")
-	credentials := flag.String("ssi-credentials", "", "set, status or delete Windows credentials")
+	credentials := flag.String("ssi-credentials", "", "set, status or delete OS keyring credentials")
+	prepareSSISecret := flag.Bool("prepare-ssi-compose-secret", false, "write a temporary Compose secret file from the OS keyring")
+	cleanSSISecret := flag.Bool("clean-ssi-compose-secret", false, "remove the temporary Compose secret file")
 	backup := flag.String("backup", "", "Offline backup ZIP outside the data directory")
 	restore := flag.String("restore", "", "Restore ZIP into a new -data directory")
 	diagnostics := flag.Bool("diagnostics", false, "Print redacted runtime configuration; no payloads")
@@ -51,7 +53,7 @@ func main() {
 		fmt.Println(`{"product":"Kestrel Terminal","storage_schema":1,"source_mode":"fixture-only","secrets":"Windows Credential Manager (not inspected)","auto_resume":false}`)
 		return
 	}
-	if *backup != "" || *restore != "" || *reset || *credentials != "" {
+	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret {
 		lock, err := net.Listen("tcp", host.ListenAddress())
 		if err != nil {
 			log.Print("Stop Kestrel Terminal before offline maintenance")
@@ -74,6 +76,33 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Offline maintenance complete; no sessions resumed; backup files are not encrypted")
+			return
+		}
+		if *prepareSSISecret && *cleanSSISecret {
+			log.Print("Choose prepare or clean SSI Compose secret")
+			os.Exit(1)
+		}
+		if *prepareSSISecret {
+			secretPath, err := secret.ComposeFilePath()
+			if err == nil {
+				err = secret.PrepareComposeFile(secretPath)
+			}
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
+			}
+			fmt.Println(secretPath)
+			return
+		}
+		if *cleanSSISecret {
+			secretPath, err := secret.ComposeFilePath()
+			if err == nil {
+				err = secret.CleanComposeFile(secretPath)
+			}
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
+			}
 			return
 		}
 		if err := cli(*data, *reset, *credentials); err != nil {
