@@ -45,7 +45,8 @@ export function Workspace({kind,title,controls,extraParams={},runBlockedReason}:
  const remove=()=>{if(!node)return;const target=node.path;dialog.show({title:'Xóa '+target,description:'Thư mục phải rỗng. Nội dung file chưa lưu sẽ bị bỏ. Thao tác này không dừng job đang chạy.',danger:true,onSubmit:async()=>{await request(`/workspaces/${kind}/file?path=${encodeURIComponent(target)}`,{method:'DELETE'});const b={...buffers},savedNext={...saved};delete b[target];delete savedNext[target];setBuffers(b);state.buffers=b;setSaved(savedNext);state.saved=savedNext;if(active===target)setActive('');setNode(null);await client.invalidateQueries({queryKey:['files',kind]})}})};
  const history=runs.data?.filter(v=>v.file===active)||[];
  const latestEvent=events.filter(v=>v.type==='state').at(-1);
- const runStatus=String(latestEvent?.payload.status??runs.data?.find(v=>v.id===runID)?.status??'');
+ const historyStatus=runs.data?.find(v=>v.id===runID)?.status??'';const eventStatus=String(latestEvent?.payload.status??'');
+ const runStatus=historyStatus==='stopping'&&!['completed','failed','cancelled','interrupted'].includes(eventStatus)?'stopping':eventStatus||historyStatus;
  let paramsError='';try{const parsed=JSON.parse(params);if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')paramsError='Parameters phải là JSON object'}catch{paramsError='Parameters JSON chưa hợp lệ'}
  const canSave=!!active&&!busy&&!file.isFetching&&!file.error;
  const canRun=canSave&&active.endsWith('.py')&&!paramsError&&!runBlockedReason&&!diagnostic;
