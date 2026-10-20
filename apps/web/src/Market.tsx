@@ -14,15 +14,15 @@ import {EmptyState,ErrorState,InlineNotice,LoadingState} from './ui/feedback';
 import {useAppearance} from './theme/store';
 import {fontFamilies} from './theme/tokens';
 import type {AppearancePreferences} from './theme/preferences';
+import {formatDate,formatDateTime} from './theme/dateTime';
 
 use([CandlestickChart,AxisPointerComponent,DataZoomInsideComponent,GridComponent,TooltipComponent,CanvasRenderer]);
 
-const vietnamDate=new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Ho_Chi_Minh'});
 const vietnamPrice=new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2});
 
 function chartOption(candles:Candle[],appearance:AppearancePreferences):EChartsOption{
  const c=appearance.colors;
- const labels=candles.map(candle=>vietnamDate.format(new Date(candle.open_time)));
+ const labels=candles.map(candle=>formatDate(candle.open_time,appearance.dateTimeRegion));
  const values=candles.map(candle=>[
   Number(candle.open),
   Number(candle.close),
@@ -86,6 +86,7 @@ function Chart({candles}:{candles:Candle[]}){
 }
 
 export function Market(){
+ const appearance=useAppearance();
  const instruments=useQuery({queryKey:['instruments'],queryFn:()=>request<Instrument[]>('/engine/market/instruments')});
  const [selected,setSelected]=useState(''),[notice,setNotice]=useState('');
  const [watchlist,setWatchlist]=useState<string[]>(()=>{try{const saved=JSON.parse(localStorage.getItem('kestrel.watchlist')||'[]');return Array.isArray(saved)?saved.filter((v:unknown)=>typeof v==='string'):[]}catch{return []}});
@@ -99,7 +100,7 @@ export function Market(){
  {notice&&<InlineNotice tone="warning">{notice}</InlineNotice>}{(instruments.isPending||data.isFetching)&&<LoadingState>Loading snapshot…</LoadingState>}<ErrorState error={instruments.error||data.error} onRetry={()=>{void instruments.refetch();if(id)void data.refetch()}}/>
  {!instruments.isPending&&!instruments.error&&!instruments.data?.length&&<EmptyState>No instruments are available.</EmptyState>}
  {snapshot&&<><Panel><PanelHeader title={snapshot.instrument.name} actions={<span>{snapshot.quality.state} · {snapshot.candles.length} daily bars</span>}/>{snapshot.candles.length?<Chart candles={snapshot.candles}/>:<EmptyState>This snapshot has no candles.</EmptyState>}</Panel>
- <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Adjustment: {snapshot.quality.adjustment}<br/>As-of {snapshot.candles.at(-1)?.available_at?new Date(snapshot.candles.at(-1)!.available_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})+' ICT':'unavailable'}<br/>Gaps: {snapshot.quality.gaps.length?snapshot.quality.gaps.join(', '):'Not included in fixture; live calendar not verified'}</SourceMetadata>
- <Panel><DataTable caption="Latest candles — synthetic prices and volume" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Date',render:v=>new Date(v.open_time).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})},...(['open','high','low','close','volume'] as const).map(key=>({key,label:key.toUpperCase(),numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>}))]}/></Panel></>}
+ <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Adjustment: {snapshot.quality.adjustment}<br/>As of {snapshot.candles.at(-1)?.available_at?formatDateTime(snapshot.candles.at(-1)!.available_at,appearance.dateTimeRegion):'unavailable'}<br/>Gaps: {snapshot.quality.gaps.length?snapshot.quality.gaps.join(', '):'Not included in fixture; live calendar not verified'}</SourceMetadata>
+ <Panel><DataTable caption="Latest candles — synthetic prices and volume" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Date',render:v=>formatDate(v.open_time,appearance.dateTimeRegion)},...(['open','high','low','close','volume'] as const).map(key=>({key,label:key.toUpperCase(),numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>}))]}/></Panel></>}
  </section>;
 }
