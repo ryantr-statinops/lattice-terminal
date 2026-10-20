@@ -2,15 +2,15 @@
 
 ## Runtime and ownership
 
-Windows source checkout, loopback UI, no hosted backend, telemetry or automatic upload. Browser calls Go `/api/v1`; Go calls authenticated local Python. Fonts/editor/assets are local/system fallback, no runtime CDN. Installing dependencies needs network; real SSI would require upstream access, so local-first does not promise an offline live market.
+Docker Compose local runtime on Windows/macOS/Linux, loopback UI, no hosted backend, telemetry or automatic upload. Browser calls Go `/api/v1`; Go calls authenticated local Python inside the container. Only `127.0.0.1:8080` is published by default. Fonts/editor/assets are local/system fallback, no runtime CDN. Building needs network; real SSI would require upstream access, so local-first does not promise an offline live market.
 
 Default data `%LOCALAPPDATA%/KestrelTerminal`; deleting source is not deleting data. Separate [storage boundaries](04-data/storage-and-retention.md#storage-inventory-and-deletion-boundaries) cover app/browser/OS secrets/backups/exports. No secure-erase claim.
 
 ## Security and programs
 
-One profile, Argon2id verifier, HttpOnly SameSite cookie, 30-minute session lifetime (including active SSE) and explicit lock. Password locks a session, not disk encryption. Stopped-service CLI reset preserves records and invalidates sessions. SSI secrets use Windows Credential Manager via CLI only; no browser/Git/log credentials or guaranteed all-RAM zeroization.
+One profile, Argon2id verifier, HttpOnly SameSite cookie, 30-minute session lifetime (including active SSE) and explicit lock. Password locks a session, not disk encryption. Stopped-service CLI reset preserves records and invalidates sessions. SSI secrets use the OS keyring via CLI; Compose secret export is a temporary plaintext host file, mounted read-only, and is not consumed by the current app. No browser/Git/log credentials or guaranteed all-RAM zeroization.
 
-Trusted Python runs with Windows-user filesystem/network permissions in a separate process, **not a sandbox**. Built-in networking remains capability-gated. Lock, closing browser tabs or switching files does not stop jobs; service stop interrupts them. Restart/restore never auto-runs Strategy/Paper.
+Trusted Python runs with the container user's filesystem/network permissions in a separate process, **not a sandbox**. Built-in networking remains capability-gated. Lock, closing browser tabs or switching files does not stop jobs; service stop interrupts them. Restart/restore never auto-runs Strategy/Paper.
 
 Research, Backtest and Strategy have distinct contracts/files/history. Train/Test means ordered research/evaluation without optimization or AI training. Freeze code/helpers/params/dependency lock at Run; record data/rule versions. SDK historical views are causal, but authors must audit trusted code for lookahead outside the SDK.
 

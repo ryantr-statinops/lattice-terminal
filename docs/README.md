@@ -4,6 +4,8 @@
 
 ## Start here
 
+Run the fixture build with Docker Compose: copy `.env.example` to `.env`, set `KESTREL_DATA_DIR` to an existing absolute host directory, then run `docker compose up --build` and open `http://127.0.0.1:8080`. See [local runtime](12-operations/hosting-scheduling.md) and [recovery](12-operations/recovery-release.md) before changing or backing up data.
+
 1. [Rebuild decisions](13-rebuild/README.md) and [progress / limitations](13-rebuild/progress.md).
 2. [Product](01-product/vision-and-scope.md), [constraints](CONSTRAINTS.md), [glossary](glossary.md).
 3. [Architecture](02-architecture/system-architecture.md), [stack](02-architecture/tech-stack.md), [ADR](02-architecture/decisions.md).

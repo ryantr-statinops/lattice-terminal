@@ -12,4 +12,4 @@ scripts/                    Windows setup/start/stop, smoke and consistency chec
 docs/                       requirements, evidence, current/deferred status
 ```
 
-User data defaults to `%LOCALAPPDATA%/KestrelTerminal`, outside source. Build caches/environments are ignored. Former services/api, services/ingestion, old feature folders and browser training workers are not current runtime. Git history preserves them; don't reinstall their dependencies or revive their contracts.
+Compose user data lives in the host directory selected by `KESTREL_DATA_DIR`, outside source. The native Windows fallback defaults to `%LOCALAPPDATA%/KestrelTerminal`. Build caches/environments are ignored. Former services/api, services/ingestion, old feature folders and browser training workers are not current runtime. Git history preserves them; don't reinstall their dependencies or revive their contracts.

@@ -9,7 +9,7 @@ The approved [rebuild](../13-rebuild/README.md) and [constraints](../CONSTRAINTS
 5. UI visibility/lock does not own job lifetime. Stop, failure and service interruption differ.
 6. VND funds/allocations use transactional decimal accounting; no double counting or implicit liquidation.
 7. Tracking settled records and simulated fills remain separate.
-8. Session password is not disk encryption; SSI secret uses Windows Credential Manager via CLI.
+8. Session password is not disk encryption; SSI credentials stay in the OS keyring and are never put in browser state, Git or logs. Compose's temporary secret-file export is plaintext plumbing only; it does not enable SSI access.
 9. No live source calls without scoped authorization/evidence; no real-order routes.
 10. News stays independent; Model Lab/optimization/3D/future classes stay deferred.
 11. Rebuild commits are directly on main, one per milestone, no automatic push or remote rename.

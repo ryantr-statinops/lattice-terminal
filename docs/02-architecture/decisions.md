@@ -8,14 +8,14 @@ Accepted rebuild: 2026-10-19. Implementation status reviewed 2026-10-20; this is
 | Record | Accepted choice | Implementation / boundary |
 |---|---|---|
 | RT-ADR-001 | React/Vite/Router/TS/Tailwind | Current web |
-| RT-ADR-002 / 027 | Go gateway + authenticated local Python; Windows launcher | Go supervision, Job Objects, local ports |
+| RT-ADR-002 / 027 | Go gateway + authenticated local Python; Compose-first local runtime, native Windows launcher retained | Compose uses one Linux container and Unix process groups; native Windows uses Go supervision/Job Objects |
 | RT-ADR-003 / 006 | Local-service ownership of future ingestion/stream | Offline reconciler only; no actual SSI transport/scheduler |
 | RT-ADR-004 / 010 / 025 | Model Lab deferred | No Pyodide/browser-training runtime |
 | RT-ADR-005 / 012 / 020 | Vietnam equities, SSI FastConnect Data direction | Synthetic fixtures; actual rights/coverage blocked |
 | RT-ADR-007 / 026 | Go-owned SQLite, Python-owned Parquet, DuckDB queries | Replaces PostgreSQL/object-store and engine-selection proposal |
-| RT-ADR-008 / 022 / 028 | Single profile, session password, Argon2id; Windows Credential Manager CLI | Not whole-data encryption; replaces managed auth/vault proposal |
+| RT-ADR-008 / 022 / 028 | Single profile, session password, Argon2id; OS keyring CLI | Not whole-data encryption; Compose secret export is temporary plaintext plumbing, not app SSI access |
 | RT-ADR-009 / 023 | Separate historical Backtest and paper Strategy; no real orders | Detailed synthetic LO only; real rules/settlement blocked |
-| RT-ADR-011 / 019 | Windows clone/run, no hosted deployment | Setup/start/dev/stop scripts |
+| RT-ADR-011 / 019 | Local-first Compose on Windows/macOS/Linux; no hosted deployment | Compose fixture runtime, dev override and native Windows scripts |
 | RT-ADR-013 | Dark default, light supported | Local theme toggle; visual/a11y polish remains |
 | RT-ADR-014 | Accent #21684e separate from market colors | Current palette |
 | RT-ADR-015 | Inter + JetBrains Mono stacks, local/system fallback | No runtime CDN; packaged fonts not added |

@@ -9,7 +9,8 @@
 | Data | Python Parquet/PyArrow, DuckDB in-memory reads |
 | Charts | Apache ECharts 6.1.0 candles / Plotly basic 2D reports |
 | Editor | Monaco 0.57 ESM/local workers; DOMPurify 3.4.17 override |
-| Secrets | Windows Credential Manager CLI |
+| Secrets | OS keyring CLI export; temporary Compose secret file is plumbing only |
 | Tools | Node 22.23.1 / npm 10.9.8 / uv 0.11.28 |
+| Local packaging | Docker Compose, multi-stage Linux image (`linux/amd64`, `linux/arm64`); Docker Desktop on Windows/macOS, Docker Engine + Compose plugin on Linux |
 
 Exact versions: package-lock.json, go.mod/go.sum, services/engine/uv.lock. Setup uses locks. ECharts is registered from only the candlestick, grid, tooltip, axis pointer, inside zoom and Canvas renderer modules; its Apache license notices are in [third-party notices](../../third-party-notices/echarts/README.md). Plotly basic has no 3D renderer; surfaces/artifact extensions are later work. SciPy/statsmodels/vectorbt are not mandatory dependencies. Fonts use system fallbacks, no CDN.

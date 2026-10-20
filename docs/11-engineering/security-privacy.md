@@ -5,7 +5,7 @@
 
 Argon2id, one profile, HttpOnly SameSite cookie, lock/session expiry; Host/Origin guard, loopback, internal bearer and restricted browser proxy. No telemetry/upload. Password does not encrypt application files.
 
-SSI CLI uses Windows Credential Manager. Set/status/delete neither authorize nor test SSI. Stopped-service password reset preserves data and invalidates sessions. Trust boundary includes Windows user/OS account; localhost and Credential Manager don't defend against same-user malware.
+SSI CLI uses the OS keyring (Windows Credential Manager, macOS Keychain, or Linux Secret Service when available). Set/status/delete neither authorize nor test SSI. Compose can export a temporary plaintext file for a read-only secret mount; the current app does not consume it and SSI source gates remain blocked. Stopped-service password reset preserves data and invalidates sessions. Trust boundary includes the host OS account and container process; localhost/keyrings do not defend against same-user malware.
 
 Trusted Python is a separate supervised process, not a sandbox; it has filesystem/network rights. No guaranteed RAM zeroization. User logs/tables/artifacts may contain sensitive content. Only explicit allowlisted diagnostics omit user output, paths, tokens and credentials.
 

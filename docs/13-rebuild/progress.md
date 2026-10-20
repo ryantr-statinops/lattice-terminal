@@ -2,6 +2,8 @@
 
 **Fixture development build; production NOT ready.** Hai phần cuối Portfolio và recovery/local acceptance đã được triển khai. Các capability SSI thật và mô phỏng thị trường thật còn thiếu cả evidence lẫn implementation; không coi đủ commit là đủ production.
 
+Dockerfile, regular/dev/SSI Compose configurations, a multi-architecture CI build and Linux lifecycle smoke script are now present on `main`. They provide the intended local packaging path; container build and lifecycle acceptance still depend on the Docker-enabled CI runner and have not been run in this checkout.
+
 ## Git / Milestones
 
 Directly on main, no push, original history and tag `archive/pre-kestrel-rebuild-2026-10-19` preserved. The 22-part commit sequence is retained. Final recovery commit is identified by its subject because embedding its own hash would change it.
@@ -60,7 +62,7 @@ Interrupted allocations require explicit reconciliation; open remainder is cance
 
 ## Accepted decisions, not open questions
 
-One profile; password locks session, not disk encryption. Windows Credential Manager via CLI. Go SQLite/Python Parquet ownership. Trusted unsandboxed workers. Separate Research/Backtest/Strategy contracts and sidebar files. UI lock/close doesn't stop jobs. VND/weighted-average funds and independent allocations. No real orders or cloud runtime.
+One profile; password locks session, not disk encryption. Host OS keyring via CLI; Compose secret export is temporary plaintext plumbing and is not consumed by the current app. Go SQLite/Python Parquet ownership. Trusted unsandboxed workers. Separate Research/Backtest/Strategy contracts and sidebar files. UI lock/close doesn't stop jobs. VND/weighted-average funds and independent allocations. No real orders or cloud runtime.
 
 News remains independent. Model Lab/AI training/optimization, factor research, 3D surfaces, derivatives and ETFs remain later work. Remote rename belongs to the owner. No automatic push.
 

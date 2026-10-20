@@ -4,7 +4,7 @@ Approved 2026-10-19. This document supersedes prototype implementation descripti
 
 ## Product and boundaries
 
-Windows clone-and-run, local-first, MIT. Stocks HOSE/HNX/UPCoM first. News is independent. Expansion: factor research, parameter surfaces/3D, derivatives, then ETFs. AI training and parameter optimization remain deferred.
+Docker Compose local runtime on Windows/macOS/Linux, local-first, MIT. Stocks HOSE/HNX/UPCoM first. News is independent. Expansion: factor research, parameter surfaces/3D, derivatives, then ETFs. AI training and parameter optimization remain deferred.
 
 React/TypeScript/Vite/Tailwind/React Router/TanStack Query UI; Go gateway owns auth, jobs, workspaces, SQLite and funds/ledger; Python FastAPI owns SSI, Parquet/DuckDB, analytics and workers. NumPy/pandas/TA-Lib for verified indicators. Monaco ESM and chart assets are local. Windows data root: `%LOCALAPPDATA%/KestrelTerminal`.
 
@@ -14,7 +14,7 @@ Train/Test means non-overlapping research/evaluation periods, without automatic 
 
 Assets manages named VND funds and allocation budgets. Manual and Strategy paper sessions can run concurrently with independent allocation ledgers; allocations cannot exceed available fund capital. Backtest copies capital configuration and never changes fund balances. Tracked/imported trades and simulated fills remain distinct. Decimal financial accounting; weighted average cost basis.
 
-One local password-locked profile, Argon2id verifier, HttpOnly session cookie. Password does not encrypt all files. SSI secrets use Windows Credential Manager and a CLI flow, not browser storage. Built-in networking is source-gated; arbitrary trusted scripts are not a network sandbox.
+One local password-locked profile, Argon2id verifier, HttpOnly session cookie. Password does not encrypt all files. SSI secrets use the host OS keyring and CLI flow, not browser storage. Compose temporary secret-file export is plaintext plumbing only and is not consumed by the current app. Built-in networking is source-gated; arbitrary trusted scripts are not a network sandbox.
 
 ## Milestones and truthful status
 
