@@ -1,11 +1,17 @@
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {request} from './api';
+import {Toolbar} from './ui/layout';
+import {Field,Select} from './ui/fields';
+import {DataTable} from './ui/data';
+import {ErrorState,LoadingState} from './ui/feedback';
 type Report={run:{id:string;snapshot:string;params:Record<string,unknown>};report:Record<string,unknown>};
 export function RunComparison({runs}:{runs:{id:string;file:string;status:string}[]}){
  const [left,setLeft]=useState(''),[right,setRight]=useState('');
- const a=useQuery({queryKey:['report',left],queryFn:()=>request<Report>(`/runs/${left}/report`),enabled:!!left});
- const b=useQuery({queryKey:['report',right],queryFn:()=>request<Report>(`/runs/${right}/report`),enabled:!!right});
+ const a=useQuery({queryKey:['report',left],queryFn:()=>request<Report>(`/runs/${encodeURIComponent(left)}/report`),enabled:!!left});
+ const b=useQuery({queryKey:['report',right],queryFn:()=>request<Report>(`/runs/${encodeURIComponent(right)}/report`),enabled:!!right});
  const cell=(value:unknown)=>value===null||value===undefined?'Unavailable':String(value);
- return <details className="panel" style={{padding:16}}><summary>So sánh báo cáo Backtest / Compare runs</summary><p className="muted">Kết quả mô phỏng synthetic, không cam kết lợi nhuận. Khác code/data/config có thể làm báo cáo không tương đương.</p><div className="toolbar">{([['A',left,setLeft],['B',right,setRight]] as const).map(([label,id,set])=><label key={label}>Run {label}<select aria-label={'Compare run '+label} value={id} onChange={e=>set(e.target.value)}><option value="">Chọn completed Backtest</option>{runs.filter(v=>v.status==='completed').map(v=><option key={v.id} value={v.id}>{v.file} · {v.id.slice(0,8)}</option>)}</select></label>)}</div>{(a.error||b.error)&&<p className="error" role="alert">{a.error?.message||b.error?.message}</p>}{(a.data||b.data)&&<table><thead><tr><th>Metric / provenance</th><th>A</th><th>B</th></tr></thead><tbody>{['stage','capital','final_nav','net_profit','max_drawdown','simulated_fill_count','sharpe','sharpe_reason','rule_pack','event_snapshot'].map(key=><tr key={key}><td>{key}</td><td>{cell(a.data?.report[key])}</td><td>{cell(b.data?.report[key])}</td></tr>)}<tr><td>Code snapshot</td><td>{a.data?.run.snapshot.slice(0,16)||'Unavailable'}</td><td>{b.data?.run.snapshot.slice(0,16)||'Unavailable'}</td></tr></tbody></table>}</details>
+ const rows=['stage','capital','final_nav','net_profit','max_drawdown','simulated_fill_count','sharpe','sharpe_reason','rule_pack','event_snapshot','Code snapshot'];
+ const value=(report:Report|undefined,key:string)=>key==='Code snapshot'?report?.run.snapshot.slice(0,16):report?.report[key];
+ return <details className="panel"><summary>So sánh báo cáo Backtest / Compare runs</summary><div className="panel-content"><p className="muted">Kết quả mô phỏng synthetic, không cam kết lợi nhuận. Khác code/data/config có thể làm báo cáo không tương đương.</p><Toolbar>{([['A',left,setLeft],['B',right,setRight]] as const).map(([label,id,set])=><Field key={label} label={'Compare run '+label}><Select value={id} onChange={e=>set(e.target.value)}><option value="">Chọn completed Backtest</option>{runs.filter(v=>v.status==='completed').map(v=><option key={v.id} value={v.id}>{v.file} · {v.id.slice(0,8)}</option>)}</Select></Field>)}</Toolbar>{(a.isFetching||b.isFetching)&&<LoadingState>Đang đọc báo cáo…</LoadingState>}<ErrorState error={a.error||b.error}/>{(a.data||b.data)&&<DataTable caption="Metrics và provenance" rows={rows} rowKey={key=>key} columns={[{key:'metric',label:'Metric / provenance',render:key=>key},{key:'a',label:'A',render:key=>cell(value(a.data,key))},{key:'b',label:'B',render:key=>cell(value(b.data,key))}]}/>}</div></details>;
 }
