@@ -1,0 +1,11 @@
+// @vitest-environment jsdom
+import {afterEach,beforeEach,expect,it} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {Appearance} from './Appearance';
+import {resetAppearance} from '../theme/store';
+import {appearanceKey} from '../theme/preferences';
+beforeEach(()=>{resetAppearance();HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')}});
+afterEach(()=>{cleanup();localStorage.clear()});
+it('keeps an unfinished HEX draft without changing the applied color',()=>{render(<Appearance/>);const input=screen.getByLabelText('Màu nhấn',{exact:true});fireEvent.change(input,{target:{value:'#12'}});expect(input.getAttribute('aria-invalid')).toBe('true');expect(document.documentElement.style.getPropertyValue('--accent')).toBe('#4DB5FF');fireEvent.change(input,{target:{value:'#abcdef'}});expect(document.documentElement.style.getPropertyValue('--accent')).toBe('#ABCDEF');expect(JSON.parse(localStorage.getItem(appearanceKey)!).preset).toBe('custom')});
+it('applies typography immediately and warns about unreadable colors',()=>{render(<Appearance/>);fireEvent.change(screen.getByLabelText('Font ứng dụng'),{target:{value:'jetbrains'}});fireEvent.change(screen.getByLabelText('Cỡ chữ UI'),{target:{value:'14'}});expect(document.documentElement.style.getPropertyValue('--font-family')).toContain('JetBrains Mono');expect(document.documentElement.style.getPropertyValue('--font-size')).toBe('14px');fireEvent.change(screen.getByLabelText('Chữ chính',{exact:true}),{target:{value:'#0B0B0B'}});expect(screen.getByText(/Tương phản thấp/)).toBeTruthy()});
+it('requires confirmation before restoring defaults',async()=>{render(<Appearance/>);fireEvent.change(screen.getByLabelText('Preset'),{target:{value:'midnight'}});fireEvent.click(screen.getByText('Khôi phục mặc định'));expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#080C12');fireEvent.click(screen.getByText('Hủy'));expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#080C12');fireEvent.click(screen.getByText('Khôi phục mặc định'));fireEvent.click(screen.getByText('Xác nhận'));await screen.findByText('Đã khôi phục Terminal Black.');expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#000000')});
