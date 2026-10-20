@@ -1,18 +1,18 @@
 export const colorGroups = {
-  'Nền': ['canvas', 'panel', 'raised', 'input'],
-  'Đường viền': ['border', 'borderStrong'],
-  'Chữ': ['text', 'secondary', 'muted'],
-  'Tương tác': ['accent', 'focus', 'hover', 'selection', 'selectionText'],
-  'Ý nghĩa': ['positive', 'negative', 'warning', 'info'],
-  'Biểu đồ': ['series1', 'series2', 'series3', 'series4'],
+  'Background': ['canvas', 'panel', 'raised', 'input'],
+  'Borders': ['border', 'borderStrong'],
+  'Text': ['text', 'secondary', 'muted'],
+  'Interaction': ['accent', 'focus', 'hover', 'selection', 'selectionText'],
+  'Semantic': ['positive', 'negative', 'warning', 'info'],
+  'Charts': ['series1', 'series2', 'series3', 'series4'],
 } as const;
 export type ColorRole = typeof colorGroups[keyof typeof colorGroups][number];
 export type Colors = Record<ColorRole, string>;
 export const colorLabels: Record<ColorRole, string> = {
-  canvas:'Nền ứng dụng', panel:'Panel', raised:'Header / dialog', input:'Ô nhập',
-  border:'Viền thường', borderStrong:'Viền nhấn', text:'Chữ chính', secondary:'Chữ phụ', muted:'Chú thích',
-  accent:'Màu nhấn', focus:'Focus bàn phím', hover:'Hover', selection:'Nền lựa chọn', selectionText:'Chữ lựa chọn',
-  positive:'Tăng / tích cực', negative:'Giảm / lỗi', warning:'Cảnh báo', info:'Thông tin',
+  canvas:'App background', panel:'Panel', raised:'Header / dialog', input:'Input',
+  border:'Border', borderStrong:'Strong border', text:'Primary text', secondary:'Secondary text', muted:'Muted text',
+  accent:'Accent', focus:'Keyboard focus', hover:'Hover', selection:'Selection background', selectionText:'Selected text',
+  positive:'Gain / positive', negative:'Loss / error', warning:'Warning', info:'Information',
   series1:'Series 1', series2:'Series 2', series3:'Series 3', series4:'Series 4',
 };
 export const terminalColors: Colors = {

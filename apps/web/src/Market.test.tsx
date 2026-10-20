@@ -46,7 +46,7 @@ afterEach(()=>{cleanup();resetAppearance();vi.unstubAllGlobals();vi.clearAllMock
 describe('Market ECharts chart',()=>{
  it('maps daily OHLC into a Vietnamese-localized, zoomable candlestick chart',async()=>{
   showMarket();
-  await screen.findByRole('img',{name:'Biểu đồ nến tổng hợp; bảng dữ liệu ở dưới'});
+  await screen.findByRole('img',{name:'Synthetic candlestick chart; data table below'});
   await waitFor(()=>expect(echarts.instance.setOption).toHaveBeenCalledOnce());
   const option=echarts.instance.setOption.mock.calls[0][0] as {series:{type:string;data:number[][]}[];xAxis:{data:string[]};dataZoom:{type:string}[];tooltip:{axisPointer:{type:string};formatter:(params:unknown)=>string}};
   expect(option.series[0].type).toBe('candlestick');
@@ -69,7 +69,7 @@ describe('Market ECharts chart',()=>{
 
  it('shows an empty snapshot without creating a chart',async()=>{
   showMarket(url=>url.includes('/instruments')?instruments:{...snapshot,candles:[]});
-  await screen.findByText('Snapshot không có nến.');
+  await screen.findByText('This snapshot has no candles.');
   expect(echarts.init).not.toHaveBeenCalled();
  });
 

@@ -14,7 +14,7 @@ it('keeps unsaved buffers across file switches and scopes the save shortcut',asy
  fireEvent.click(await screen.findByRole('treeitem',{name:/a.py/}));const editor=await screen.findByLabelText('Editor content');fireEvent.change(editor,{target:{value:'edited A'}});
  fireEvent.click(screen.getByRole('treeitem',{name:/b.py/}));await waitFor(()=>expect((screen.getByLabelText('Editor content') as HTMLTextAreaElement).value).toBe('original B'));
  fireEvent.click(screen.getByRole('treeitem',{name:/a.py/}));await waitFor(()=>expect((screen.getByLabelText('Editor content') as HTMLTextAreaElement).value).toBe('edited A'));
- await waitFor(()=>expect((screen.getByRole('button',{name:'Lưu'}) as HTMLButtonElement).disabled).toBe(false));
+ await waitFor(()=>expect((screen.getByRole('button',{name:'Save'}) as HTMLButtonElement).disabled).toBe(false));
  fireEvent.keyDown(screen.getByLabelText('Editor content'),{key:'s',ctrlKey:true});await waitFor(()=>expect(send).toHaveBeenCalledWith('/workspaces/research/file',{Path:'a.py',Content:'edited A',Directory:false},'PUT'));
 });
 it('keeps Stop disabled once the service reports stopping despite an older running event',async()=>{
