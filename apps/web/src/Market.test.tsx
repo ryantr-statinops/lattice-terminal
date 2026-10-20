@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {cleanup,render,screen,waitFor} from '@testing-library/react';
+import {act,cleanup,render,screen,waitFor} from '@testing-library/react';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 
 const echarts=vi.hoisted(()=>{
@@ -13,6 +13,7 @@ vi.mock('echarts/components',()=>({AxisPointerComponent:'axis-pointer',DataZoomI
 vi.mock('echarts/renderers',()=>({CanvasRenderer:'canvas-renderer'}));
 
 import {Market} from './Market';
+import {setColor,resetAppearance} from './theme/store';
 import type {Candle,Instrument,Snapshot} from './api';
 
 const instruments:Instrument[]=[{id:'VN:SYN01',venue:'HOSE',native_symbol:'SYN01',name:'Synthetic One',is_synthetic:true}];
@@ -40,7 +41,7 @@ beforeEach(()=>{
  document.documentElement.dataset.theme='dark';
  vi.stubGlobal('ResizeObserver',TestResizeObserver);
 });
-afterEach(()=>{cleanup();vi.unstubAllGlobals();vi.clearAllMocks();localStorage.clear()});
+afterEach(()=>{cleanup();resetAppearance();vi.unstubAllGlobals();vi.clearAllMocks();localStorage.clear()});
 
 describe('Market ECharts chart',()=>{
  it('maps daily OHLC into a Vietnamese-localized, zoomable candlestick chart',async()=>{
@@ -56,6 +57,14 @@ describe('Market ECharts chart',()=>{
   expect(option.tooltip.formatter([{axisValueLabel:'20/10/2026',value:[110,109,108,115]}])).toContain('High: 115');
   resizeCallback?.([{contentRect:{width:640}} as ResizeObserverEntry],{} as ResizeObserver);
   expect(echarts.instance.resize).toHaveBeenCalledWith({width:640});
+ });
+
+ it('updates colors without recreating the chart or resetting inside zoom',async()=>{
+  showMarket();await screen.findByRole('img');await waitFor(()=>expect(echarts.instance.setOption).toHaveBeenCalledOnce());
+  act(()=>setColor('positive','#ABCDEF'));
+  expect(echarts.init).toHaveBeenCalledOnce();
+  const option=echarts.instance.setOption.mock.calls.at(-1)![0] as {dataZoom?:unknown;series:{itemStyle:{color:string}}[]};
+  expect(option.dataZoom).toBeUndefined();expect(option.series[0].itemStyle.color).toBe('#ABCDEF');
  });
 
  it('shows an empty snapshot without creating a chart',async()=>{

@@ -81,7 +81,7 @@ function Chart({candles}:{candles:Candle[]}){
  const container=useRef<HTMLDivElement>(null),instance=useRef<ReturnType<typeof init>|null>(null),configured=useRef(false);
  const appearance=useAppearance();
  useEffect(()=>{const element=container.current;if(!element)return;const chart=init(element,undefined,{renderer:'canvas'});instance.current=chart;configured.current=false;const resize=new ResizeObserver(([entry])=>{if(entry.contentRect.width>0)chart.resize({width:entry.contentRect.width})});resize.observe(element);return()=>{resize.disconnect();chart.dispose();instance.current=null}},[]);
- useEffect(()=>{if(!instance.current)return;const {dataZoom,...option}=chartOption(candles,appearance);instance.current.setOption(configured.current?option:{...option,dataZoom});configured.current=true},[candles,appearance]);
+ useEffect(()=>{if(!instance.current)return;let alive=true;const {dataZoom,...option}=chartOption(candles,appearance);instance.current.setOption(configured.current?option:{...option,dataZoom});configured.current=true;void document.fonts?.load(`${appearance.fontSize}px ${fontFamilies[appearance.font]}`).then(()=>{if(alive)instance.current?.resize()});return()=>{alive=false}},[candles,appearance]);
  return <div role="img" aria-label="Biểu đồ nến tổng hợp; bảng dữ liệu ở dưới" ref={container} style={{height:360,width:'100%'}}/>;
 }
 
