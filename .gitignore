@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
 
 # Dependencies
 node_modules
@@ -32,6 +34,12 @@ npm-debug.log*
 
 # Kestrel Terminal generated artifacts
 .cache/
+data/
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm
+*.zip
 .venv-reset/
 dist/
 coverage/

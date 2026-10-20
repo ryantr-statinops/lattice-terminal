@@ -14,6 +14,12 @@ coverage
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
+data/
+*.sqlite-wal
+*.sqlite-shm
+*.zip
 *.log
 *.pem
 *.key

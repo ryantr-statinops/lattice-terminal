@@ -26,13 +26,6 @@ func Token() string {
 	}
 	return hex.EncodeToString(b[:])
 }
-func DataRoot() string {
-	if v := os.Getenv("LOCALAPPDATA"); v != "" {
-		return filepath.Join(v, "KestrelTerminal")
-	}
-	d, _ := os.UserConfigDir()
-	return filepath.Join(d, "KestrelTerminal")
-}
 
 // ListenAddress is loopback by default. Container deployments can opt in to a
 // container-interface bind while keeping the host port published on loopback.

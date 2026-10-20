@@ -58,7 +58,7 @@ func TestBackupRestoreExcludesSecretsAndNeverResumes(t *testing.T) {
 	}
 }
 func TestUnsafeArchivesDoNotPublish(t *testing.T) {
-	for _, name := range []string{"../escape", "workspaces/../../escape", "workspaces/CON.py", "workspaces/a:stream", "workspaces/x.", "profile.json"} {
+	for _, name := range []string{"../escape", "workspaces/../../escape", "workspaces/CON.py", "workspaces/a:stream", "workspaces/x.", "profile.json", ".env", "data/secret"} {
 		t.Run(name, func(t *testing.T) {
 			base := t.TempDir()
 			p := filepath.Join(base, "bad.zip")
