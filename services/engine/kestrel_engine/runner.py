@@ -15,9 +15,10 @@ class RunManager:
         if not isinstance(identity,str) or len(identity)!=64 or any(v not in '0123456789abcdef' for v in identity):raise ValueError('invalid run id')
         with self.lock:
             if identity in self.jobs:return
-            job={'events':[],'cancel':threading.Event(),'process':None,'done':False};self.jobs[identity]=job
+            job={'events':[],'cancel':threading.Event(),'process':None,'thread':None,'done':False};self.jobs[identity]=job
         self.append(identity,'state',{'status':'queued'})
-        threading.Thread(target=self._run,args=(config,job),daemon=True).start()
+        job['thread']=threading.Thread(target=self._run,args=(config,job),daemon=True)
+        job['thread'].start()
     def append(self,identity,kind,payload):
         with self.lock:
             job=self.jobs[identity]
@@ -31,6 +32,14 @@ class RunManager:
         with self.lock:
             job=self.jobs.get(identity)
             if job:job['cancel'].set()
+    def close(self,timeout=10):
+        with self.lock:
+            jobs=list(self.jobs.values())
+            for job in jobs:job['cancel'].set()
+        deadline=time.monotonic()+timeout
+        for job in jobs:
+            thread=job.get('thread')
+            if thread is not None:thread.join(max(0,deadline-time.monotonic()))
     def _run(self,config,job):
         acquired=False;process=None;close_tree=None
         try:

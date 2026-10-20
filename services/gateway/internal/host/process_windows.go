@@ -9,6 +9,8 @@ import (
 	"unsafe"
 )
 
+func prepare(*exec.Cmd) error { return nil }
+
 // A Job Object closes the complete child process tree on gateway exit.
 func attach(cmd *exec.Cmd) (func(), error) {
 	kernel := syscall.NewLazyDLL("kernel32.dll")

@@ -45,6 +45,9 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     gate=SourceGate(root)
     runs=RunManager(root)
 
+    @app.on_event('shutdown')
+    def stop_workers():runs.close()
+
     @app.middleware('http')
     async def internal_auth(request: Request, call_next):
         expected = app.state.internal_token

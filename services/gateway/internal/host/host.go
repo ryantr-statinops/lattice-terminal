@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -68,15 +69,23 @@ type Engine struct {
 }
 
 func (e *Engine) Close() {
+	done := false
+	if e.cmd != nil && e.cmd.Process != nil && runtime.GOOS != "windows" {
+		_ = e.cmd.Process.Signal(syscall.SIGTERM)
+		select {
+		case <-e.done:
+			done = true
+		case <-time.After(8 * time.Second):
+		}
+	}
 	if e.closeJob != nil {
 		e.closeJob()
 	}
-	if e.cmd != nil && e.cmd.Process != nil {
-		_ = e.cmd.Process.Kill()
-	}
-	select {
-	case <-e.done:
-	case <-time.After(5 * time.Second):
+	if !done {
+		select {
+		case <-e.done:
+		case <-time.After(5 * time.Second):
+		}
 	}
 }
 
@@ -87,12 +96,15 @@ func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
 	}
 	token := Token()
 	payload, _ := json.Marshal(map[string]string{"token": token, "data_root": data})
-	cmd := exec.CommandContext(ctx, python, "-m", "kestrel_engine")
+	cmd := exec.Command(python, "-m", "kestrel_engine")
 	cmd.Dir = filepath.Join(root, "services", "engine")
 	cmd.Stdin = strings.NewReader(string(payload) + "\n")
 	cmd.Stderr = os.Stderr
 	output, err := cmd.StdoutPipe()
 	if err != nil {
+		return nil, err
+	}
+	if err = prepare(cmd); err != nil {
 		return nil, err
 	}
 	if err = cmd.Start(); err != nil {
@@ -162,10 +174,13 @@ func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
 }
 
 func StartVite(ctx context.Context, root string) (func(), error) {
-	cmd := exec.CommandContext(ctx, "node", filepath.Join(root, "node_modules", "vite", "bin", "vite.js"), "--host", ViteHost(), "--port", "5173", "--strictPort")
+	cmd := exec.Command("node", filepath.Join(root, "node_modules", "vite", "bin", "vite.js"), "--host", ViteHost(), "--port", "5173", "--strictPort")
 	cmd.Dir = filepath.Join(root, "apps", "web")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if err := prepare(cmd); err != nil {
+		return nil, err
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

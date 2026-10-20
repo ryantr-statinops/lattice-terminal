@@ -35,3 +35,17 @@ def test_timeout_stops_worker_without_completing(tmp_path):
     config['timeout_seconds']=1;manager=RunManager(tmp_path);manager.start(config);events=wait(manager,config['id'])
     assert events[-1]['payload']['status']=='failed'
     assert any('time limit' in e['payload'].get('message','') for e in events)
+
+def test_engine_shutdown_cancels_running_worker(tmp_path):
+    config=snapshot(tmp_path,'KESTREL_KIND="research"\ndef run(context):\n    while True: pass\n')
+    manager=RunManager(tmp_path);manager.start(config)
+    deadline=time.monotonic()+5
+    while time.monotonic()<deadline:
+        process=manager.jobs[config['id']]['process']
+        if process is not None and process.stdin.closed:break
+        time.sleep(.02)
+    assert process is not None and process.stdin.closed
+    manager.close(timeout=5)
+    events=manager.events(config['id'],0)['events']
+    assert manager.jobs[config['id']]['done']
+    assert events[-1]['payload']['status']=='cancelled'

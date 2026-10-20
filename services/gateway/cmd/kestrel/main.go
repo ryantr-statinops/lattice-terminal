@@ -25,6 +25,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -99,7 +100,7 @@ func run(root, data string, dev bool) error {
 	if err := os.MkdirAll(data, 0700); err != nil {
 		return err
 	}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	engine, err := host.StartEngine(ctx, root, data)
 	if err != nil {
