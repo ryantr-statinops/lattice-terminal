@@ -9,15 +9,16 @@ Local-first Vietnamese equity research terminal · Docker Compose · MIT.
 Install Docker Desktop with the Compose plugin on Windows or macOS, or Docker Engine plus the Compose plugin on Linux. Docker is required; startup builds the image and may need network access to download pinned dependencies. The running fixture application does not fetch market data.
 
 1. Copy `.env.example` to `.env`.
-2. Set `KESTREL_DATA_DIR` in `.env` to an **existing absolute directory on the host** where application data should live. For example, `D:/KestrelTerminalData` on Windows or `/home/alex/KestrelTerminalData` on Linux. Create the directory first.
-3. On Linux/macOS, set `KESTREL_UID` and `KESTREL_GID` to the owner IDs of that directory (`id -u` and `id -g`). Docker Desktop users can keep the defaults.
-4. From the repository directory:
+2. Set `KESTREL_LOCAL_USERNAME` and `KESTREL_LOCAL_PASSWORD`. Use at least 6 bytes for the password. Single-quote values with spaces or special characters. The local password is plain text in this ignored, local-only file; never commit or share it. Changes apply on restart.
+3. `KESTREL_DATA_DIR` defaults to `./data` in the repository. This folder contains `kestrel.sqlite`, workspaces and artifacts, and is ignored by Git. Explicit `-data` remains available for isolated testing.
+4. On Linux/macOS, set `KESTREL_UID` and `KESTREL_GID` to the owner IDs of that directory (`id -u` and `id -g`). Docker Desktop users can keep the defaults.
+5. From the repository directory:
 
 ```sh
 docker compose up --build
 ```
 
-Open `http://127.0.0.1:8080`. First launch asks you to create a local password (6–1024 UTF-8 bytes). The password locks the session; it does not encrypt the data directory. Only localhost port 8080 is published. Compose runs fixture-only by default.
+Open `http://127.0.0.1:8080`. Enter the configured local account to unlock the session. The password does not encrypt the data directory. Only localhost port 8080 is published. Compose runs fixture-only by default.
 
 Stop with `docker compose down`. The host data directory persists across stop/start. Do not use `down -v` as a routine stop command; it removes the development cache volumes (not the bind-mounted host data).
 
@@ -35,7 +36,7 @@ The development UI is at `http://127.0.0.1:5173`. Changes to Go or Python requir
 
 The cross-platform CLI can export an OS-keyring entry to a temporary host file, and Compose can mount it read-only. This only prepares transport plumbing: the application does not consume the mounted secret, SSI source gates remain blocked, and no live SSI request is enabled. Do not add credentials until a specific capability has passed its source/rights gate and the implementation is ready.
 
-When separately authorized and implemented, set the credential through the native CLI (`kestrel.exe -ssi-credentials set` on Windows or `kestrel -ssi-credentials set` on macOS/Linux; both values are prompted without echo). Then run `-prepare-ssi-compose-secret`, set the printed absolute path as `KESTREL_SSI_SECRET_FILE` in `.env`, and start with `docker compose -f compose.yaml -f compose.ssi.yaml up`. After Compose is down, run the matching `-clean-ssi-compose-secret` command. The temporary file is plaintext on the host; the container mount is read-only. Cleanup is not secure erase. If the machine stops unexpectedly, check and clean any leftover file before reuse.
+Set SSI credentials through the native CLI (`kestrel.exe -ssi-credentials set` on Windows or `kestrel -ssi-credentials set` on macOS/Linux; both values are prompted without echo). Then run `-prepare-ssi-compose-secret`, set the printed absolute path as `KESTREL_SSI_SECRET_FILE` in `.env`, and start with `docker compose -f compose.yaml -f compose.ssi.yaml up`. After Compose is down, run the matching `-clean-ssi-compose-secret` command. The temporary file is plaintext on the host; the container mount is read-only. Cleanup is not secure erase. If the machine stops unexpectedly, check and clean any leftover file before reuse.
 
 ## Implemented / Đã có
 

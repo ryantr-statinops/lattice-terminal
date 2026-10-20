@@ -96,3 +96,22 @@ func TestGuardOriginAndHost(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestLoginRouteUsesUsernameAndNeverReturnsCredentials(t *testing.T) {
+	m := New("local", "Tiếng Việt $ secret 123")
+	mux := http.NewServeMux()
+	m.Routes(mux)
+	h := m.Guard(mux, false)
+	req := httptest.NewRequest("POST", "http://127.0.0.1:8080/api/v1/auth/login", strings.NewReader(`{"username":"local","password":"Tiếng Việt $ secret 123"}`))
+	req.Header.Set("Origin", "http://127.0.0.1:8080")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("login status %d: %s", w.Code, w.Body.String())
+	}
+	status := httptest.NewRecorder()
+	h.ServeHTTP(status, httptest.NewRequest("GET", "http://127.0.0.1:8080/api/v1/auth/status", nil))
+	if strings.Contains(status.Body.String(), "secret") || strings.Contains(status.Body.String(), "username") {
+		t.Fatal("status disclosed credentials")
+	}
+}
