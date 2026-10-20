@@ -24,6 +24,8 @@ Graphite and Midnight override surfaces and interaction shades; other roles inhe
 
 ## Appearance storage
 
-Settings → Appearance auto-applies valid changes and writes `kestrel.appearance.v1`. Invalid or obsolete data uses safe defaults; old `kestrel.theme` light/dark preferences no longer control presentation. Preferences apply before React renders, survive session lock and synchronize between tabs. Storage failure retains in-session settings with an explicit notice.
+Settings → Appearance auto-applies valid changes and writes `kestrel.appearance.v1`. Date/time region is saved with the other appearance preferences: Vietnam uses `vi-VN` and `Asia/Ho_Chi_Minh` (ICT, day/month/year, 24-hour clock); United States uses `en-US` and `America/New_York` (ET, month/day/year, 12-hour clock). The Vietnam option is the default, including for preferences saved before this field existed. Market dates, portfolio valuation timestamps, and workspace run history use this choice. Numeric formatting and stored/API timestamps are unchanged.
+
+Invalid or obsolete data uses safe defaults; old `kestrel.theme` light/dark preferences no longer control presentation. Preferences apply before React renders, survive session lock and synchronize between tabs. Storage failure retains in-session settings with an explicit notice.
 
 HEX drafts are editable until complete; only six-digit HEX colors apply. Low contrast warns without rejecting customization. Reset-all requires confirmation. Preset text colors are tested at AA contrast against all preset surfaces. Charts update without reinitializing their view; Monaco retains models and per-file view state.

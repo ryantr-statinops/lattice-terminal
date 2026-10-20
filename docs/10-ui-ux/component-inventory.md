@@ -1,6 +1,6 @@
 # Component inventory
 
-**Tóm tắt:** Bảng dưới ghi nhận component đã có trong repo; không phải danh sách capability production đã được nghiệm thu.
+**Summary:** This inventory lists components present in the repository; it does not certify production capabilities.
 
 
 | apps/web/src | Responsibility |
@@ -16,7 +16,7 @@
 | Portfolio.tsx | Flows/NAV/positions, settled trade/CSV preview/apply/export |
 | Settings.tsx | Evidence / CLI guidance |
 | theme/ | Semantic palettes, validated preferences, browser store, packaged fonts |
-| appearance/ | Presets, font controls, grouped colors, contrast, preview and reset |
+| appearance/ | Presets, font and date/time region controls, grouped colors, contrast, preview and reset |
 | ui/ | Shell/login, controls, panels, semantic tables, feedback, dialogs and pane resize |
 | workspace/ | File tree, toolbar, history/output, isolated SSE lifecycle |
 
