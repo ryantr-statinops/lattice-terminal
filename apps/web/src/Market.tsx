@@ -6,6 +6,11 @@ import {CandlestickChart} from 'echarts/charts';
 import {AxisPointerComponent,DataZoomInsideComponent,GridComponent,TooltipComponent} from 'echarts/components';
 import {CanvasRenderer} from 'echarts/renderers';
 import {request,type Candle,type Instrument,type Snapshot} from './api';
+import {PageHeader,Panel,PanelHeader,Toolbar} from './ui/layout';
+import {Button} from './ui/buttons';
+import {Select} from './ui/fields';
+import {DataTable,NumericValue,SourceMetadata,StatusLabel} from './ui/data';
+import {EmptyState,ErrorState,InlineNotice,LoadingState} from './ui/feedback';
 import {useAppearance} from './theme/store';
 import {fontFamilies} from './theme/tokens';
 import type {AppearancePreferences} from './theme/preferences';
@@ -82,18 +87,19 @@ function Chart({candles}:{candles:Candle[]}){
 
 export function Market(){
  const instruments=useQuery({queryKey:['instruments'],queryFn:()=>request<Instrument[]>('/engine/market/instruments')});
- const [selected,setSelected]=useState('');
- const [watchlist,setWatchlist]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('kestrel.watchlist')||'[]')}catch{return []}});
+ const [selected,setSelected]=useState(''),[notice,setNotice]=useState('');
+ const [watchlist,setWatchlist]=useState<string[]>(()=>{try{const saved=JSON.parse(localStorage.getItem('kestrel.watchlist')||'[]');return Array.isArray(saved)?saved.filter((v:unknown)=>typeof v==='string'):[]}catch{return []}});
  const id=selected||instruments.data?.[0]?.id||'';
  const data=useQuery({queryKey:['candles',id],queryFn:()=>request<Snapshot>('/engine/market/candles?instrument_id='+encodeURIComponent(id)),enabled:!!id});
- const toggle=()=>{const next=watchlist.includes(id)?watchlist.filter(v=>v!==id):[...watchlist,id];setWatchlist(next);localStorage.setItem('kestrel.watchlist',JSON.stringify(next))};
- return <section><div className="page-title"><div><small>MARKET / EQUITIES</small><h1>Thị trường</h1></div><span className="badge">SYNTHETIC-FIXTURE</span></div>
- <div className="toolbar"><select aria-label="Instrument" value={id} onChange={e=>setSelected(e.target.value)}>{instruments.data?.map(v=><option value={v.id} key={v.id}>{v.native_symbol} · {v.venue}</option>)}</select><button disabled={!id} onClick={toggle}>{watchlist.includes(id)?'★ Đã theo dõi':'☆ Theo dõi'}</button><button onClick={()=>data.refetch()}>Làm mới</button></div>
- <p className="muted">Dữ liệu tổng hợp dùng để phát triển. SSI chưa được cấp quyền vận hành; không phải dữ liệu thị trường thật.</p>
- {(instruments.isPending||data.isFetching)&&<p role="status">Đang đọc snapshot…</p>}
- {(instruments.error||data.error)&&<p role="alert" className="error">{(instruments.error||data.error)?.message}</p>}
- {data.data&&<><div className="panel"><div className="panel-heading"><strong>{data.data.instrument.name}</strong><span>{data.data.quality.state} · {data.data.candles.length} daily bars</span></div>{data.data.candles.length?<Chart candles={data.data.candles}/>:<p>Snapshot không có nến.</p>}</div>
- <p className="muted numeric">Snapshot {data.data.snapshot_id.slice(0,16)} · Adjustment: {data.data.quality.adjustment}<br/>As-of {data.data.candles.at(-1)?.available_at?new Date(data.data.candles.at(-1)!.available_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})+' ICT':'unavailable'}</p>
- <p className="muted">Gaps: {data.data.quality.gaps.length?data.data.quality.gaps.join(', '):'Không có trong fixture; chưa xác minh calendar thật'}</p><div className="panel"><table><caption>Nến gần nhất — giá và volume tổng hợp</caption><thead><tr>{['Ngày','Open','High','Low','Close','Volume'].map(v=><th key={v}>{v}</th>)}</tr></thead><tbody>{data.data.candles.slice(-10).map(v=><tr key={v.open_time}><td>{new Date(v.open_time).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}</td>{[v.open,v.high,v.low,v.close,v.volume].map((n,i)=><td className="numeric" key={i}>{n===null?'unavailable':Number(n).toLocaleString('vi-VN')}</td>)}</tr>)}</tbody></table></div></>}
- </section>
+ const toggle=()=>{const next=watchlist.includes(id)?watchlist.filter(v=>v!==id):[...watchlist,id];setWatchlist(next);try{localStorage.setItem('kestrel.watchlist',JSON.stringify(next));setNotice('')}catch{setNotice('Theo dõi chỉ được lưu trong phiên này.')}};
+ const snapshot=data.data;
+ return <section><PageHeader eyebrow="MARKET / EQUITIES" title="Thị trường" actions={<StatusLabel tone="warning">SYNTHETIC-FIXTURE</StatusLabel>}/>
+ <Toolbar><Select aria-label="Instrument" value={id} disabled={instruments.isPending||!instruments.data?.length} onChange={e=>setSelected(e.target.value)}>{instruments.data?.map(v=><option value={v.id} key={v.id}>{v.native_symbol} · {v.venue}</option>)}</Select><Button disabled={!id} aria-pressed={watchlist.includes(id)} onClick={toggle}>{watchlist.includes(id)?'★ Đã theo dõi':'☆ Theo dõi'}</Button><Button disabled={!id} pending={data.isFetching} onClick={()=>void data.refetch()}>Làm mới</Button></Toolbar>
+ <SourceMetadata>Dữ liệu tổng hợp dùng để phát triển. SSI chưa được cấp quyền vận hành; không phải dữ liệu thị trường thật.</SourceMetadata>
+ {notice&&<InlineNotice tone="warning">{notice}</InlineNotice>}{(instruments.isPending||data.isFetching)&&<LoadingState>Đang đọc snapshot…</LoadingState>}<ErrorState error={instruments.error||data.error} onRetry={()=>{void instruments.refetch();if(id)void data.refetch()}}/>
+ {!instruments.isPending&&!instruments.error&&!instruments.data?.length&&<EmptyState>Chưa có instrument khả dụng.</EmptyState>}
+ {snapshot&&<><Panel><PanelHeader title={snapshot.instrument.name} actions={<span>{snapshot.quality.state} · {snapshot.candles.length} daily bars</span>}/>{snapshot.candles.length?<Chart candles={snapshot.candles}/>:<EmptyState>Snapshot không có nến.</EmptyState>}</Panel>
+ <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Adjustment: {snapshot.quality.adjustment}<br/>As-of {snapshot.candles.at(-1)?.available_at?new Date(snapshot.candles.at(-1)!.available_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})+' ICT':'unavailable'}<br/>Gaps: {snapshot.quality.gaps.length?snapshot.quality.gaps.join(', '):'Không có trong fixture; chưa xác minh calendar thật'}</SourceMetadata>
+ <Panel><DataTable caption="Nến gần nhất — giá và volume tổng hợp" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Ngày',render:v=>new Date(v.open_time).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})},...(['open','high','low','close','volume'] as const).map(key=>({key,label:key.toUpperCase(),numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>}))]}/></Panel></>}
+ </section>;
 }
