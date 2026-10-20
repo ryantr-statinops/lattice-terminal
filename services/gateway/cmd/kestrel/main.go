@@ -42,7 +42,7 @@ func main() {
 	data := flag.String("data", "", "Override .env local data directory")
 	printData := flag.Bool("print-data-dir", false, "Print resolved data directory without credentials")
 	dev := flag.Bool("dev", false, "Start Vite")
-	reset := flag.Bool("reset-password", false, "Reset local password without deleting data")
+	reset := flag.Bool("reset-password", false, "Show how to change the account in .env")
 	credentials := flag.String("ssi-credentials", "", "set, status or delete OS keyring credentials")
 	prepareSSISecret := flag.Bool("prepare-ssi-compose-secret", false, "write a temporary Compose secret file from the OS keyring")
 	cleanSSISecret := flag.Bool("clean-ssi-compose-secret", false, "remove the temporary Compose secret file")
@@ -136,6 +136,10 @@ func main() {
 }
 
 func run(root, data string, dev bool) error {
+	config, err := host.ReadLocal(root, data, true)
+	if err != nil {
+		return err
+	}
 	listenAddress := host.ListenAddress()
 	listener, err := net.Listen("tcp", listenAddress)
 	if err != nil {
@@ -162,7 +166,12 @@ func run(root, data string, dev bool) error {
 		defer stop()
 	}
 	mux := handler().(*http.ServeMux)
-	manager := auth.New(data)
+	manager := auth.New(config.Username, config.Password)
+	config.Password = ""
+	mux.HandleFunc("GET /api/v1/local/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"data_dir": data, "account_source": ".env"})
+	})
 	manager.Routes(mux)
 	db, err := store.Open(data)
 	if err != nil {
@@ -291,20 +300,6 @@ func cli(data string, reset bool, action string) error {
 		b, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Fprintln(os.Stderr)
 		return string(b), err
-	}
-	if reset {
-		a, err := read("New local password: ")
-		if err != nil {
-			return err
-		}
-		b, err := read("Confirm password: ")
-		if err != nil {
-			return err
-		}
-		if a != b {
-			return fmt.Errorf("passwords differ")
-		}
-		return auth.New(data).SetPassword(a, true)
 	}
 	switch action {
 	case "set":

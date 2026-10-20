@@ -9,15 +9,9 @@ import (
 	"time"
 )
 
-func TestProfileResetAndLock(t *testing.T) {
-	m := New(t.TempDir())
-	if err := m.SetPassword("correct password 123", false); err != nil {
-		t.Fatal(err)
-	}
-	if m.SetPassword("another password", false) == nil {
-		t.Fatal("overwrote profile")
-	}
-	token, err := m.Login("correct password 123")
+func TestUsernamePasswordAndLock(t *testing.T) {
+	m := New("local", "correct password 123")
+	token, err := m.Login("local", "correct password 123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,13 +20,12 @@ func TestProfileResetAndLock(t *testing.T) {
 	if !m.Valid(r) {
 		t.Fatal("session missing")
 	}
-	if err := m.SetPassword("new correct password", true); err != nil {
-		t.Fatal(err)
+	if _, err := m.Login("other", "correct password 123"); err == nil {
+		t.Fatal("accepted wrong username")
 	}
-	if m.Valid(r) {
-		t.Fatal("reset preserved old session")
+	if _, err := m.Login("local", "incorrect password"); err == nil {
+		t.Fatal("accepted wrong password")
 	}
-	token, _ = m.Login("new correct password")
 	r = httptest.NewRequest("GET", "/", nil)
 	r.AddCookie(Cookie(token))
 	m.Lock()
@@ -48,7 +41,7 @@ type wireBody struct {
 
 func (b *wireBody) Close() error { b.closed = true; return nil }
 func TestGuardConsumesWireBodyBeforeAHandlerResponds(t *testing.T) {
-	m := New(t.TempDir())
+	m := New("local", "test password 123")
 	body := &wireBody{Reader: strings.NewReader(`{}`)}
 	request := httptest.NewRequest("POST", "http://127.0.0.1:8080/api/v1/auth/login", nil)
 	request.Header.Set("Origin", "http://127.0.0.1:8080")
@@ -70,11 +63,8 @@ func TestGuardConsumesWireBodyBeforeAHandlerResponds(t *testing.T) {
 	}
 }
 func TestActiveStreamCannotExtendAbsoluteSessionLifetime(t *testing.T) {
-	m := New(t.TempDir())
-	if err := m.SetPassword("test password only 123", false); err != nil {
-		t.Fatal(err)
-	}
-	token, err := m.Login("test password only 123")
+	m := New("local", "test password only 123")
+	token, err := m.Login("local", "test password only 123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +79,7 @@ func TestActiveStreamCannotExtendAbsoluteSessionLifetime(t *testing.T) {
 	}
 }
 func TestGuardOriginAndHost(t *testing.T) {
-	m := New(t.TempDir())
+	m := New("local", "test password 123")
 	h := m.Guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }), false)
 	for _, u := range []string{"http://evil.example/api/v1/auth/status", "http://127.0.0.1:8080/api/v1/private"} {
 		w := httptest.NewRecorder()
