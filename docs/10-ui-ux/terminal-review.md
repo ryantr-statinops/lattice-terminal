@@ -14,7 +14,7 @@ Preview đang dùng production build qua [gateway local](http://127.0.0.1:8080/s
 
 Trong Settings → Appearance, thử preset, font, cỡ chữ và màu HEX. Tùy chỉnh áp dụng và lưu ngay; HEX chưa đủ ký tự chỉ nằm ở ô nhập. Khôi phục mặc định có xác nhận. Preference chỉ thuộc trình duyệt hiện tại, không được lưu vào sổ quỹ hoặc backend.
 
-Để chạy bản production bằng launcher native khi chưa có runtime nào chiếm cổng 8080: `npm run build`, sau đó `scripts/start.ps1` với profile local của bạn. Web dev/Compose tiếp tục theo hướng dẫn README; không dùng profile review để lưu dữ liệu thật.
+Để chạy bản local, dùng Docker Compose như hướng dẫn trong README. Khi cần debug từng dịch vụ, dùng workflow ba terminal tại README; không dùng profile review để lưu dữ liệu thật.
 
 ## Ảnh để review
 

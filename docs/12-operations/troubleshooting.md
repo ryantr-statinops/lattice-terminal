@@ -9,7 +9,7 @@
 
 ## Port or readiness errors
 
-Port 8080 must be available on the host; development mode also needs 5173. Stop an older native or Compose instance before retrying. `docker compose ps` and `docker compose logs kestrel` show service health and startup errors. The health check waits for `/api/v1/ready`; a container that is still starting is not ready to serve the UI.
+Compose requires host port 8080; the Vite development override also uses 5173. The three-terminal debug mode uses 8081 for the engine, 8080 for the gateway and 5173 for Vite. Stop the other run mode before retrying because both share `.env` and `data/`. `docker compose ps` and `docker compose logs kestrel` show Compose health and startup errors. The health check waits for `/api/v1/ready`; a container that is still starting is not ready to serve the UI.
 
 If a build fails while downloading packages, retry after network access is restored. Runtime startup does not install dependencies. When dev dependencies change, recreate the dedicated caches with `docker compose -f compose.yaml -f compose.dev.yaml down -v` only if you accept deleting Compose's named development volumes; this does not delete `KESTREL_DATA_DIR`.
 

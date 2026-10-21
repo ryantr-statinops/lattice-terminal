@@ -9,7 +9,7 @@
 - node scripts/check-docs.mjs: relative Markdown paths/headings.
 - node scripts/contracts.mjs: Go response DTO/route drift.
 - uv run --project services/engine python scripts/export-engine-contracts.py --check
-- uv run --project services/engine python scripts/smoke-windows.py (Windows, after setup/build).
+- On Windows, run `npm ci`, `uv sync --project services/engine --frozen`, create `.cache/bin`, build with `go -C services/gateway build -o ../../.cache/bin/kestrel.exe ./cmd/kestrel`, then run `uv run --project services/engine python scripts/smoke-windows.py`.
 
 Coverage includes decimal/idempotent/concurrent finance, immutable snapshots, interruptions, source gates, causal indicators, detailed quote time/freshness, separate contracts, worker timeout, backup integrity/path bounds, CSV and missing valuation. Frontend tests are components/contracts, not full browser automation.
 

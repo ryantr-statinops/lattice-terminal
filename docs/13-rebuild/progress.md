@@ -42,7 +42,7 @@ Directly on main, no push, original history and tag `archive/pre-kestrel-rebuild
 - Generated gateway response schemas / 38 routes and internal OpenAPI/market schemas checked. External request OpenAPI/TS SDK generation remains incomplete.
 - Markdown relative paths/headings: **65 files passed**. Legacy prohibited market terms absent from docs. No real credentials or SSI calls used.
 - npm audit (including dev dependencies): **0 advisories**. pip-audit 2.10.1: **no known vulnerabilities** among auditable installed Python packages; local editable project skipped. Patched Monaco's DOMPurify to 3.4.17 and Starlette to 1.9.0. These are point-in-time audit results, not a vulnerability-free guarantee.
-- Clean Windows local clone: **passed** scripts/setup.ps1 (fresh npm ci, uv frozen environment, UI/Go build) and full Windows smoke. Go tests, Python 35 tests, schema/route drift and docs checks also passed in the clone. Installed toolchains/download caches were reused; project node_modules/.venv/builds were created fresh. Remote GitHub CI has not executed for unpushed commits.
+- At the time of this review, clean Windows setup and smoke passed using the former setup script; the current supported procedure is Compose-first with optional direct terminal commands documented in the root README. Remote GitHub CI has not executed for unpushed commits.
 
 ## Delivered recovery boundaries
 

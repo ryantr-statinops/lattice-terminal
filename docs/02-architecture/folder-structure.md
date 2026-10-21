@@ -8,7 +8,7 @@ services/engine/kestrel_engine/  internal API, data, indicators, replay, workers
 services/engine/tests/      Python regression tests
 data/fixtures/              synthetic instruments/candles/quote tape
 contracts/                  generated response/market schemas, routes, internal OpenAPI
-scripts/                    Windows setup/start/stop, smoke and consistency checks
+scripts/                    smoke, contract and consistency checks
 docs/                       requirements, evidence, current/deferred status
 ```
 

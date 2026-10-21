@@ -1,6 +1,6 @@
 # Development workflow
 
-Locked Node/npm/Go/uv, Python 3.12. Windows setup/start/stop in root README. Go owns SQLite; Python owns Parquet; frontend calls Go. Stop before rebuilding the Windows executable.
+Locked Node/npm/Go/uv, Python 3.12. Docker Compose is the primary local workflow; optional three-terminal debugging instructions are in the root README. Go owns SQLite; Python owns Parquet; frontend calls Go. Stop the running app before rebuilding or sharing the data directory.
 
 One reviewed commit per approved rebuild milestone on main; preserve the original tag/history. No automatic push/remote rename/PR requirement for this rebuild. Inspect diff and relevant checks before commit.
 

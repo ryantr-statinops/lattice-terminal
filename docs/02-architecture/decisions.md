@@ -8,14 +8,14 @@ Accepted rebuild: 2026-10-19. Implementation status reviewed 2026-10-20; this is
 | Record | Accepted choice | Implementation / boundary |
 |---|---|---|
 | RT-ADR-001 | React/Vite/Router/TS/Tailwind | Current web |
-| RT-ADR-002 / 027 | Go gateway + authenticated local Python; Compose-first local runtime, native Windows launcher retained | Compose uses one Linux container and Unix process groups; native Windows uses Go supervision/Job Objects |
+| RT-ADR-002 / 027 | Go gateway + authenticated local Python; Compose-first local runtime, three-terminal host debugging | Compose uses one Linux container and Unix process groups; host debugging runs processes separately |
 | RT-ADR-003 / 006 | Local-service ownership of future ingestion/stream | Offline reconciler only; no actual SSI transport/scheduler |
 | RT-ADR-004 / 010 / 025 | Model Lab deferred | No Pyodide/browser-training runtime |
 | RT-ADR-005 / 012 / 020 | Vietnam equities, SSI FastConnect Data direction | Synthetic fixtures; actual rights/coverage blocked |
 | RT-ADR-007 / 026 | Go-owned SQLite, Python-owned Parquet, DuckDB queries | Replaces PostgreSQL/object-store and engine-selection proposal |
 | RT-ADR-008 / 022 / 028 | Single profile, session password, Argon2id; OS keyring CLI | Not whole-data encryption; Compose secret export is temporary plaintext plumbing, not app SSI access |
 | RT-ADR-009 / 023 | Separate historical Backtest and paper Strategy; no real orders | Detailed synthetic LO only; real rules/settlement blocked |
-| RT-ADR-011 / 019 | Local-first Compose on Windows/macOS/Linux; no hosted deployment | Compose fixture runtime, dev override and native Windows scripts |
+| RT-ADR-011 / 019 | Local-first Compose on Windows/macOS/Linux; no hosted deployment | Compose fixture runtime, Vite dev override and optional three-terminal host debugging |
 | RT-ADR-013 | Dark-only terminal presets and Appearance | Owner revision 2026-10-20; immediate versioned local preferences |
 | RT-ADR-014 | Editable semantic color roles, accent separate from market colors | Terminal Black accent #4DB5FF; Graphite/Midnight presets |
 | RT-ADR-015 | IBM Plex Mono default, JetBrains Mono optional | Licensed WOFF2 bundled locally with Vietnamese glyphs; no runtime CDN |

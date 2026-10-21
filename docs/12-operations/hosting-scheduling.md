@@ -16,7 +16,7 @@ The development override mounts the checkout read-only and gives dependencies se
 
 ## Native development path
 
-The Windows `scripts/setup.ps1`, `start.ps1`, `dev.ps1` and `stop.ps1` remain available for contributors who want to run the pinned native toolchain. The native path uses the same local service ownership and fixture-only behavior. Do not run a native instance and Compose against the same data root concurrently.
+For debugging, the root README documents a three-terminal host workflow for Python engine, Go gateway and Vite. It uses the same `.env` and data directory as Compose. Stop Compose before starting it, and stop the three host processes before returning to Compose.
 
 ## SSI and news boundaries
 

@@ -4,7 +4,7 @@
 
 ## Local setup and privacy
 
-- Clean Docker Compose setup can build/start/stop on Windows, macOS and Linux using documented steps; record failures and time to first localhost screen. Native Windows scripts remain a contributor fallback.
+- Clean Docker Compose setup can build/start/stop on Windows, macOS and Linux using documented steps; record failures and time to first localhost screen. Three-terminal host processes remain an optional debugging path.
 - Verify market credentials, market payloads, portfolio and research results remain local; no unexpected outbound calls/telemetry.
 - Local backup/export/restore/reset and password behavior succeed on a clean profile.
 

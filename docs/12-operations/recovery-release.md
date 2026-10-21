@@ -15,18 +15,17 @@ docker compose up
 
 ## Offline maintenance
 
-Stop the Compose stack or native service first. Maintenance reserves port 8080 and refuses if a terminal is active. Use the same `-data` root as the selected `KESTREL_DATA_DIR` when operating on a Compose data directory. The following Windows examples use the native CLI; macOS/Linux use the corresponding `kestrel` executable and host paths.
+Stop the Compose stack first. Maintenance reserves port 8080 and refuses if a terminal is active. Use the same `KESTREL_DATA_DIR` as the running stack. Run the Go CLI from the repository root; Compose must be stopped for offline maintenance.
 
 ```powershell
 # Existing backup parent, outside app data; output must not exist:
-./.cache/bin/kestrel.exe -backup D:/Backups/kestrel.zip
+go -C services/gateway run ./cmd/kestrel -root ../.. -backup D:/Backups/kestrel.zip
 # Destination must not exist; parent must exist:
-./.cache/bin/kestrel.exe -restore D:/Backups/kestrel.zip -data D:/Research/KestrelRestored
-./scripts/start.ps1 -DataDir D:/Research/KestrelRestored
+go -C services/gateway run ./cmd/kestrel -root ../.. -restore D:/Backups/kestrel.zip -data D:/Research/KestrelRestored
 # The repository .env account is used after restore; no session is restored.
-./.cache/bin/kestrel.exe -reset-password
-./.cache/bin/kestrel.exe -ssi-credentials delete
-./.cache/bin/kestrel.exe -diagnostics
+go -C services/gateway run ./cmd/kestrel -root ../.. -reset-password
+go -C services/gateway run ./cmd/kestrel -root ../.. -ssi-credentials delete
+go -C services/gateway run ./cmd/kestrel -root ../.. -diagnostics
 ```
 
 Backup uses SQLite VACUUM INTO, then checksums workspaces/trash, code snapshots, market snapshots and artifacts. Excludes .env, profile verifier/runtime sessions/control tokens/source policy/OS secrets/service logs. ZIP is **unencrypted** and may contain sensitive scripts/output. Restore only trusted copies.

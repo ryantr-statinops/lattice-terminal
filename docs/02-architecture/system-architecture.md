@@ -5,7 +5,7 @@
 
 Implemented fixture topology; no enabled SSI upstream transport.
 
-Docker Compose packages the Go gateway and Python engine in one Linux container while keeping them as separate supervised processes. The browser-facing port is published only on host loopback. The host-selected `KESTREL_DATA_DIR` bind mount supplies `/data`; stopping the container preserves it. The optional development override bind-mounts source read-only and exposes Vite only on host loopback. Native Windows scripts remain a contributor alternative.
+Docker Compose packages the Go gateway and Python engine in one Linux container while keeping them as separate supervised processes. The browser-facing port is published only on host loopback. The host-selected `KESTREL_DATA_DIR` bind mount supplies `/data`; stopping the container preserves it. The optional development override runs Vite in a separate container and publishes both Vite and gateway only on host loopback. A three-terminal local debug mode can run Python, Go and Vite as separate host processes against the same `.env` and data directory; do not run it alongside Compose.
 
 ```mermaid
 flowchart LR
