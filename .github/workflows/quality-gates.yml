@@ -61,7 +61,13 @@ jobs:
         with:
           version: 0.11.28
           python-version: '3.12'
-      - run: ./scripts/setup.ps1
+      - run: npm ci
+      - run: uv sync --project services/engine --frozen
+      - run: New-Item -ItemType Directory -Force .cache/bin | Out-Null
+        shell: pwsh
+      - run: (Get-Content .env.example) -replace '^KESTREL_LOCAL_PASSWORD=$', 'KESTREL_LOCAL_PASSWORD=fixture-smoke-password-only' | Set-Content .env
+        shell: pwsh
+      - run: go -C services/gateway build -o ../../.cache/bin/kestrel.exe ./cmd/kestrel
       - run: uv run --project services/engine python scripts/smoke-windows.py
   compose:
     runs-on: ubuntu-latest

@@ -17,7 +17,24 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
 args=parser.parse_args();root=args.root.resolve();binary=root/'.cache/bin/kestrel.exe'
 if os.name!='nt':raise SystemExit('This acceptance smoke requires Windows')
-origin='http://127.0.0.1:8080';password='fixture-smoke-password-only'
+origin='http://127.0.0.1:8080'
+def local_account(path):
+    values={}
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        line=line.strip()
+        if not line or line.startswith('#'):continue
+        if line.startswith('export '):line=line[7:].lstrip()
+        key,separator,value=line.partition('=')
+        if not separator:continue
+        key,value=key.strip(),value.strip()
+        if value.startswith("'") and value.endswith("'"):value=value[1:-1]
+        elif value.startswith('"') and value.endswith('"'):value=json.loads(value)
+        else:value=value.split(' #',1)[0].strip()
+        values[key]=value
+    username,password=values.get('KESTREL_LOCAL_USERNAME',''),values.get('KESTREL_LOCAL_PASSWORD','')
+    if not username or len(password.encode())<6:raise RuntimeError('Set a valid local account in repository .env before the Windows smoke')
+    return username,password
+username,password=local_account(root/'.env')
 def key():return uuid.uuid4().hex
 with tempfile.TemporaryDirectory(prefix='kestrel-smoke-',dir=root/'.cache') as temp:
     base=Path(temp).resolve();assert base.is_relative_to((root/'.cache').resolve());data=base/'data';process=None;jar=http.cookiejar.CookieJar()
@@ -89,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix='kestrel-smoke-',dir=root/'.cache') as t
             urllib.request.urlopen(origin+'/..%20/..%20/..%20/package.json')
             raise AssertionError('Windows alias path accepted')
         except urllib.error.HTTPError as error:assert error.code==404
-        call('/auth/setup',{'password':password},expected=201);call('/auth/login',{'password':password},expected=204)
+        call('/auth/login',{'username':username,'password':password},expected=204)
         for page in ['market','quant','backtest','strategies','assets','portfolio','settings']:
             with urllib.request.urlopen(origin+'/'+page) as response:
                 body=response.read();assert b'Kestrel Terminal' in body,(page,response.status,response.url,body[:200])
@@ -123,7 +140,7 @@ with tempfile.TemporaryDirectory(prefix='kestrel-smoke-',dir=root/'.cache') as t
         assert len(call('/allocations/'+manual+'/paper')['orders'])==1
         write('strategy','main.py','KESTREL_KIND="strategy"\ndef on_event(context,event):\n    return []\n')
         live=run('strategy','main.py',{'allocation_id':strategy,'paper_source':'fixture-replay','event_snapshot':tape})
-        call('/auth/lock',{},expected=204);call('/portfolio',expected=401);call('/auth/login',{'password':password},expected=204)
+        call('/auth/lock',{},expected=204);call('/portfolio',expected=401);call('/auth/login',{'username':username,'password':password},expected=204)
         time.sleep(.3);assert call('/runs/'+live)['status'] in ['queued','running','completed']
         call('/runs/'+live+'/stop',{},expected=202);done(live,'cancelled')
         # Wait for controller cleanup, then explicitly acknowledge interrupted book.
@@ -144,16 +161,16 @@ with tempfile.TemporaryDirectory(prefix='kestrel-smoke-',dir=root/'.cache') as t
         stream=call('/runs/'+many+'/events');assert stream.count('event: run')>=243
         write('research','slow.py','KESTREL_KIND="research"\nimport time\ndef run(context):time.sleep(60)\n')
         interrupted=run('research','slow.py',{})
-        stop(data);start(data);call('/auth/login',{'password':password},expected=204)
+        stop(data);start(data);call('/auth/login',{'username':username,'password':password},expected=204)
         assert call('/runs/'+interrupted)['status']=='interrupted'
         crashed=run('research','slow.py',{});time.sleep(.5);children=descendants();process.kill();process.wait(timeout=10);assert_gone(children)
-        start(data);call('/auth/login',{'password':password},expected=204);assert call('/runs/'+crashed)['status']=='interrupted'
+        start(data);call('/auth/login',{'username':username,'password':password},expected=204);assert call('/runs/'+crashed)['status']=='interrupted'
         stop(data)
         archive=base/'backup.zip';restored=base/'restored'
         subprocess.run([str(binary),'-data',str(data),'-backup',str(archive)],check=True,timeout=30)
         subprocess.run([str(binary),'-data',str(restored),'-restore',str(archive)],check=True,timeout=30)
-        start(restored);assert not call('/auth/status')['initialized']
-        call('/auth/setup',{'password':password},expected=201);call('/auth/login',{'password':password},expected=204)
+        start(restored);assert call('/auth/status')['configured']
+        call('/auth/login',{'username':username,'password':password},expected=204)
         assert len(call('/portfolio')['funds'])==2
         assert len(call('/engine/market/candles?instrument_id='+urllib.parse.quote(instrument))['candles'])==100
         stop(restored)
