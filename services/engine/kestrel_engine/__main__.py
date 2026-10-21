@@ -54,6 +54,7 @@ def standalone(args: argparse.Namespace) -> None:
     if not data_root.is_absolute():
         data_root = root / data_root
     data_root = data_root.resolve()
+    data_root.mkdir(parents=True, exist_ok=True)
     app = create_app(token, str(data_root))
     app.state.internal_token = token
     app.state.data_root = str(data_root)
@@ -70,7 +71,7 @@ def standalone(args: argparse.Namespace) -> None:
 def main():
     parser = argparse.ArgumentParser(description='Kestrel local engine')
     parser.add_argument('--standalone', action='store_true', help='Run fixed-port local debug engine')
-    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2], help='Repository root')
+    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[3], help='Repository root')
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('--port', type=int, default=8081)
     args = parser.parse_args()
