@@ -1,5 +1,6 @@
 services:
   kestrel:
+    image: kestrel-terminal:dev
     build:
       target: dev
     entrypoint:
@@ -22,6 +23,7 @@ services:
       - kestrel_go_modules:/go/pkg/mod
     stop_grace_period: 30s
   web:
+    image: kestrel-terminal:web-dev
     build:
       context: .
       dockerfile: Dockerfile
