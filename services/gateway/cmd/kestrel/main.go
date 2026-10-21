@@ -5,16 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"golang.org/x/term"
 	"io"
-	"kestrel-terminal/gateway/internal/api"
-	"kestrel-terminal/gateway/internal/auth"
-	"kestrel-terminal/gateway/internal/fileutil"
-	"kestrel-terminal/gateway/internal/host"
-	"kestrel-terminal/gateway/internal/recovery"
-	"kestrel-terminal/gateway/internal/secret"
-	"kestrel-terminal/gateway/internal/store"
-	"kestrel-terminal/gateway/internal/workspace"
 	"log"
 	"net"
 	"net/http"
@@ -27,6 +18,17 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"kestrel-terminal/gateway/internal/api"
+	"kestrel-terminal/gateway/internal/auth"
+	"kestrel-terminal/gateway/internal/fileutil"
+	"kestrel-terminal/gateway/internal/host"
+	"kestrel-terminal/gateway/internal/recovery"
+	"kestrel-terminal/gateway/internal/secret"
+	"kestrel-terminal/gateway/internal/store"
+	"kestrel-terminal/gateway/internal/workspace"
+
+	"golang.org/x/term"
 )
 
 func handler() http.Handler {
@@ -42,7 +44,7 @@ func main() {
 	data := flag.String("data", "", "Override .env local data directory")
 	printData := flag.Bool("print-data-dir", false, "Print resolved data directory without credentials")
 	checkConfig := flag.Bool("check-config", false, "Validate local account configuration without displaying it")
-	dev := flag.Bool("dev", false, "Start Vite")
+	dev := flag.Bool("dev", false, "Allow the Vite development origin")
 	reset := flag.Bool("reset-password", false, "Show how to change the account in .env")
 	credentials := flag.String("ssi-credentials", "", "set, status or delete OS keyring credentials")
 	prepareSSISecret := flag.Bool("prepare-ssi-compose-secret", false, "write a temporary Compose secret file from the OS keyring")
@@ -158,21 +160,20 @@ func run(root, data string, dev bool) error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	engine, err := host.StartEngine(ctx, root, data)
+	var engine *host.Engine
+	if engineURL := os.Getenv("KESTREL_ENGINE_URL"); engineURL != "" {
+		engine, err = host.ConnectEngine(ctx, engineURL, config.EngineToken)
+	} else {
+		engine, err = host.StartEngine(ctx, root, data)
+	}
 	if err != nil {
 		return err
 	}
 	defer engine.Close()
-	if dev {
-		stop, err := host.StartVite(ctx, root)
-		if err != nil {
-			return err
-		}
-		defer stop()
-	}
 	mux := handler().(*http.ServeMux)
 	manager := auth.New(config.Username, config.Password)
 	config.Password = ""
+	config.EngineToken = ""
 	mux.HandleFunc("GET /api/v1/local/config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"data_dir": data, "account_source": ".env"})

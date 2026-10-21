@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type LocalConfig struct{ Username, Password, DataDir string }
+type LocalConfig struct{ Username, Password, DataDir, EngineToken string }
 
 // RepositoryRoot supports scripts and binaries in .cache/bin from any cwd.
 func RepositoryRoot(explicit string) (string, error) {
@@ -79,6 +79,7 @@ func ReadLocal(root, override string, credentials bool) (LocalConfig, error) {
 		return LocalConfig{}, errors.New("configure KESTREL_LOCAL_USERNAME and KESTREL_LOCAL_PASSWORD (6-1024 bytes) in repository .env, then restart")
 	}
 	c.DataDir = values["KESTREL_DATA_DIR"]
+	c.EngineToken = values["KESTREL_ENGINE_TOKEN"]
 	if c.DataDir == "" {
 		c.DataDir = "data"
 	}

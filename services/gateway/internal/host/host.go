@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,13 +49,6 @@ func EnginePython(root string) string {
 	return python
 }
 
-func ViteHost() string {
-	if v := os.Getenv("KESTREL_VITE_HOST"); v != "" {
-		return v
-	}
-	return "127.0.0.1"
-}
-
 type Engine struct {
 	URL, Token string
 	cmd        *exec.Cmd
@@ -62,6 +57,9 @@ type Engine struct {
 }
 
 func (e *Engine) Close() {
+	if e.cmd == nil {
+		return
+	}
 	done := false
 	if e.cmd != nil && e.cmd.Process != nil && runtime.GOOS != "windows" {
 		_ = e.cmd.Process.Signal(syscall.SIGTERM)
@@ -85,7 +83,7 @@ func (e *Engine) Close() {
 func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
 	python := EnginePython(root)
 	if _, err := os.Stat(python); err != nil {
-		return nil, errors.New("Python environment missing; run scripts/setup.ps1")
+		return nil, errors.New("Python environment missing; install it with `uv sync --project services/engine --frozen` from the repository root")
 	}
 	token := Token()
 	payload, _ := json.Marshal(map[string]string{"token": token, "data_root": data})
@@ -144,45 +142,71 @@ func StartEngine(ctx context.Context, root, data string) (*Engine, error) {
 		e.Close()
 		return nil, ctx.Err()
 	}
-	client := http.Client{Timeout: time.Second}
-	for range 300 {
-		req, _ := http.NewRequestWithContext(ctx, "GET", e.URL+"/internal/v1/health", nil)
-		req.Header.Set("Authorization", "Bearer "+token)
-		response, err := client.Do(req)
+	if err := waitEngine(ctx, e, 30*time.Second); err != nil {
+		e.Close()
+		return nil, err
+	}
+	return e, nil
+}
+
+// ConnectEngine attaches to a separately started loopback engine. The bearer
+// token is read from the local .env by the caller and never logged.
+func ConnectEngine(ctx context.Context, rawURL, token string) (*Engine, error) {
+	if token == "" {
+		return nil, errors.New("configure KESTREL_ENGINE_TOKEN in repository .env for terminal debug mode")
+	}
+	target, err := url.Parse(rawURL)
+	if err != nil || target.Scheme != "http" || target.Hostname() == "" || target.Port() == "" || target.User != nil || target.RawQuery != "" || target.Fragment != "" || (target.Path != "" && target.Path != "/") {
+		return nil, errors.New("KESTREL_ENGINE_URL must be an http URL to a loopback engine")
+	}
+	host := target.Hostname()
+	if !strings.EqualFold(host, "localhost") && net.ParseIP(host).IsLoopback() == false {
+		return nil, errors.New("KESTREL_ENGINE_URL must use localhost or a loopback IP")
+	}
+	e := &Engine{URL: strings.TrimRight(rawURL, "/"), Token: token}
+	if err := waitEngine(ctx, e, 10*time.Second); err != nil {
+		return nil, fmt.Errorf("cannot connect to terminal debug engine: %w", err)
+	}
+	return e, nil
+}
+
+func waitEngine(ctx context.Context, e *Engine, timeout time.Duration) error {
+	return waitEngineWithClient(ctx, e, timeout, &http.Client{Timeout: time.Second})
+}
+
+func waitEngineWithClient(ctx context.Context, e *Engine, timeout time.Duration, client *http.Client) error {
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	var lastErr error
+	for {
+		req, err := http.NewRequestWithContext(ctx, "GET", e.URL+"/internal/v1/health", nil)
 		if err == nil {
-			response.Body.Close()
-			if response.StatusCode == 200 {
-				return e, nil
+			req.Header.Set("Authorization", "Bearer "+e.Token)
+			response, requestErr := client.Do(req)
+			if requestErr == nil {
+				response.Body.Close()
+				if response.StatusCode == http.StatusOK {
+					return nil
+				}
+				if response.StatusCode == http.StatusUnauthorized {
+					return errors.New("engine token rejected; check KESTREL_ENGINE_TOKEN in repository .env")
+				}
+				lastErr = fmt.Errorf("engine health returned HTTP %d", response.StatusCode)
+			} else {
+				lastErr = requestErr
 			}
+		} else {
+			lastErr = err
 		}
 		select {
 		case <-ctx.Done():
-			e.Close()
-			return nil, ctx.Err()
+			return ctx.Err()
+		case <-deadline.C:
+			if lastErr == nil {
+				lastErr = errors.New("engine readiness timeout")
+			}
+			return lastErr
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
-	e.Close()
-	return nil, errors.New("engine health check failed")
-}
-
-func StartVite(ctx context.Context, root string) (func(), error) {
-	cmd := exec.Command("node", filepath.Join(root, "node_modules", "vite", "bin", "vite.js"), "--host", ViteHost(), "--port", "5173", "--strictPort")
-	cmd.Dir = filepath.Join(root, "apps", "web")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := prepare(cmd); err != nil {
-		return nil, err
-	}
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-	closeJob, err := attach(cmd)
-	if err != nil {
-		cmd.Process.Kill()
-		cmd.Wait()
-		return nil, err
-	}
-	go cmd.Wait()
-	return func() { closeJob(); _ = cmd.Process.Kill() }, nil
 }
