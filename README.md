@@ -22,36 +22,60 @@ Open `http://127.0.0.1:8080`. Enter the configured local account to unlock the s
 
 Stop with `docker compose down`. The host data directory persists across stop/start. Do not use `down -v` as a routine stop command; it removes the development cache volumes (not the bind-mounted host data).
 
-## Run the local Windows build
+## Debug with three local terminals (optional)
 
-1. Copy `.env.example` to `.env` if needed, then enter your local username and password.
-2. Run the setup command:
+Use this only when investigating a service. Stop Compose first because both modes use the same `.env` and `data/` directory. Install Go 1.27.2, Node.js 22.23.1/npm 10.9.8, Python 3.12 and uv 0.11.28, then install the pinned project dependencies once from the repository root:
 
 ```powershell
-./scripts/setup.ps1
+npm ci
+uv sync --project services/engine --frozen
+go -C services/gateway mod download
 ```
 
-3. Start with `./scripts/start.ps1` and stop with `./scripts/stop.ps1`.
+Set a private random `KESTREL_ENGINE_TOKEN` in `.env` once. If the sample left it blank, generate and store a local 256-bit token with PowerShell:
 
-The app reads the repository `.env` on each start. Its default SQLite database is
-`data\kestrel.sqlite`; Settings shows the resolved data directory. To change a
-forgotten password, edit `KESTREL_LOCAL_PASSWORD` in `.env` and restart.
+```powershell
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$token = [Convert]::ToHexString($bytes).ToLowerInvariant()
+(Get-Content .env) -replace '^KESTREL_ENGINE_TOKEN=$', "KESTREL_ENGINE_TOKEN=$token" | Set-Content -Encoding utf8 .env
+$rng.Dispose(); Remove-Variable token, bytes
+```
+
+Keep the token local; it is not sent to the browser or written to logs.
+
+Start the processes in this order, each in its own terminal at the repository root:
+
+```powershell
+# Terminal 1 — Python engine, bound to 127.0.0.1:8081
+uv run --project services/engine python -m kestrel_engine --standalone --root .
+
+# Terminal 2 — Go gateway, bound to 127.0.0.1:8080
+$env:KESTREL_ENGINE_URL = "http://127.0.0.1:8081"
+go -C services/gateway run ./cmd/kestrel -root ../.. -dev
+
+# Terminal 3 — Vite UI at 127.0.0.1:5173; API requests proxy to the gateway
+npm run dev --workspace=@kestrel-terminal/web
+```
+
+Open `http://127.0.0.1:5173`. Stop Vite, gateway, and engine with Ctrl+C in each terminal. If startup fails, check that `.env` has valid local account fields and `KESTREL_ENGINE_TOKEN`, verify the previous process released its port, and start again in engine → gateway → Vite order. A token mismatch is reported as a configuration error without displaying either token.
 
 ### Web development mode
 
-Use the Compose override for Vite hot reload:
+Use the Compose override for Vite hot reload. It runs Vite as a separate container and publishes both UI and gateway on loopback:
 
 ```sh
 docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-The development UI is at `http://127.0.0.1:5173`. Changes to Go or Python require rebuilding/restarting the service. `docker compose down` stops either mode.
+The development UI is at `http://127.0.0.1:5173`; the gateway is at `http://127.0.0.1:8080`. Changes to Go or Python require rebuilding/restarting the service. `docker compose down` stops either Compose mode.
 
 ### SSI secret plumbing — currently unavailable to the app
 
 The cross-platform CLI can export an OS-keyring entry to a temporary host file, and Compose can mount it read-only. This only prepares transport plumbing: the application does not consume the mounted secret, SSI source gates remain blocked, and no live SSI request is enabled. Do not add credentials until a specific capability has passed its source/rights gate and the implementation is ready.
 
-Set SSI credentials through the native CLI (`kestrel.exe -ssi-credentials set` on Windows or `kestrel -ssi-credentials set` on macOS/Linux; both values are prompted without echo). Then run `-prepare-ssi-compose-secret`, set the printed absolute path as `KESTREL_SSI_SECRET_FILE` in `.env`, and start with `docker compose -f compose.yaml -f compose.ssi.yaml up`. After Compose is down, run the matching `-clean-ssi-compose-secret` command. The temporary file is plaintext on the host; the container mount is read-only. Cleanup is not secure erase. If the machine stops unexpectedly, check and clean any leftover file before reuse.
+Set SSI credentials through the local CLI (`go -C services/gateway run ./cmd/kestrel -root ../.. -ssi-credentials set`; both values are prompted without echo). Then run `-prepare-ssi-compose-secret`, set the printed absolute path as `KESTREL_SSI_SECRET_FILE` in `.env`, and start with `docker compose -f compose.yaml -f compose.ssi.yaml up`. After Compose is down, run the matching `-clean-ssi-compose-secret` command. The temporary file is plaintext on the host; the container mount is read-only. Cleanup is not secure erase. If the machine stops unexpectedly, check and clean any leftover file before reuse.
 
 ## Implemented / Đã có
 
@@ -64,7 +88,7 @@ Set SSI credentials through the native CLI (`kestrel.exe -ssi-credentials set` o
 
 ## Verify from a development checkout
 
-Native toolchain checks remain available to contributors:
+Contributor checks:
 
 ```sh
 npm run typecheck
@@ -80,4 +104,4 @@ uv run --project services/engine python scripts/export-engine-contracts.py --che
 
 [Docs](docs/README.md) · [Progress / remaining gates](docs/13-rebuild/progress.md) · [Recovery](docs/12-operations/recovery-release.md).
 
-History/tag `archive/pre-kestrel-rebuild-2026-10-19` is preserved. Changes are committed on `main`; no automatic push. Owner renames the remote later. News is independent; AI/optimization, factor research, 3D surfaces, derivatives and ETFs are later work.
+History/tag `archive/pre-kestrel-rebuild-2026-10-19` is preserved. News is independent; AI/optimization, factor research, 3D surfaces, derivatives and ETFs are later work.
