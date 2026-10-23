@@ -26,6 +26,7 @@ import (
 	"kestrel-terminal/gateway/internal/recovery"
 	"kestrel-terminal/gateway/internal/secret"
 	"kestrel-terminal/gateway/internal/store"
+	"kestrel-terminal/gateway/internal/terminal"
 	"kestrel-terminal/gateway/internal/workspace"
 
 	"golang.org/x/term"
@@ -186,7 +187,7 @@ func run(root, data string, dev bool) error {
 	defer db.Close()
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
 	defer func() { cancel(); bridge.Wait() }()
-	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect}
+	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
 	application.Engine = bridge
 	bridge.OnEvent = application.PaperEvent
 	bridge.OnFinish = application.FinishPaper

@@ -6,6 +6,7 @@ import (
 	"io"
 	"kestrel-terminal/gateway/internal/host"
 	"kestrel-terminal/gateway/internal/store"
+	"kestrel-terminal/gateway/internal/terminal"
 	"kestrel-terminal/gateway/internal/workspace"
 	"net/http"
 	"strconv"
@@ -21,6 +22,7 @@ type API struct {
 	StopRun   func(string)
 	Inspect   func(string, string, json.RawMessage) error
 	Engine    *Runner
+	Terminal  *terminal.Manager
 	paperMu   sync.Mutex
 }
 
@@ -51,6 +53,7 @@ func (a *API) Routes(m *http.ServeMux) {
 	a.recoveryRoutes(m)
 	a.artifactRoutes(m)
 	a.reportRoutes(m)
+	a.terminalRoutes(m)
 	m.HandleFunc("GET /api/v1/workspaces/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		files, err := a.Workspace.List(r.PathValue("kind"))
 		if err != nil {
