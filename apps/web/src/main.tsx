@@ -6,4 +6,6 @@ import {App} from './App';
 import './styles.css';
 import {initAppearance} from './theme/store';
 initAppearance();
-createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><BrowserRouter><App/></BrowserRouter></QueryClientProvider></React.StrictMode>);
+const DevTools = import.meta.env.DEV && import.meta.env.VITE_ENABLE_AGENTATION === 'true'
+  ? React.lazy(() => import('./dev/DevTools')) : null;
+createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><BrowserRouter><App/></BrowserRouter></QueryClientProvider>{DevTools && <React.Suspense fallback={null}><DevTools/></React.Suspense>}</React.StrictMode>);
