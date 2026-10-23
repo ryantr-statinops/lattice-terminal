@@ -20,6 +20,7 @@ const mockPref: AppearancePreferences = {
   editorSize: 13,
   dateTimeRegion: 'vietnam',
   colors: {...presets.terminal.colors},
+  density: 'compact',
 };
 
 describe('MarketChart indicators and dark theme', () => {

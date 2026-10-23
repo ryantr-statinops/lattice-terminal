@@ -6,11 +6,28 @@ const listeners=new Set<()=>void>();
 const subscribe=(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener)}};
 const notify=()=>listeners.forEach(fn=>fn());
 function apply(value:AppearancePreferences){
- const root=document.documentElement;root.dataset.theme='dark';root.style.colorScheme='dark';
+ const root=document.documentElement;root.dataset.theme='dark';root.style.colorScheme='dark';root.dataset.density=value.density;
  for(const [key,color] of Object.entries(value.colors))root.style.setProperty('--'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),color);
  root.style.setProperty('--surface',value.colors.panel);
  root.style.setProperty('--font-family',fontFamilies[value.font]);
  root.style.setProperty('--font-size',value.fontSize+'px');root.style.setProperty('--editor-font-size',value.editorSize+'px');
+ if(value.density==='compact'){
+  root.style.setProperty('--line-height','17px');
+  root.style.setProperty('--control-height','24px');
+  root.style.setProperty('--cell-padding','1px 6px');
+  root.style.setProperty('--space-1','2px');
+  root.style.setProperty('--space-2','6px');
+  root.style.setProperty('--space-3','10px');
+  root.style.setProperty('--space-4','12px');
+ }else{
+  root.style.setProperty('--line-height','20px');
+  root.style.setProperty('--control-height','28px');
+  root.style.setProperty('--cell-padding','3px 8px');
+  root.style.setProperty('--space-1','4px');
+  root.style.setProperty('--space-2','8px');
+  root.style.setProperty('--space-3','12px');
+  root.style.setProperty('--space-4','16px');
+ }
 }
 export function initAppearance(){
  let preferences=defaultAppearance(),sessionOnly=false;
