@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "agentation": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["node_modules/agentation-mcp/dist/cli.js", "server"]
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["node_modules/@upstash/context7-mcp/dist/index.js"]
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js", "--no-usage-statistics", "--no-performance-crux"]
+    }
+  }
+}
