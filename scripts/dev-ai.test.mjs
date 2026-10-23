@@ -32,7 +32,8 @@ async function freePort() {
 
 test('OMP exit stops Vite and releases its port (paths with spaces)', async () => fixture(async cwd => {
   const port = await freePort();
-  const code = await runSession({cwd, url: `http://127.0.0.1:${port}`, vite: node(`require('http').createServer((q,s)=>s.end(process.env.VITE_ENABLE_AGENTATION)).listen(${port},'127.0.0.1')`), omp: node('process.exit(7)')});
+  const server = `require('http').createServer((q,s)=>s.end(process.env.VITE_ENABLE_AGENTATION)).listen(${port},'127.0.0.1')`;
+  const code = await runSession({cwd, url: `http://127.0.0.1:${port}`, vite: node(`require('child_process').spawn(process.execPath,['-e',${JSON.stringify(server)}],{stdio:'ignore'});setInterval(()=>{},1000)`), omp: node(`fetch('http://127.0.0.1:${port}').then(r=>r.text()).then(flag=>process.exit(flag==='true'?7:1))`)});
   assert.equal(code, 7);
   await assertPortFree(port);
 }));
@@ -50,5 +51,15 @@ test('Ctrl+C handler cleans up while waiting for Vite', async () => fixture(asyn
   try {
     const code = await runSession({cwd, url: 'http://127.0.0.1:1', vite: node('setInterval(()=>{},1000)'), omp: node('process.exit(0)')});
     assert.equal(code, 130);
+  } finally { clearTimeout(timer); }
+}));
+
+test('Ctrl+C handler stops an active OMP session and Vite', async () => fixture(async cwd => {
+  const port = await freePort();
+  const timer = setTimeout(() => process.emit('SIGINT'), 1200);
+  try {
+    const code = await runSession({cwd, url: `http://127.0.0.1:${port}`, vite: node(`require('http').createServer((q,s)=>s.end('ready')).listen(${port},'127.0.0.1')`), omp: node('setInterval(()=>{},1000)')});
+    assert.equal(code, 130);
+    await assertPortFree(port);
   } finally { clearTimeout(timer); }
 }));
