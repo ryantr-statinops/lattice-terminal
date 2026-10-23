@@ -17,16 +17,68 @@ import (
 
 type Workspace struct{ Root, Repository string }
 
-var mutation sync.Mutex
+var (
+	mutation     sync.Mutex
+	mountedRoots = make(map[string]string)
+	mountedMu    sync.RWMutex
+)
 
 type File struct {
 	Path      string `json:"path"`
 	Directory bool   `json:"directory"`
 }
 
+func (w Workspace) Mount(kind, targetDir string) (string, error) {
+	if kind != "research" && kind != "backtest" && kind != "strategy" {
+		return "", errors.New("unknown workspace")
+	}
+	clean := filepath.Clean(targetDir)
+	if !filepath.IsAbs(clean) {
+		return "", errors.New("mounted path must be absolute")
+	}
+	info, err := os.Stat(clean)
+	if err != nil {
+		return "", errors.New("mounted path does not exist")
+	}
+	if !info.IsDir() {
+		return "", errors.New("mounted path must be a directory")
+	}
+	vol := filepath.VolumeName(clean)
+	if clean == vol+string(filepath.Separator) || clean == "/" {
+		return "", errors.New("mounting system root is not permitted")
+	}
+	mountedMu.Lock()
+	mountedRoots[kind] = clean
+	mountedMu.Unlock()
+	return clean, nil
+}
+
+func (w Workspace) Unmount(kind string) error {
+	if kind != "research" && kind != "backtest" && kind != "strategy" {
+		return errors.New("unknown workspace")
+	}
+	mountedMu.Lock()
+	delete(mountedRoots, kind)
+	mountedMu.Unlock()
+	return nil
+}
+
+func (w Workspace) GetMount(kind string) (string, bool) {
+	mountedMu.RLock()
+	defer mountedMu.RUnlock()
+	p, ok := mountedRoots[kind]
+	return p, ok
+}
+
 func (w Workspace) area(kind string) (string, error) {
 	if kind != "research" && kind != "backtest" && kind != "strategy" {
 		return "", errors.New("unknown workspace")
+	}
+	mountedMu.RLock()
+	custom, ok := mountedRoots[kind]
+	mountedMu.RUnlock()
+	if ok && custom != "" {
+		return custom, nil
 	}
 	root := filepath.Join(w.Root, "workspaces", kind)
 	return root, os.MkdirAll(root, 0700)

@@ -99,6 +99,32 @@ func (a *API) Routes(m *http.ServeMux) {
 		}
 		w.WriteHeader(204)
 	})
+	m.HandleFunc("GET /api/v1/workspaces/{kind}/mount", func(w http.ResponseWriter, r *http.Request) {
+		kind := r.PathValue("kind")
+		path, ok := a.Workspace.GetMount(kind)
+		JSON(w, 200, map[string]any{"kind": kind, "path": path, "mounted": ok})
+	})
+	m.HandleFunc("POST /api/v1/workspaces/{kind}/mount", func(w http.ResponseWriter, r *http.Request) {
+		kind := r.PathValue("kind")
+		var v struct{ Path string }
+		if !Read(w, r, &v) {
+			return
+		}
+		mountedPath, err := a.Workspace.Mount(kind, v.Path)
+		if err != nil {
+			Fail(w, err)
+			return
+		}
+		JSON(w, 200, map[string]any{"kind": kind, "path": mountedPath, "mounted": true})
+	})
+	m.HandleFunc("DELETE /api/v1/workspaces/{kind}/mount", func(w http.ResponseWriter, r *http.Request) {
+		kind := r.PathValue("kind")
+		if err := a.Workspace.Unmount(kind); err != nil {
+			Fail(w, err)
+			return
+		}
+		JSON(w, 200, map[string]any{"kind": kind, "mounted": false})
+	})
 	m.HandleFunc("GET /api/v1/runs", func(w http.ResponseWriter, r *http.Request) {
 		runs, err := a.Store.Runs(r.URL.Query().Get("kind"))
 		if err != nil {
