@@ -275,6 +275,9 @@ func (w Workspace) Snapshot(kind, entry string, params json.RawMessage) (string,
 		return "", err
 	}
 	manifest := map[string]any{"kind": kind, "entry": entry, "params": params, "files": contents, "dependency_lock": string(lock), "engine_sha256": engine}
+	if mount, ok := w.GetMount(kind); ok {
+		manifest["mounted_root"] = mount
+	}
 	b, _ := json.Marshal(manifest)
 	hash := sha256.Sum256(b)
 	id := hex.EncodeToString(hash[:])

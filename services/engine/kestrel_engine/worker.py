@@ -80,6 +80,10 @@ def main():
     inspect_source(entry.read_text(encoding='utf-8-sig'),config['kind'],manifest['params'].get('kind_detection')=='selected')
     context=Context(config,manifest,sink);writer=Writer(context)
     sys.path.insert(0,str(directory/'files'))
+    if manifest.get('mounted_root'):
+        m_root=Path(manifest['mounted_root']).resolve()
+        if m_root.is_dir() and str(m_root) not in sys.path:
+            sys.path.insert(1,str(m_root))
     context.emit('state',{'status':'running'})
     try:
         with contextlib.redirect_stdout(writer),contextlib.redirect_stderr(writer):
