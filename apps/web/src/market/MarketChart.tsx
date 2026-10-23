@@ -44,6 +44,8 @@ export function buildChartOption(
       type: 'candlestick',
       name: 'OHLC',
       data: ohlcValues,
+      progressive: 2000,
+      progressiveThreshold: 3000,
       itemStyle: {
         color: c.positive,
         color0: c.negative,
@@ -191,7 +193,7 @@ export function MarketChart({candles, indicators}: {candles: Candle[]; indicator
     if (!instance.current) return;
     let alive = true;
     const {dataZoom, ...option} = buildChartOption(candles, appearance, indicators);
-    instance.current.setOption(configured.current ? option : {...option, dataZoom});
+    instance.current.setOption(configured.current ? option : {...option, dataZoom}, {lazyUpdate: true});
     configured.current = true;
     void document.fonts?.load(`${appearance.fontSize}px ${fontFamilies[appearance.font]}`).then(() => {
       if (alive) instance.current?.resize();
