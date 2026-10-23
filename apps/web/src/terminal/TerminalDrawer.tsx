@@ -19,6 +19,12 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const appearance = useAppearance();
   const [connected, setConnected] = useState<boolean>(false);
+  const [cmdInput, setCmdInput] = useState<string>('');
+
+  const runCommand = (cmd: string) => {
+    if (!sessionRef.current) return;
+    void send('/terminal/input', {session_id: sessionRef.current, data: cmd + '\r\n'});
+  };
 
   useEffect(() => {
     if (!open || !containerRef.current) return;
@@ -102,7 +108,7 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
         bottom: 0,
         left: 0,
         right: 0,
-        height: open ? 260 : 32,
+        height: open ? 320 : 32,
         background: 'var(--panel)',
         borderTop: '1px solid var(--border)',
         zIndex: 50,
@@ -134,20 +140,12 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
           )}
         </div>
         {open && (
-          <div style={{display: 'flex', gap: 6}}>
-            <Button
-              onClick={() => {
-                if (sessionRef.current) {
-                  void send('/terminal/input', {session_id: sessionRef.current, data: 'cls\r\n'});
-                }
-              }}
-              title="Clear terminal screen"
-            >
-              Clear
-            </Button>
-            <Button onClick={onToggle} title="Close terminal drawer">
-              ×
-            </Button>
+          <div style={{display: 'flex', gap: 4, alignItems: 'center'}}>
+            <Button onClick={() => runCommand('git status')} title="Check git status">git status</Button>
+            <Button onClick={() => runCommand('npm run test:web')} title="Run web test suite">npm test</Button>
+            <Button onClick={() => runCommand('uv run --project services/engine pytest')} title="Run engine pytest">pytest</Button>
+            <Button onClick={() => runCommand('cls')} title="Clear terminal screen">Clear</Button>
+            <Button onClick={onToggle} title="Close terminal drawer">×</Button>
           </div>
         )}
       </div>
@@ -163,6 +161,26 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
             background: 'var(--canvas)',
           }}
         />
+      )}
+      {open && (
+        <div style={{display: 'flex', padding: '4px 8px', background: 'var(--raised)', borderTop: '1px solid var(--border)', gap: 6, alignItems: 'center'}}>
+          <input
+            type="text"
+            aria-label="Terminal command input"
+            placeholder="Type command and press Enter (e.g. dir, git status, uv run...)"
+            value={cmdInput}
+            onChange={e => setCmdInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && cmdInput.trim()) {
+                e.preventDefault();
+                runCommand(cmdInput.trim());
+                setCmdInput('');
+              }
+            }}
+            style={{flex: 1, minHeight: 24, fontSize: 12}}
+          />
+          <Button onClick={() => { if (cmdInput.trim()) { runCommand(cmdInput.trim()); setCmdInput(''); } }}>Run</Button>
+        </div>
       )}
     </aside>
   );
