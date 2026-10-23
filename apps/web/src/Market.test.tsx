@@ -8,7 +8,7 @@ const echarts=vi.hoisted(()=>{
  return {instance,init:vi.fn(()=>instance),use:vi.fn()};
 });
 vi.mock('echarts/core',()=>({init:echarts.init,use:echarts.use}));
-vi.mock('echarts/charts',()=>({CandlestickChart:'candlestick-chart'}));
+vi.mock('echarts/charts',()=>({CandlestickChart:'candlestick-chart',LineChart:'line-chart',BarChart:'bar-chart'}));
 vi.mock('echarts/components',()=>({AxisPointerComponent:'axis-pointer',DataZoomInsideComponent:'inside-data-zoom',GridComponent:'grid',TooltipComponent:'tooltip'}));
 vi.mock('echarts/renderers',()=>({CanvasRenderer:'canvas-renderer'}));
 
