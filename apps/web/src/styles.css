@@ -14,8 +14,12 @@
 .tab-dirty{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warning)}
 .tab-close{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:0;border-radius:2px;background:transparent;color:var(--muted);cursor:pointer;padding:0;font-size:12px;line-height:1;margin-left:2px}
 .tab-close:hover{background:var(--hover);color:var(--text)}
+.terminal-drawer{position:fixed;bottom:0;left:205px;right:0;height:32px;background:var(--panel);border-top:1px solid var(--border);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column;transition:height .2s ease}
+.terminal-drawer.open{height:320px}
 @media(max-width:1100px){.app-shell{grid-template-columns:155px minmax(0,1fr)}.app-nav{padding:12px 4px}.wordmark{gap:6px;padding:0 6px}.wordmark>span:last-child{font-size:11px}.app-body main{padding:8px}.header-actions{gap:8px}.header-actions .muted{font-size:11px}.color-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
+@media(max-width:1100px){.terminal-drawer{left:155px}}
 @media(max-width:700px){.app-header{height:auto;min-height:40px;align-items:flex-start;padding:6px 8px;flex-direction:column;gap:2px}.header-actions{flex-wrap:wrap}.page-title{align-items:flex-start;flex-wrap:wrap}.form-grid{grid-template-columns:1fr}.color-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.terminal-drawer{left:0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 /* Keep dense desktop controls contained as panels narrow on tablets. */

@@ -101,21 +101,8 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
 
   return (
     <aside
-      className="terminal-drawer"
+      className={'terminal-drawer' + (open ? ' open' : '')}
       aria-label="Interactive terminal"
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: open ? 320 : 32,
-        background: 'var(--panel)',
-        borderTop: '1px solid var(--border)',
-        zIndex: 50,
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'height 0.2s ease',
-      }}
     >
       <div
         className="terminal-header"
