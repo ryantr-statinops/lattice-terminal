@@ -8,6 +8,7 @@ import {programTemplate} from './templates';
 import {TabBar} from './workspace/TabBar';
 import {FileTree} from './workspace/FileTree';
 import {WorkspaceToolbar} from './workspace/WorkspaceToolbar';
+import {saveDraft,deleteDraft,loadAllDrafts} from './workspace/draftStore';
 import {PageHeader} from './ui/layout';
 import {StatusLabel} from './ui/data';
 import {useActionDialog} from './ui/dialogs';
@@ -32,12 +33,13 @@ export function Workspace({kind,title,controls,extraParams={},runBlockedReason}:
  const [detection,setDetection]=useState('auto');const [node,setNode]=useState<File|null>(null);const [diagnostic,setDiagnostic]=useState('');
  useEffect(()=>{if(!active.endsWith('.py')){setDiagnostic('');return}let stale=false;const timer=setTimeout(()=>{void send('/engine/programs/inspect',{source:content,kind,selected:detection==='selected'}).then(()=>{if(!stale)setDiagnostic('')}).catch((e:Error)=>{if(!stale)setDiagnostic(e.message)})},500);return()=>{stale=true;clearTimeout(timer)}},[active,content,kind,detection]);
  useEffect(()=>{if(active&&file.data&&saved[active]===undefined){const next={...saved,[active]:file.data.content};setSaved(next);state.saved=next}},[active,file.data,saved,state]);
- const update=(value:string)=>{const next={...buffers,[active]:value};setBuffers(next);state.buffers=next};
+ useEffect(()=>{let mounted=true;void loadAllDrafts(kind).then(drafts=>{if(!mounted||Object.keys(drafts).length===0)return;setBuffers(prev=>{const next={...drafts,...prev};state.buffers=next;return next});setOpenFiles(prev=>{const draftKeys=Object.keys(drafts);const next=Array.from(new Set([...prev,...draftKeys]));state.openFiles=next;return next})});return()=>{mounted=false}},[kind,state]);
+ const update=(value:string)=>{const next={...buffers,[active]:value};setBuffers(next);state.buffers=next;if(active)void saveDraft(kind,active,value)};
  useEffect(()=>{const dirty=Object.keys(buffers).some(v=>saved[v]!==undefined&&saved[v]!==buffers[v]);const before=(e:BeforeUnloadEvent)=>{if(dirty)e.preventDefault()};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before)},[buffers,saved]);
 
  const select=(path:string)=>{setActive(path);state.active=path;setOpenFiles(old=>{const next=old.includes(path)?old:[...old,path];state.openFiles=next;return next});setNode({path,directory:false});setError('');setRunID('')};
  const closeTab=(path:string)=>{const next=openFiles.filter(p=>p!==path);setOpenFiles(next);state.openFiles=next;if(active===path){const idx=openFiles.indexOf(path);const nextActive=next[idx]??next[idx-1]??'';setActive(nextActive);state.active=nextActive;if(nextActive)setNode({path:nextActive,directory:false});else setNode(null)}};
- const save=async()=>{if(!active)throw Error('Select a file first');await send(`/workspaces/${kind}/file`,{Path:active,Content:content,Directory:false},'PUT');const next={...saved,[active]:content};setSaved(next);state.saved=next;await client.invalidateQueries({queryKey:['file',kind,active]})};
+ const save=async()=>{if(!active)throw Error('Select a file first');await send(`/workspaces/${kind}/file`,{Path:active,Content:content,Directory:false},'PUT');const next={...saved,[active]:content};setSaved(next);state.saved=next;void deleteDraft(kind,active);await client.invalidateQueries({queryKey:['file',kind,active]})};
  const action=async(fn:()=>Promise<void>)=>{if(sending.current)return;sending.current=true;setError('');setBusy(true);try{await fn();setSuccess('Action completed.')}catch(e){setError((e as Error).message)}finally{sending.current=false;setBusy(false)}};
  const executeRun=async()=>{const parsed=JSON.parse(params);if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')throw Error('Parameters must be a JSON object');await save();const run=await send<Run>('/runs',{Kind:kind,File:active,Params:{...parsed,...extraParams,kind_detection:detection}});client.setQueryData<Run[]>(['runs',kind],old=>[run,...(old??[])]);setRunID(run.id);await client.invalidateQueries({queryKey:['runs',kind]})};
  const stopRun=async()=>{await send(`/runs/${runID}/stop`,{});client.setQueryData<Run[]>(['runs',kind],old=>old?.map(run=>run.id===runID?{...run,status:'stopping'}:run));await client.invalidateQueries({queryKey:['runs',kind]})};
