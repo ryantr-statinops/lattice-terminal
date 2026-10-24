@@ -21,7 +21,7 @@ export function Market(){
  const data=useQuery({queryKey:['candles',id],queryFn:()=>request<Snapshot>('/engine/market/candles?instrument_id='+encodeURIComponent(id)),enabled:!!id});
  const toggle=()=>{const next=watchlist.includes(id)?watchlist.filter(v=>v!==id):[...watchlist,id];setWatchlist(next);try{localStorage.setItem('kestrel.watchlist',JSON.stringify(next));setNotice('')}catch{setNotice('Watchlist changes are saved for this session only.')}};
  const snapshot=data.data;
- return <section><PageHeader eyebrow="MARKET / EQUITIES" title="Market" actions={<StatusLabel tone="warning">SYNTHETIC-FIXTURE</StatusLabel>}/>
+ return <section><PageHeader title="Market" actions={<StatusLabel tone="warning">SYNTHETIC</StatusLabel>}/>
  <Toolbar>
   <Select aria-label="Instrument" value={id} disabled={instruments.isPending||!instruments.data?.length} onChange={e=>setSelected(e.target.value)}>{instruments.data?.map(v=><option value={v.id} key={v.id}>{v.native_symbol} · {v.venue}</option>)}</Select>
   <Button disabled={!id} aria-pressed={watchlist.includes(id)} onClick={toggle}>{watchlist.includes(id)?'★ Watching':'☆ Watch'}</Button>
@@ -30,11 +30,10 @@ export function Market(){
   <Button aria-pressed={indicators.ma50} onClick={()=>setIndicators(i=>({...i,ma50:!i.ma50}))}>MA50</Button>
   <Button aria-pressed={indicators.volume} onClick={()=>setIndicators(i=>({...i,volume:!i.volume}))}>Volume</Button>
  </Toolbar>
- <SourceMetadata>Synthetic data for development. SSI is not authorized for production use; this is not live market data.</SourceMetadata>
  {notice&&<InlineNotice tone="warning">{notice}</InlineNotice>}{(instruments.isPending||data.isFetching)&&<LoadingState>Loading snapshot…</LoadingState>}<ErrorState error={instruments.error||data.error} onRetry={()=>{void instruments.refetch();if(id)void data.refetch()}}/>
  {!instruments.isPending&&!instruments.error&&!instruments.data?.length&&<EmptyState>No instruments are available.</EmptyState>}
  {snapshot&&<><Panel><PanelHeader title={snapshot.instrument.name} actions={<span>{snapshot.quality.state} · {snapshot.candles.length} daily bars</span>}/>{snapshot.candles.length?<MarketChart candles={snapshot.candles} indicators={indicators}/>:<EmptyState>This snapshot has no candles.</EmptyState>}</Panel>
- <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Adjustment: {snapshot.quality.adjustment}<br/>As of {snapshot.candles.at(-1)?.available_at?formatDateTime(snapshot.candles.at(-1)!.available_at,appearance.dateTimeRegion):'unavailable'}<br/>Gaps: {snapshot.quality.gaps.length?snapshot.quality.gaps.join(', '):'Not included in fixture; live calendar not verified'}</SourceMetadata>
- <Panel><DataTable caption="Latest candles — synthetic prices and volume" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Date',render:v=>formatDate(v.open_time,appearance.dateTimeRegion)},...(['open','high','low','close','volume'] as const).map(key=>({key,label:key.toUpperCase(),numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>}))]}/></Panel></>}
+ <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · {snapshot.candles.at(-1)?.available_at?formatDateTime(snapshot.candles.at(-1)!.available_at,appearance.dateTimeRegion):'unavailable'}</SourceMetadata>
+ <Panel><DataTable caption="Latest candles" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Date',render:v=>formatDate(v.open_time,appearance.dateTimeRegion)},...(['open','high','low','close','volume'] as const).map(key=>({key,label:key.toUpperCase(),numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>}))]}/></Panel></>}
  </section>;
 }
