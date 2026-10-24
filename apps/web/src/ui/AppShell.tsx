@@ -5,7 +5,7 @@ import {StatusLabel} from './data';
 import {ErrorState} from './feedback';
 import {TerminalDrawer} from '../terminal/TerminalDrawer';
 import {KestrelMark} from './KestrelMark';
-const navigation=[['/market','Market','M'],['/quant','Quant','Q'],['/backtest','Backtest','B'],['/strategies','Strategies','S'],['/assets','Assets / Funds','A'],['/portfolio','Portfolio','P'],['/settings','Settings','⚙']] as const;
+const navigation=[['/market','Market','M'],['/quant','Quant','Q'],['/backtest','Backtest','B'],['/strategies','Strategies','S'],['/assets','Assets / Funds','A'],['/portfolio','Portfolio','P'],['/providers','Providers','🔌'],['/settings','Settings','⚙']] as const;
 export function AppShell({children,onLock}:{children:ReactNode;onLock:()=>Promise<void>}){
   const [busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null);
   const [terminalOpen,setTerminalOpen]=useState(false);
