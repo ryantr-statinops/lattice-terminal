@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from .market import MarketRepository
 from .quant import INDICATORS,calculate
 from .sources import SourceGate
+from .providers import ProviderRouter
 from .programs import inspect_source
 from .runner import RunManager
 from .models import Record
@@ -44,6 +45,7 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     market = MarketRepository(root,Path(__file__).resolve().parents[3]/'data/fixtures')
     gate=SourceGate(root)
     runs=RunManager(root)
+    provider_router = ProviderRouter(root / 'market')
 
     @app.on_event('shutdown')
     def stop_workers():runs.close()
@@ -59,6 +61,22 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     @app.get("/internal/v1/health")
     def health():
         return {"service": "kestrel-engine", "status": "ok", "mode": "fixture-only"}
+
+    @app.get("/internal/v1/providers")
+    def list_providers():
+        return provider_router.list_statuses()
+
+    @app.post("/internal/v1/providers/{id}/ping")
+    def ping_provider(id: str):
+        return provider_router.ping(id)
+
+    @app.get("/internal/v1/providers/routing")
+    def get_routing():
+        return provider_router.policy
+
+    @app.put("/internal/v1/providers/routing")
+    def update_routing(patch: dict[str, Any]):
+        return provider_router.update_policy(patch)
 
     @app.exception_handler(ValueError)
     async def invalid(request: Request,error: ValueError):

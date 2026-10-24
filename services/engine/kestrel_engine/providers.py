@@ -284,3 +284,57 @@ class SyntheticFixtureProvider(BaseMarketProvider):
 
     def fetch_instruments(self) -> list[Instrument]:
         return []
+
+class RoutingPolicy(BaseModel):
+    historical_provider: str = 'vndirect'
+    realtime_provider: str = 'fixture'
+    financials_provider: str = 'tcbs'
+    fallback_enabled: bool = True
+
+class ProviderRouter:
+    """Manages provider routing, fallback execution and local caching."""
+    def __init__(self, cache_dir: Path | None = None):
+        self.cache_dir = cache_dir or Path('data/market')
+        self.providers: dict[str, BaseMarketProvider] = {
+            'vndirect': VndirectCommunityProvider(),
+            'tcbs': TcbsCommunityProvider(),
+            'dnse': DnseBrokerProvider(),
+            'ssi': SsiFastConnectProvider(),
+            'fixture': SyntheticFixtureProvider(),
+        }
+        self.policy = RoutingPolicy()
+
+    def list_statuses(self) -> list[ProviderStatus]:
+        return [p.ping() for p in self.providers.values()]
+
+    def ping(self, provider_id: str) -> ProviderStatus:
+        if provider_id not in self.providers:
+            raise ValueError(f"Unknown provider: {provider_id}")
+        return self.providers[provider_id].ping()
+
+    def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
+        self.policy = self.policy.model_copy(update=patch)
+        return self.policy
+
+    def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
+        primary_id = self.policy.historical_provider
+        primary = self.providers.get(primary_id)
+        if primary:
+            try:
+                res = primary.fetch_candles(symbol, interval, start, end)
+                if res:
+                    return res
+            except Exception:
+                if not self.policy.fallback_enabled:
+                    raise
+        if self.policy.fallback_enabled:
+            for pid, prov in self.providers.items():
+                if pid == primary_id or pid in ('ssi', 'dnse'):
+                    continue
+                try:
+                    res = prov.fetch_candles(symbol, interval, start, end)
+                    if res:
+                        return res
+                except Exception:
+                    continue
+        return []
