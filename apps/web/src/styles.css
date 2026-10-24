@@ -23,6 +23,13 @@
 .setting-desc{font-size:11px;color:var(--muted);line-height:16px}
 .setting-control{flex-shrink:0;min-width:240px;display:flex;justify-content:flex-end}
 .setting-control>select,.setting-control>input{width:100%}
+.settings-container{display:flex;max-width:1060px;margin:0 auto;border:1px solid var(--border);background:var(--panel);min-height:580px}
+.settings-nav{width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--panel);padding:12px 6px;display:flex;flex-direction:column;gap:2px}
+.settings-nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:transparent;border:0;border-radius:2px;color:var(--secondary);font-size:12px;cursor:pointer;text-align:left;width:100%}
+.settings-nav-item:hover{background:var(--hover);color:var(--text)}
+.settings-nav-item.active{background:var(--selection);color:var(--selection-text);font-weight:500}
+.settings-content{flex:1;min-width:0;padding:16px 20px;overflow-y:auto}
+@media(max-width:860px){.settings-container{flex-direction:column;max-width:100%}.settings-nav{width:100%;border-right:none;border-bottom:1px solid var(--border);flex-direction:row;overflow-x:auto;padding:6px}.settings-nav-item{white-space:nowrap;width:auto}.settings-content{padding:12px}}
 .color-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;min-height:38px}
 .color-row:last-child{border-bottom:none}
 .color-row:hover{background:var(--hover)}
