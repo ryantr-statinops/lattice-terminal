@@ -65,7 +65,6 @@
         "type": "string"
       },
       "is_synthetic": {
-        "const": true,
         "default": true,
         "title": "Is Synthetic",
         "type": "boolean"
@@ -79,7 +78,6 @@
         "type": "string"
       },
       "source_id": {
-        "const": "SYNTHETIC-FIXTURE",
         "default": "SYNTHETIC-FIXTURE",
         "title": "Source Id",
         "type": "string"
@@ -165,7 +163,7 @@
             "type": "string"
           },
           "source_id": {
-            "const": "SYNTHETIC-FIXTURE",
+            "default": "SYNTHETIC-FIXTURE",
             "title": "Source Id",
             "type": "string"
           },
@@ -194,8 +192,7 @@
           "volume",
           "is_closed",
           "revision",
-          "session",
-          "source_id"
+          "session"
         ],
         "title": "Candle",
         "type": "object"
@@ -266,7 +263,6 @@
             "type": "string"
           },
           "is_synthetic": {
-            "const": true,
             "default": true,
             "title": "Is Synthetic",
             "type": "boolean"
@@ -280,7 +276,6 @@
             "type": "string"
           },
           "source_id": {
-            "const": "SYNTHETIC-FIXTURE",
             "default": "SYNTHETIC-FIXTURE",
             "title": "Source Id",
             "type": "string"

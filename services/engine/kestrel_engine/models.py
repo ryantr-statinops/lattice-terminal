@@ -35,8 +35,8 @@ class Instrument(Record):
     native_symbol: str
     instrument_class: Literal['equity'] = 'equity'
     name: str
-    source_id: Literal['SYNTHETIC-FIXTURE'] = 'SYNTHETIC-FIXTURE'
-    is_synthetic: Literal[True] = True
+    source_id: str = 'SYNTHETIC-FIXTURE'
+    is_synthetic: bool = True
 
 class Candle(Record):
     instrument_id: str
@@ -52,7 +52,7 @@ class Candle(Record):
     is_closed: bool
     revision: str
     session: str
-    source_id: Literal['SYNTHETIC-FIXTURE']
+    source_id: str = 'SYNTHETIC-FIXTURE'
     @field_validator('open','high','low','close')
     @classmethod
     def prices(cls,value):
