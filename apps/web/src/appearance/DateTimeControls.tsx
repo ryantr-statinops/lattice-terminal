@@ -5,11 +5,7 @@ import {SettingRow} from '../ui/SettingRow';
 export function DateTimeControls(){
   const value=useAppearance();
   return (
-    <SettingRow
-      id="setting-datetime"
-      label="Date and time format"
-      description="Vietnam uses ICT (24-hour). United States uses Eastern Time ET (12-hour)."
-    >
+    <SettingRow id="setting-datetime" label="Date and time format">
       <Select
         id="setting-datetime"
         aria-label="Date and time format"

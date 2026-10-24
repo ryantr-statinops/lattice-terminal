@@ -25,15 +25,12 @@ export function SourcesTab(){
       <Panel style={{border:'none',background:'transparent',margin:0}}>
         <PanelHeader title="DATA SOURCES & CAPABILITY EVIDENCE"/>
         <div style={{padding:'8px 0'}}>
-          <p className="muted" style={{margin:'0 0 12px'}}>
-            Configure production credentials only through the CLI and Windows Credential Manager. Do not enter SSI secrets in the browser.
-          </p>
           {query.isPending && <LoadingState>Loading source evidence…</LoadingState>}
           <ErrorState error={query.error} onRetry={() => void query.refetch()} />
         </div>
         <DataTable
           loading={query.isPending}
-          caption="Source evidence — each flag is independent"
+          caption="Source capability evidence"
           rows={query.data ?? []}
           rowKey={v => v.id}
           columns={[

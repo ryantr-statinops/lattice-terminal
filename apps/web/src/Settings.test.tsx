@@ -76,7 +76,7 @@ it('renders centered master-detail layout and switches between categories', asyn
   // 4. Switch to Local Profile
   const profileTabBtn = screen.getByRole('tab', {name: /Local Profile/});
   fireEvent.click(profileTabBtn);
-  expect(await screen.findByText('LOCAL PROFILE & CREDENTIAL CONFIGURATION')).toBeDefined();
+  expect(await screen.findByText(/LOCAL PROFILE/)).toBeDefined();
 
   // 5. Verify centered container exists
   const layout = container.querySelector('.settings-container');

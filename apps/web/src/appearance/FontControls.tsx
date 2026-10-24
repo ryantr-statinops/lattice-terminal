@@ -7,11 +7,7 @@ export function FontControls(){
   const value=useAppearance();
   return (
     <>
-      <SettingRow
-        id="setting-preset"
-        label="Preset"
-        description="Select primary dark palette profile and base terminal contrast"
-      >
+      <SettingRow id="setting-preset" label="Preset">
         <Select
           id="setting-preset"
           aria-label="Preset"
@@ -25,11 +21,7 @@ export function FontControls(){
         </Select>
       </SettingRow>
 
-      <SettingRow
-        id="setting-density"
-        label="Layout density / Scale"
-        description="Interface scaling and spacing density (90% Terminal feel vs 100% Standard)"
-      >
+      <SettingRow id="setting-density" label="Layout density / Scale">
         <Select
           id="setting-density"
           aria-label="Layout density / Scale"
@@ -41,11 +33,7 @@ export function FontControls(){
         </Select>
       </SettingRow>
 
-      <SettingRow
-        id="setting-app-font"
-        label="App font"
-        description="Local bundled monospace font for navigation, labels and tables"
-      >
+      <SettingRow id="setting-app-font" label="App font">
         <Select
           id="setting-app-font"
           aria-label="App font"
@@ -57,11 +45,7 @@ export function FontControls(){
         </Select>
       </SettingRow>
 
-      <SettingRow
-        id="setting-ui-font-size"
-        label="UI font size"
-        description="Base typography font size across panels, tables and controls"
-      >
+      <SettingRow id="setting-ui-font-size" label="UI font size">
         <Select
           id="setting-ui-font-size"
           aria-label="UI font size"
@@ -74,11 +58,7 @@ export function FontControls(){
         </Select>
       </SettingRow>
 
-      <SettingRow
-        id="setting-editor-font-size"
-        label="Editor font size"
-        description="Font size applied to Monaco code editor and diff comparison views"
-      >
+      <SettingRow id="setting-editor-font-size" label="Editor font size">
         <Select
           id="setting-editor-font-size"
           aria-label="Editor font size"

@@ -13,11 +13,7 @@ export function AppearanceTab(){
       <Panel style={{border:'none',background:'transparent',margin:0}}>
         <PanelHeader title="APPEARANCE & TYPOGRAPHY" actions={<AppearanceReset/>}/>
         <div style={{padding:'8px 0'}}>
-          <p className="muted" role="status" style={{margin:'0 0 12px'}}>
-            {sessionOnly?'Applied for this session only — the browser cannot save preferences.':'Saved in this browser · applied immediately · works offline'}
-          </p>
-          {sessionOnly&&<InlineNotice tone="warning">You can keep customizing the interface; changes may be lost when the browser closes.</InlineNotice>}
-
+          {sessionOnly&&<InlineNotice tone="warning">Session-only: preferences will not be saved.</InlineNotice>}
           <div className="settings-list">
             <FontControls/>
             <DateTimeControls/>
