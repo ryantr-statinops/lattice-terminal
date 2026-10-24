@@ -12,6 +12,8 @@
     "GET /api/v1/portfolio",
     "GET /api/v1/portfolio/export",
     "GET /api/v1/positions",
+    "GET /api/v1/providers",
+    "GET /api/v1/providers/routing",
     "GET /api/v1/ready",
     "GET /api/v1/runs",
     "GET /api/v1/runs/{id}",
@@ -37,6 +39,7 @@
     "POST /api/v1/portfolio/import/apply",
     "POST /api/v1/portfolio/import/preview",
     "POST /api/v1/portfolio/trade",
+    "POST /api/v1/providers/{id}/ping",
     "POST /api/v1/runs",
     "POST /api/v1/runs/{id}/stop",
     "POST /api/v1/runtime/stop",
@@ -45,6 +48,7 @@
     "POST /api/v1/terminal/session",
     "POST /api/v1/workspaces/{kind}/mount",
     "POST /api/v1/workspaces/{kind}/rename",
+    "PUT /api/v1/providers/routing",
     "PUT /api/v1/workspaces/{kind}/file"
   ],
   "engine_proxy": "Whitelisted market/quant/source/data GETs and program inspection POST only; see cmd/kestrel/main.go."
