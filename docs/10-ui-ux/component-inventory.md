@@ -15,6 +15,9 @@
 | Assets.tsx | Named funds, budgets, Manual, interrupted-book reconciliation |
 | Portfolio.tsx | Flows/NAV/positions, settled trade/CSV preview/apply/export |
 | Settings.tsx | Evidence / CLI guidance |
+| Providers.tsx | Multi-provider hub, latency ping probes and data routing policy |
+| terminal/ | Interactive xterm.js terminal drawer and command shortcuts |
+| quant/SurfacePlot3D.tsx | 3D parameter surface optimization visualization |
 | theme/ | Semantic palettes, validated preferences, browser store, packaged fonts |
 | appearance/ | Presets, font and date/time region controls, grouped colors, contrast, preview and reset |
 | ui/ | Shell/login, controls, panels, semantic tables, feedback, dialogs and pane resize |

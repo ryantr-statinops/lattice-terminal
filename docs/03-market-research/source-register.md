@@ -11,13 +11,16 @@
 
 Các flags độc lập. `false` nghĩa là chưa có evidence trong register, không kết luận provider từ chối khả năng/quyền. Ghi nguồn, phiên bản/ngày, owner, expiry/review date và disable procedure cho mỗi approval. Không ghi credentials hoặc account identifiers vào tài liệu này.
 
-## Market data — SSI FastConnect Data
+## Market data — Multi-provider registry
 
-| Source ID | Capability direction | Documented | Access tested | Rights confirmed | Approved |
-|---|---|---:|---:|---:|---:|
-| `SSI-FC-DATA-REST` | Token, reference, historical/reference market APIs | true | false | false | false |
-| `SSI-FC-DATA-STREAM` | Realtime market-data stream groups | true | false | false | false |
-
+| Source ID | Category | Capability direction | Documented | Access tested | Rights confirmed | Approved |
+|---|---|---|---:|---:|---:|---:|
+| `SYNTHETIC-FIXTURE` | synthetic | Offline deterministic replay fixtures | true | true | true | true |
+| `VNDIRECT-COMMUNITY` | community | Public TradingView UDF historical/intraday feed | true | true | false | false |
+| `TCBS-COMMUNITY` | community | Public corporate analysis and financial ratios | true | true | false | false |
+| `DNSE-OPENAPI` | broker_api | LightSpeed OpenAPI real-time quotes and websocket | true | false | false | false |
+| `SSI-FC-DATA-REST` | broker_api | Token, reference, historical/reference market APIs | true | false | false | false |
+| `SSI-FC-DATA-STREAM` | broker_api | Realtime market-data stream groups | true | false | false | false |
 Official capability references: [REST API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [streaming data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming), [service registration](https://guide.ssi.com.vn/ssi-products/service-registration), [general information](https://guide.ssi.com.vn/ssi-products/general-information). These links establish documentation references only. User entitlement, fees, coverage, quota, exact schema, geography and local-use rights remain unverified.
 
 **Current decision:** production capabilities BLOCKED; no access probe is authorized or performed by this docs change. Both SSI rows remain unchanged. Account-specific access evidence and rights for the exact production purpose are still missing.
