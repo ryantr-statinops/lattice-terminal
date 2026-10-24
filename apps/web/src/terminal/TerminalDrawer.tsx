@@ -154,7 +154,7 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
           <input
             type="text"
             aria-label="Terminal command input"
-            placeholder="Type command and press Enter (e.g. dir, git status, uv run...)"
+            placeholder="Enter command..."
             value={cmdInput}
             onChange={e => setCmdInput(e.target.value)}
             onKeyDown={e => {

@@ -75,7 +75,6 @@ export function Providers() {
   return (
     <section className="providers-page">
       <PageHeader
-        eyebrow="INTEGRATIONS / MARKET DATA"
         title="Data Providers"
         actions={<StatusLabel tone="positive">MULTI-SOURCE ROUTER ACTIVE</StatusLabel>}
       />
@@ -85,8 +84,8 @@ export function Providers() {
           Refresh Feeds
         </Button>
         <span className="muted">
-          Active Primary: <strong>{routing.data?.historical_provider.toUpperCase() ?? 'VNDIRECT'}</strong> · Fallback:{' '}
-          {routing.data?.fallback_enabled ? 'Enabled' : 'Disabled'}
+          Primary: <strong>{routing.data?.historical_provider.toUpperCase() ?? 'VNDIRECT'}</strong> · Fallback:{' '}
+          {routing.data?.fallback_enabled ? 'ON' : 'OFF'}
         </span>
       </Toolbar>
 
@@ -153,9 +152,6 @@ export function Providers() {
         <Panel>
           <PanelHeader title="DATA ROUTING & DISPATCH POLICY" />
           <div className="panel-content">
-            <p className="muted">
-              Configure which provider handles research historical candles, realtime quotes and corporate financials.
-            </p>
 
             <div className="form-grid" style={{marginTop: 12}}>
               <Field label="Historical EOD & Backtest Feed">
@@ -199,7 +195,7 @@ export function Providers() {
                   onChange={e => updateRouting({fallback_enabled: e.target.checked})}
                 />
                 <span>
-                  <strong>Automatic Fallback:</strong> Fall back to secondary community providers or local fixtures if primary feed encounters network errors.
+                  <strong>Auto fallback:</strong> Revert to secondary feeds or local cache on error.
                 </span>
               </label>
             </div>
