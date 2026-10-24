@@ -83,3 +83,17 @@ it('toggles mini icon-only navbar mode via logo, keyboard and Ctrl+B shortcut', 
   expect(localStorage.getItem('kestrel.nav.collapsed')).toBe('false');
   expect(shell.style.getPropertyValue('--nav-width')).toBe('205px');
 });
+
+it('renders clean concise header without redundant disclaimers', () => {
+  const onLock = vi.fn();
+  render(
+    <MemoryRouter>
+      <AppShell onLock={onLock}>
+        <div>Main content</div>
+      </AppShell>
+    </MemoryRouter>
+  );
+
+  expect(screen.getByText('VND')).toBeDefined();
+  expect(screen.queryByText(/SSI production blocked/)).toBeNull();
+});
