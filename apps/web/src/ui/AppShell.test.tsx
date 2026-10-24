@@ -3,6 +3,7 @@ import {afterEach,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {AppShell} from './AppShell';
+import userEvent from '@testing-library/user-event';
 
 // Mock TerminalDrawer to avoid xterm setup in AppShell test
 vi.mock('../terminal/TerminalDrawer', () => ({
@@ -42,7 +43,8 @@ it('supports navbar drag/keyboard resizing and double-click reset', () => {
   expect(shell.style.getPropertyValue('--nav-width')).toBe('205px');
 });
 
-it('toggles mini icon-only navbar mode via button and Ctrl+B shortcut', () => {
+it('toggles mini icon-only navbar mode via logo, keyboard and Ctrl+B shortcut', async () => {
+  const user = userEvent.setup();
   const onLock = vi.fn();
   const {container} = render(
     <MemoryRouter>
@@ -54,6 +56,9 @@ it('toggles mini icon-only navbar mode via button and Ctrl+B shortcut', () => {
 
   const toggleBtn = screen.getByRole('button', {name: /Collapse sidebar/});
   expect(toggleBtn).toBeDefined();
+  expect(toggleBtn.querySelector('svg[aria-label="Kestrel"]')).not.toBeNull();
+  expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
+  expect(container.querySelector('.app-nav-toggle')).toBeNull();
 
   // Click collapse
   fireEvent.click(toggleBtn);
@@ -63,6 +68,14 @@ it('toggles mini icon-only navbar mode via button and Ctrl+B shortcut', () => {
 
   const shell = container.querySelector('.app-shell') as HTMLElement;
   expect(shell.style.getPropertyValue('--nav-width')).toBe('56px');
+  expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
+
+  toggleBtn.focus();
+  await user.keyboard('{Enter}');
+  expect(nav.classList.contains('collapsed')).toBe(false);
+  expect(document.activeElement).toBe(toggleBtn);
+  await user.keyboard(' ');
+  expect(nav.classList.contains('collapsed')).toBe(true);
 
   // Shortcut Ctrl+B to expand back
   fireEvent.keyDown(window, {key: 'b', ctrlKey: true});
