@@ -39,6 +39,7 @@ RUN groupadd --gid 10001 kestrel && useradd --uid 10001 --gid 10001 --no-create-
 COPY --from=gateway-build --chown=10001:10001 /out/kestrel /app/kestrel
 COPY --from=engine-build --chown=10001:10001 /app/services/engine /app/services/engine
 COPY --from=web-build --chown=10001:10001 /src/apps/web/dist /app/apps/web/dist
+COPY --chown=10001:10001 data/fixtures /app/data/fixtures
 ENV KESTREL_ENGINE_PYTHON=/app/services/engine/.venv/bin/python
 EXPOSE 8080
 USER 10001:10001
