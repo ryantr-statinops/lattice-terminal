@@ -84,7 +84,10 @@ class VndirectCommunityProvider(BaseMarketProvider):
             )
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
-        resolution = '1' if interval == '1m' else 'D'
+        resolutions = {'1m': '1', '1d': 'D'}
+        resolution = resolutions.get(interval)
+        if resolution is None:
+            raise ValueError(f'VNDIRECT does not support candle interval: {interval}')
         from_ts = int(start.timestamp())
         to_ts = int(end.timestamp())
         url = f'{self.base_url}/dchart/history?resolution={resolution}&symbol={symbol}&from={from_ts}&to={to_ts}'

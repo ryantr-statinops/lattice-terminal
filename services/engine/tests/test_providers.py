@@ -77,5 +77,11 @@ class TestProviders(unittest.TestCase):
             with self.assertRaisesRegex(NotImplementedError, 'refusing to return VNDIRECT instruments'):
                 provider.fetch_instruments()
 
+    def test_vndirect_rejects_unsupported_interval_without_requesting_daily(self):
+        provider = VndirectCommunityProvider()
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=AssertionError('request sent')):
+            with self.assertRaisesRegex(ValueError, 'does not support candle interval: 5m'):
+                provider.fetch_candles('HPG', '5m', datetime.now(timezone.utc), datetime.now(timezone.utc))
+
 if __name__ == '__main__':
     unittest.main()
