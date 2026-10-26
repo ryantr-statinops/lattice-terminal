@@ -15,6 +15,7 @@ compose() {
 
 cleanup() {
   docker compose -p "$project" -f "$root/compose.yaml" -f "$root/compose.ssi.yaml" down --remove-orphans >/dev/null 2>&1 || true
+  docker compose -p "$project" -f "$root/compose.yaml" -f "$root/compose.vault.yaml" down --remove-orphans >/dev/null 2>&1 || true
   compose down --remove-orphans >/dev/null 2>&1 || true
   rm -rf "$tmp"
 }
@@ -66,3 +67,13 @@ if compose logs 2>&1 | grep -Fq 'compose-secret-sentinel'; then
   echo "SSI secret sentinel appeared in container logs" >&2
   exit 1
 fi
+
+vault_file="$tmp/vault-master-key"
+dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 > "$vault_file"
+chmod 600 "$vault_file"
+export KESTREL_VAULT_MASTER_KEY_FILE="$vault_file"
+compose -f "$root/compose.vault.yaml" config -q
+compose -f "$root/compose.vault.yaml" up -d
+wait_healthy
+container="$(compose ps -q kestrel)"
+docker exec "$container" test -r /run/secrets/vault_master_key

@@ -77,6 +77,10 @@ The cross-platform CLI can export an OS-keyring entry to a temporary host file, 
 
 Set SSI credentials through the local CLI (`go -C services/gateway run ./cmd/kestrel -root ../.. -ssi-credentials set`; both values are prompted without echo). Then run `-prepare-ssi-compose-secret`, set the printed absolute path as `KESTREL_SSI_SECRET_FILE` in `.env`, and start with `docker compose -f compose.yaml -f compose.ssi.yaml up`. After Compose is down, run the matching `-clean-ssi-compose-secret` command. The temporary file is plaintext on the host; the container mount is read-only. Cleanup is not secure erase. If the machine stops unexpectedly, check and clean any leftover file before reuse.
 
+### Encrypted provider vault in Compose
+
+Initialize the local vault key once with `go -C services/gateway run ./cmd/kestrel -root ../.. -bootstrap-vault`. To run Compose with encrypted provider credentials, prepare a temporary key file with `-prepare-vault-compose-secret`, set its printed path as `KESTREL_VAULT_MASTER_KEY_FILE` in `.env`, then start with `docker compose -f compose.yaml -f compose.vault.yaml up`. On Linux, set `KESTREL_UID` and `KESTREL_GID` to the host user's `id -u` and `id -g` so the container can read the restricted file; Windows Docker Desktop can keep the defaults. The container reads the mounted key file; the key itself is never put in `.env` or the browser. After Compose is down, run `-clean-vault-compose-secret`. The host file contains the plaintext key, is created with restricted permissions, and cleanup is not secure erase. Ordinary application backups exclude both this file and the OS keyring entry; if the key is lost, encrypted provider credentials cannot be recovered.
+
 ## Implemented / Đã có
 
 - React → Go gateway → authenticated Python, supervised child processes and local login.

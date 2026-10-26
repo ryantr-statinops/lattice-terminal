@@ -52,6 +52,8 @@ func main() {
 	cleanSSISecret := flag.Bool("clean-ssi-compose-secret", false, "remove the temporary Compose secret file")
 	bootstrapVault := flag.Bool("bootstrap-vault", false, "create the encrypted credential vault master key in the OS keyring")
 	migrateSSICredentials := flag.Bool("migrate-ssi-credentials", false, "copy legacy SSI credentials into the encrypted provider vault")
+	prepareVaultSecret := flag.Bool("prepare-vault-compose-secret", false, "write a temporary Compose secret file from the OS keyring")
+	cleanVaultSecret := flag.Bool("clean-vault-compose-secret", false, "remove the temporary Compose vault secret file")
 	backup := flag.String("backup", "", "Offline backup ZIP outside the data directory")
 	restore := flag.String("restore", "", "Restore ZIP into a new -data directory")
 	diagnostics := flag.Bool("diagnostics", false, "Print redacted runtime configuration; no payloads")
@@ -81,7 +83,7 @@ func main() {
 		fmt.Println("Local account configuration is valid")
 		return
 	}
-	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret || *bootstrapVault || *migrateSSICredentials {
+	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret || *bootstrapVault || *migrateSSICredentials || *prepareVaultSecret || *cleanVaultSecret {
 		lock, err := net.Listen("tcp", host.ListenAddress())
 		if err != nil {
 			log.Print("Stop Kestrel Terminal before offline maintenance")
@@ -110,6 +112,10 @@ func main() {
 			log.Print("Choose prepare or clean SSI Compose secret")
 			os.Exit(1)
 		}
+		if *prepareVaultSecret && *cleanVaultSecret {
+			log.Print("Choose prepare or clean vault Compose secret")
+			os.Exit(1)
+		}
 		if *bootstrapVault {
 			created, err := secret.BootstrapVaultMasterKey()
 			if err != nil {
@@ -133,6 +139,29 @@ func main() {
 				fmt.Println("Legacy SSI credentials copied into encrypted provider vault")
 			} else {
 				fmt.Println("Encrypted provider vault already contains SSI market-data credentials")
+			}
+			return
+		}
+		if *prepareVaultSecret {
+			secretPath, err := secret.VaultComposeFilePath()
+			if err == nil {
+				err = secret.PrepareVaultComposeFile(secretPath)
+			}
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
+			}
+			fmt.Println(secretPath)
+			return
+		}
+		if *cleanVaultSecret {
+			secretPath, err := secret.VaultComposeFilePath()
+			if err == nil {
+				err = secret.CleanVaultComposeFile(secretPath)
+			}
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
 			}
 			return
 		}

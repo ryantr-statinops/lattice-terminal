@@ -1,0 +1,10 @@
+services:
+  kestrel:
+    environment:
+      KESTREL_VAULT_MASTER_KEY_FILE: /run/secrets/vault_master_key
+    secrets:
+      - vault_master_key
+
+secrets:
+  vault_master_key:
+    file: ${KESTREL_VAULT_MASTER_KEY_FILE:?Prepare the OS-keyring vault secret first}

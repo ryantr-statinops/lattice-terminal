@@ -118,7 +118,7 @@ func rejectWorkspacePath(path string) error {
 		return err
 	}
 	if rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))) {
-		return fmt.Errorf("SSI Compose secret file must be outside the repository working directory")
+		return fmt.Errorf("Compose secret file must be outside the repository working directory")
 	}
 	return nil
 }

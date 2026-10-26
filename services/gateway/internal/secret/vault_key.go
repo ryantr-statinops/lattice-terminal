@@ -5,6 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const vaultKeyService = "KestrelTerminal/Vault"
@@ -47,13 +51,51 @@ func BootstrapVaultMasterKey() (bool, error) {
 // OpenVault loads the already-bootstrapped key from the OS keyring. It never
 // creates or replaces a key while opening stored credentials.
 func OpenVault(root string) (*Vault, error) {
-	encoded, err := getVaultKeyringValue()
-	if err != nil {
-		return nil, errors.New("vault master key is not available in the OS keyring")
+	var encoded string
+	var err error
+	if keyFile := strings.TrimSpace(os.Getenv(vaultMasterKeyFileEnv)); keyFile != "" {
+		encoded, err = readVaultMasterKeyFile(keyFile)
+	} else {
+		encoded, err = getVaultKeyringValue()
 	}
-	key, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, errors.New("vault master key is not available")
+	}
+	key, err := decodeVaultMasterKey(encoded)
 	if err != nil || len(key) != 32 {
 		return nil, errors.New("vault master key is invalid")
 	}
 	return newVault(root, key)
+}
+
+func decodeVaultMasterKey(encoded string) ([]byte, error) {
+	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
+	if err != nil || len(key) != 32 {
+		return nil, errors.New("vault master key is invalid")
+	}
+	return key, nil
+}
+
+func readVaultMasterKeyFile(path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return "", errors.New("vault master key file path must be absolute")
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return "", errors.New("could not read vault master key file")
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() > 256 {
+		return "", errors.New("vault master key file is invalid")
+	}
+	data, err := io.ReadAll(io.LimitReader(file, 257))
+	if err != nil || len(data) > 256 {
+		return "", errors.New("could not read vault master key file")
+	}
+	encoded := strings.TrimSpace(string(data))
+	if _, err = decodeVaultMasterKey(encoded); err != nil {
+		return "", errors.New("vault master key file is invalid")
+	}
+	return encoded, nil
 }
