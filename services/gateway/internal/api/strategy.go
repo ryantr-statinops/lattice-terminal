@@ -21,8 +21,33 @@ func (a *API) prepareStrategy(run *store.Run) error {
 	if json.Unmarshal(run.Params, &params) != nil {
 		return errors.New("parameters must be an object")
 	}
+	mode, _ := params["strategy_mode"].(string)
+	if mode == "" {
+		mode = "paper"
+	}
+	if mode != "paper" && mode != "signal_only" {
+		return errors.New("strategy_mode must be paper or signal_only")
+	}
+	params["strategy_mode"] = mode
 	if params["paper_source"] != "fixture-replay" {
 		return errors.New("SSI live paper remains blocked: entitlement/feed/rules not verified; select explicitly labelled fixture replay for development")
+	}
+	if mode == "signal_only" {
+		snapshot, ok := params["event_snapshot"].(string)
+		decoded, decodeErr := hex.DecodeString(snapshot)
+		if !ok || decodeErr != nil || len(decoded) != sha256.Size {
+			return errors.New("signal_only requires a valid detailed replay snapshot")
+		}
+		delete(params, "allocation_id")
+		delete(params, "allocation_cash")
+		delete(params, "allocation_positions")
+		delete(params, "after_sequence")
+		encoded, err := json.Marshal(params)
+		if err != nil {
+			return err
+		}
+		run.Params = encoded
+		return nil
 	}
 	id, ok := params["allocation_id"].(string)
 	if !ok || id == "" {
@@ -76,6 +101,9 @@ func (a *API) bindStrategy(run store.Run) error {
 	}
 	var params map[string]any
 	json.Unmarshal(run.Params, &params)
+	if params["strategy_mode"] == "signal_only" {
+		return nil
+	}
 	return a.Store.BindController(params["allocation_id"].(string), run.ID)
 }
 func (a *API) PaperEvent(run store.Run, kind string, payload json.RawMessage) error {
@@ -87,6 +115,9 @@ func (a *API) PaperEvent(run store.Run, kind string, payload json.RawMessage) er
 	}
 	var params map[string]any
 	json.Unmarshal(run.Params, &params)
+	if params["strategy_mode"] == "signal_only" {
+		return errors.New("signal_only strategy cannot emit paper events")
+	}
 	id, _ := params["allocation_id"].(string)
 	allocation, err := a.Store.Allocation(id)
 	if err != nil || allocation.Controller != run.ID {
@@ -168,6 +199,9 @@ func (a *API) FinishPaper(run store.Run) {
 	}
 	var params map[string]any
 	json.Unmarshal(run.Params, &params)
+	if params["strategy_mode"] == "signal_only" {
+		return
+	}
 	id, _ := params["allocation_id"].(string)
 	allocation, err := a.Store.Allocation(id)
 	if err != nil || allocation.Controller != run.ID {

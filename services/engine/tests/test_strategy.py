@@ -40,3 +40,30 @@ def test_strategy_context_signal_is_independent_from_paper_order_intents(monkeyp
     assert signals[0]['source']=='replay'
     assert signals[0]['instrument_id']=='HOSE:REGULAR:equity:SYN01'
     assert not any(kind=='paper_order' for kind,_ in output)
+
+def test_signal_only_strategy_replays_without_an_allocation(monkeypatch):
+    repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures');output=[]
+    base=SimpleNamespace(params={
+        'strategy_mode':'signal_only','paper_source':'fixture-replay',
+        'event_snapshot':repo.manifest()['snapshot_id'],'strategy_id':'watch-only',
+    },run_id='run-signal-only',emit=lambda kind,payload:output.append((kind,payload)),log=lambda message:None)
+    monkeypatch.setattr('kestrel_engine.strategy.time.sleep',lambda value:None)
+    def on_event(context,event):
+        if event.sequence==1:
+            context.signal(action='custom',custom_action='watch',reason='condition observed',logical_key='watch:SYN01')
+        return []
+    execute_program({'on_event':on_event},base)
+    assert [kind for kind,_ in output]==['signal']
+    assert output[0][1]['strategy_id']=='watch-only'
+    assert output[0][1]['source']=='replay'
+
+def test_signal_only_strategy_rejects_order_intents(monkeypatch):
+    repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures');output=[]
+    base=SimpleNamespace(params={
+        'strategy_mode':'signal_only','paper_source':'fixture-replay',
+        'event_snapshot':repo.manifest()['snapshot_id'],
+    },run_id='run-signal-order',emit=lambda kind,payload:output.append((kind,payload)),log=lambda message:None)
+    monkeypatch.setattr('kestrel_engine.strategy.time.sleep',lambda value:None)
+    with pytest.raises(ValueError,match='cannot emit paper order intents'):
+        execute_program({'on_event':lambda context,event:[{'side':'buy','limit_price':'10000','quantity':'1'}]},base)
+    assert not any(kind.startswith('paper_') for kind,_ in output)
