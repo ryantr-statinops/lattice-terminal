@@ -228,6 +228,27 @@ class CorporateAction(Record):
                 raise ValueError('corporate action amounts must not be negative')
         return value
 
+class FinancialStatement(Record):
+    instrument_id: str
+    statement_id: str
+    statement_type: str
+    period_start: date | None = None
+    period_end: date
+    published_at: AwareDatetime
+    available_at: AwareDatetime
+    currency: str
+    unit: str
+    values: dict[str, str]
+    source_id: str
+    revision: str = '0'
+
+    @field_validator('values')
+    @classmethod
+    def finite_statement_values(cls, values):
+        for value in values.values():
+            decimal_text(value)
+        return values
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []

@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,Instrument,OrderBookDepth,Quote,Trade,decimal_text
+from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,Trade,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -145,3 +145,15 @@ def test_corporate_action_keeps_announcement_and_effective_dates():
     )
     assert event.announced_at.utcoffset().total_seconds() == 0
     assert event.ex_date.isoformat() == '2026-10-20'
+
+
+def test_financial_statement_preserves_publication_time_and_units():
+    published = datetime.fromisoformat('2026-10-26T03:00:00+00:00')
+    statement = FinancialStatement(
+        instrument_id='vn-equity:HOSE:HPG', statement_id='statement-1',
+        statement_type='income', period_start='2026-07-01', period_end='2026-09-30',
+        published_at=published, available_at=published, currency='VND', unit='million',
+        values={'revenue':'1000.25'}, source_id='fixture', revision='1',
+    )
+    assert statement.published_at == published
+    assert statement.values['revenue'] == '1000.25'
