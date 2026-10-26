@@ -243,6 +243,7 @@ class AtomicDatasetPublisher:
             manifest = self._load_manifest(directory, snapshot_id)
             if manifest['provider_id'] != provider_id or not manifest['dataset'].startswith('instruments.'):
                 continue
+            self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
             key = (manifest['dataset'], manifest['capability_id'])
             existing = latest.get(key)
             if existing is None or (manifest['available_to'], snapshot_id) > (existing['available_to'], existing['snapshot_id']):
