@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,Trade,ValueSeriesPoint,decimal_text
+from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,StrategySignal,Trade,ValueSeriesPoint,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -207,3 +207,30 @@ def test_instrument_keeps_native_currency_when_known():
         native_symbol='HPG', name='Hoa Phat', currency='VND',
     )
     assert instrument.currency == 'VND'
+
+
+def test_strategy_signal_contract_keeps_run_source_context_and_expiry():
+    signal = StrategySignal(
+        id='signal-1', run_id='run-1', strategy_id='strategy-1',
+        instrument_id='vn-equity:HOSE:HPG', action='buy',
+        event_time='2026-10-26T03:00:00+07:00',
+        price_context={'bid':'25.10','ask':'25.15'}, reason='Breakout confirmed',
+        source='replay', logical_key='breakout:HPG', correlation_id='decision-1',
+        expires_at='2026-10-26T03:04:00+07:00',
+    )
+    assert signal.event_time.utcoffset().total_seconds() == 0
+    assert signal.source == 'replay'
+    assert signal.price_context['ask'] == '25.15'
+
+
+def test_strategy_signal_rejects_expiry_over_five_minutes_and_custom_without_name():
+    fields = {
+        'id':'signal-2','run_id':'run-1','strategy_id':'strategy-1',
+        'instrument_id':'vn-equity:HOSE:HPG','action':'buy',
+        'event_time':'2026-10-26T03:00:00Z','reason':'test','source':'live',
+        'logical_key':'test:HPG','expires_at':'2026-10-26T03:06:00Z',
+    }
+    with pytest.raises(ValidationError, match='at most five minutes'):
+        StrategySignal(**fields)
+    with pytest.raises(ValidationError, match='custom signal requires'):
+        StrategySignal(**(fields | {'action':'custom','expires_at':'2026-10-26T03:01:00Z'}))

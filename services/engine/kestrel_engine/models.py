@@ -1,5 +1,5 @@
 """Versioned domain records. Money never crosses a boundary as a float."""
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import re
 from typing import Any, Literal
@@ -286,6 +286,58 @@ class ValueSeriesPoint(Record):
     def finite_series_value(cls, value):
         decimal_text(value)
         return value
+
+class StrategySignal(Record):
+    id: str
+    run_id: str
+    strategy_id: str
+    instrument_id: str
+    action: Literal['buy','sell','exit','reduce','custom']
+    custom_action: str | None = None
+    event_time: AwareDatetime
+    price_context: dict[str, str] = Field(default_factory=dict)
+    reason: str
+    source: Literal['live','replay']
+    logical_key: str
+    correlation_id: str | None = None
+    expires_at: AwareDatetime
+
+    @field_validator('id','run_id','strategy_id','instrument_id','reason','logical_key','custom_action','correlation_id')
+    @classmethod
+    def non_blank_signal_fields(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError('signal identity, reason, and logical key must not be blank')
+        return value
+
+    @field_validator('reason')
+    @classmethod
+    def bounded_reason(cls, value):
+        if len(value) > 2000:
+            raise ValueError('signal reason exceeds 2000 characters')
+        return value
+
+    @field_validator('logical_key')
+    @classmethod
+    def bounded_logical_key(cls, value):
+        if len(value) > 200:
+            raise ValueError('signal logical key exceeds 200 characters')
+        return value
+
+    @field_validator('price_context')
+    @classmethod
+    def decimal_price_context(cls, value):
+        for item in value.values():
+            decimal_text(item)
+        return value
+
+    @model_validator(mode='after')
+    def valid_action_and_expiry(self):
+        if self.action == 'custom' and self.custom_action is None:
+            raise ValueError('custom signal requires custom_action')
+        lifetime = self.expires_at - self.event_time
+        if lifetime <= timedelta(0) or lifetime > timedelta(minutes=5):
+            raise ValueError('signal expiry must be after event time and at most five minutes later')
+        return self
 
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
