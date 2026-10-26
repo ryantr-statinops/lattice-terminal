@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS paper_orders(id TEXT PRIMARY KEY,allocation_id TEXT N
 CREATE TABLE IF NOT EXISTS settlements(id TEXT PRIMARY KEY,allocation_id TEXT NOT NULL REFERENCES allocations(id),instrument_id TEXT NOT NULL,quantity TEXT NOT NULL,cash TEXT NOT NULL,due TEXT NOT NULL,done INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS paper_cursors(allocation_id TEXT PRIMARY KEY REFERENCES allocations(id),snapshot TEXT NOT NULL,sequence INTEGER NOT NULL,event_time TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS marks(instrument_id TEXT PRIMARY KEY,price TEXT NOT NULL,event_time TEXT NOT NULL,source TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS paper_steps(allocation_id TEXT NOT NULL REFERENCES allocations(id),snapshot TEXT NOT NULL,sequence INTEGER NOT NULL,event_key TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,created TEXT NOT NULL,PRIMARY KEY(allocation_id,snapshot,sequence));
 UPDATE allocations SET status='interrupted',controller='' WHERE status='running';`)
 	return err
 }

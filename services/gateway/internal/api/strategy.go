@@ -125,6 +125,25 @@ func (a *API) PaperEvent(run store.Run, kind string, payload json.RawMessage) er
 	}
 	key := eventKey(run.ID, kind, payload)
 	switch kind {
+	case "paper_step":
+		var input struct {
+			Allocation string                        `json:"allocation_id"`
+			Snapshot   string                        `json:"snapshot_id"`
+			After      int64                         `json:"after_sequence"`
+			Sequence   int64                         `json:"sequence"`
+			Time       string                        `json:"event_time"`
+			Instrument string                        `json:"instrument_id"`
+			Bid        string                        `json:"bid"`
+			Ask        string                        `json:"ask"`
+			Mutations  []store.StrategyPaperMutation `json:"mutations"`
+		}
+		if err = json.Unmarshal(payload, &input); err != nil {
+			return err
+		}
+		if input.Allocation != id || input.Snapshot != params["event_snapshot"] {
+			return errors.New("paper step allocation or snapshot mismatch")
+		}
+		return a.Store.ApplyStrategyStep(id, run.ID, key, input.Snapshot, input.After, input.Sequence, input.Time, input.Instrument, input.Bid, input.Ask, input.Mutations)
 	case "paper_order":
 		var order store.PaperOrder
 		if err = json.Unmarshal(payload, &order); err != nil {

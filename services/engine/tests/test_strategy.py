@@ -16,6 +16,20 @@ def test_strategy_contract_emits_paper_events_and_is_not_backtest(monkeypatch):
     base.params['paper_source']='ssi-live'
     with pytest.raises(ValueError,match='SSI live'):execute_program({'on_event':lambda ctx,event:[]},base)
 
+def test_strategy_paper_mutations_share_one_market_step_event(monkeypatch):
+    repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures');output=[]
+    base=SimpleNamespace(params={'paper_source':'fixture-replay','allocation_id':'a','allocation_cash':'100000','event_snapshot':repo.manifest()['snapshot_id'],'allocation_positions':{}},run_id='run-step',emit=lambda kind,payload:output.append((kind,payload)),log=lambda message:None)
+    monkeypatch.setattr('kestrel_engine.strategy.time.sleep',lambda value:None)
+    def on_event(context,event):
+        if event.sequence==1:return [{'side':'buy','limit_price':'10010','quantity':'1'}]
+        return []
+    execute_program({'on_event':on_event},base)
+    steps=[payload for kind,payload in output if kind=='paper_step']
+    assert len(steps)==80
+    assert steps[0]['after_sequence']==0 and steps[0]['sequence']==1
+    assert steps[0]['mutations'][0]['type']=='paper_order'
+    assert not any(kind in {'paper_order','paper_fill','paper_cursor'} for kind,_ in output)
+
 
 def test_strategy_context_signal_is_independent_from_paper_order_intents(monkeypatch):
     repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures');output=[]

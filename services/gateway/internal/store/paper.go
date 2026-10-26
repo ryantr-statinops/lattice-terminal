@@ -178,6 +178,18 @@ func (s *Store) PaperOrders(allocation string) ([]PaperOrder, error) {
 	return result, rows.Err()
 }
 func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err = s.placePaper(tx, order, key, controller); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) placePaper(tx *sql.Tx, order PaperOrder, key, controller string) error {
 	price, err := amount(order.Price, false)
 	if err != nil {
 		return err
@@ -197,11 +209,6 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	if err != nil {
 		return errors.New("order timestamp required")
 	}
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 	a, err := scanAllocation(tx.QueryRow("SELECT * FROM allocations WHERE id=?", order.AllocationID))
 	if err != nil {
 		return err
@@ -263,7 +270,7 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	if _, err = tx.Exec("UPDATE allocations SET cash=?,reserved=? WHERE id=?", cash.String(), reserved.String(), a.ID); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 func (s *Store) PaperOrderRequest(key string) (PaperOrder, error) {
 	var kind, raw string

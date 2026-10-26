@@ -51,24 +51,30 @@ def execute_program(program,base):
     after=int(params.get('after_sequence',0));events=[v for v in events if v.sequence>after]
     if not events:raise ValueError('fixture tape exhausted; existing positions remain held until eligible future data is available')
     session=None
+    pending_mutations=[]
     if mode=='paper':
-        session=PaperSession(params['allocation_cash'],rules,base.emit)
+        session=PaperSession(params['allocation_cash'],rules,lambda kind,payload:pending_mutations.append({'type':kind,'payload':payload}))
         session.positions={key:Decimal(value) for key,value in params.get('allocation_positions',{}).items()}
     context=StrategyContext(base,session,str(params.get('strategy_id') or base.run_id),'replay',mode);state=Reconciler(timedelta(seconds=5));state.reconcile(events[0].event_time,after)
+    completed=False
     try:
         if callable(program.get('on_start')):program['on_start'](context)
         for event in events:
             if not state.apply(event):raise ValueError('paper source requires reconciliation')
             context._set_event(event)
+            pending_mutations.clear()
             if session is not None:session.quote(event,True)
             intents=program['on_event'](context,event.model_copy(deep=True)) or []
             if not isinstance(intents,list):raise ValueError('on_event must return a list of LO intents')
             if mode=='signal_only' and intents:raise ValueError('signal_only strategies cannot emit paper order intents')
             if session is not None:
                 for intent in intents:session.place(event,intent,allocation,base.run_id)
-                base.emit('paper_cursor',{'allocation_id':allocation,'snapshot_id':params['event_snapshot'],'sequence':event.sequence,'event_time':event.event_time.isoformat(),'instrument_id':event.instrument_id,'bid':event.bid,'ask':event.ask})
+                base.emit('paper_step',{'allocation_id':allocation,'snapshot_id':params['event_snapshot'],'after_sequence':event.sequence-1,'sequence':event.sequence,'event_time':event.event_time.isoformat(),'instrument_id':event.instrument_id,'bid':event.bid,'ask':event.ask,'mutations':pending_mutations.copy()})
             time.sleep(.1)
+        completed=True
     finally:
-        if session is not None:session.close()
+        if session is not None and completed:
+            pending_mutations.clear();session.close()
+            for mutation in pending_mutations:base.emit(mutation['type'],mutation['payload'])
         if callable(program.get('on_stop')):program['on_stop'](context)
     if session is not None:base.emit('paper_session',{'mode':'synthetic-fixture-replay','allocation_id':allocation,'cash':str(session.cash),'positions':context.portfolio['positions'],'realtime':False})
