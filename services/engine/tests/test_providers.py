@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timezone
 from kestrel_engine.providers import (
     ProviderRouter,
@@ -55,6 +56,16 @@ class TestProviders(unittest.TestCase):
         self.assertTrue(status.configured)
         self.assertIsNone(status.latency_ms)
         self.assertIn('connectivity is unverified', status.error)
+
+    def test_listing_providers_does_not_probe_external_network(self):
+        router = ProviderRouter()
+        with patch.object(VndirectCommunityProvider, 'ping', side_effect=AssertionError('network probe called')):
+            statuses = router.list_statuses()
+        vndirect = next(status for status in statuses if status.id == 'vndirect')
+        tcbs = next(status for status in statuses if status.id == 'tcbs')
+        self.assertEqual(vndirect.state, 'unknown')
+        self.assertEqual(tcbs.state, 'unknown')
+        self.assertIsNone(vndirect.latency_ms)
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,7 +14,7 @@ class ProviderStatus(BaseModel):
     id: str
     name: str
     category: Literal['community', 'broker_api', 'local', 'synthetic']
-    state: Literal['connected', 'offline', 'blocked', 'fixture']
+    state: Literal['connected', 'offline', 'blocked', 'fixture', 'unknown']
     latency_ms: float | None = None
     capabilities: list[str] = Field(default_factory=list)
     description: str = ''
@@ -309,7 +309,30 @@ class ProviderRouter:
         self.policy = RoutingPolicy()
 
     def list_statuses(self) -> list[ProviderStatus]:
-        return [p.ping() for p in self.providers.values()]
+        statuses: list[ProviderStatus] = []
+        for provider in self.providers.values():
+            if provider.id == 'fixture':
+                statuses.append(provider.ping())
+                continue
+            if provider.id == 'ssi':
+                statuses.append(provider.ping())
+                continue
+            configured = bool(
+                getattr(provider, 'api_key', None)
+                and getattr(provider, 'api_secret', None)
+            )
+            statuses.append(ProviderStatus(
+                id=provider.id,
+                name=provider.name,
+                category=provider.category,
+                state='unknown',
+                latency_ms=None,
+                capabilities=provider.capabilities,
+                description=provider.description,
+                error=None,
+                configured=configured,
+            ))
+        return statuses
 
     def ping(self, provider_id: str) -> ProviderStatus:
         if provider_id not in self.providers:

@@ -11,7 +11,7 @@ export type ProviderStatus = {
   id: string;
   name: string;
   category: 'community' | 'broker_api' | 'local' | 'synthetic';
-  state: 'connected' | 'offline' | 'blocked' | 'fixture';
+  state: 'connected' | 'offline' | 'blocked' | 'fixture' | 'unknown';
   latency_ms: number | null;
   capabilities: string[];
   description: string;
@@ -68,6 +68,7 @@ export function Providers() {
   const getTone = (state: string): 'positive' | 'warning' | 'negative' | 'info' => {
     if (state === 'connected') return 'positive';
     if (state === 'fixture') return 'info';
+    if (state === 'unknown') return 'info';
     if (state === 'blocked') return 'warning';
     return 'negative';
   };
@@ -89,7 +90,7 @@ export function Providers() {
         </span>
       </Toolbar>
 
-      {providers.isPending && <LoadingState>Querying provider health registry…</LoadingState>}
+      {providers.isPending && <LoadingState>Loading provider configuration…</LoadingState>}
       <ErrorState error={providers.error || routing.error} onRetry={() => { void providers.refetch(); void routing.refetch(); }} />
 
       {providers.data && (
