@@ -1,6 +1,13 @@
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.broker import BrokerAccount, BrokerReadRequest, validate_broker_read_operation
+from kestrel_engine.broker import (
+    BrokerAccount,
+    BrokerAccountSnapshot,
+    BrokerBalance,
+    BrokerPosition,
+    BrokerReadRequest,
+    validate_broker_read_operation,
+)
 
 
 @pytest.mark.parametrize('operation', [
@@ -44,3 +51,44 @@ def test_broker_account_rejects_invalid_currency_and_blank_identity():
         BrokerAccount(provider_id='broker-a', account_id='12345', display_name='Account', currency='vnd')
     with pytest.raises(ValidationError, match='must not be blank'):
         BrokerAccount(provider_id='broker-a', account_id=' ', display_name='Account')
+
+
+def test_broker_account_snapshot_preserves_source_currency_and_asset_class():
+    account = BrokerAccount(provider_id='broker-a', account_id='12345', display_name='Main')
+    snapshot = BrokerAccountSnapshot(
+        snapshot_id='snapshot-1', account=account,
+        captured_at='2026-10-26T02:00:00Z', synced_at='2026-10-26T02:00:05Z',
+        state='complete',
+        balances=[BrokerBalance(currency='USD', cash_balance='12.50', available_cash='10.00')],
+        positions=[BrokerPosition(
+            provider_instrument_id='VN30F1M', asset_class='derivative', quantity='2',
+            available_quantity='1', average_cost='1200.25', currency='VND',
+        )],
+    )
+    assert snapshot.balances[0].currency == 'USD'
+    assert snapshot.positions[0].asset_class == 'derivative'
+    assert snapshot.positions[0].instrument_id is None
+
+
+def test_partial_broker_snapshot_requires_missing_sections():
+    account = BrokerAccount(provider_id='broker-a', account_id='12345', display_name='Main')
+    fields = {
+        'snapshot_id': 'snapshot-2', 'account': account,
+        'captured_at': '2026-10-26T02:00:00Z', 'synced_at': '2026-10-26T02:00:05Z',
+    }
+    with pytest.raises(ValidationError, match='must list missing sections'):
+        BrokerAccountSnapshot(**fields, state='partial')
+    partial = BrokerAccountSnapshot(**fields, state='partial', missing_sections=['positions'])
+    assert partial.state == 'partial'
+
+
+def test_account_snapshot_rejects_float_money_and_complete_with_missing_data():
+    account = BrokerAccount(provider_id='broker-a', account_id='12345', display_name='Main')
+    with pytest.raises(ValidationError, match='valid string'):
+        BrokerBalance(currency='VND', cash_balance=100.0)
+    with pytest.raises(ValidationError, match='cannot have missing sections'):
+        BrokerAccountSnapshot(
+            snapshot_id='snapshot-3', account=account,
+            captured_at='2026-10-26T02:00:00Z', synced_at='2026-10-26T02:00:05Z',
+            state='complete', missing_sections=['positions'],
+        )

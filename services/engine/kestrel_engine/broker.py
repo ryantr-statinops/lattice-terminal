@@ -1,8 +1,8 @@
 """Read-only broker account operation contracts."""
 from typing import Literal
 import re
-from pydantic import Field, field_validator, model_validator
-from .models import Record
+from pydantic import AwareDatetime, Field, field_validator, model_validator
+from .models import Record, decimal_text
 
 BrokerReadOperation = Literal[
     'accounts.list',
@@ -70,6 +70,88 @@ class BrokerAccount(Record):
     def namespace_key(self) -> str:
         subaccount = self.subaccount_id or ''
         return f'{self.provider_id}:{self.account_id}:{subaccount}'
+
+
+class BrokerBalance(Record):
+    currency: str
+    cash_balance: str | None = None
+    available_cash: str | None = None
+    buying_power: str | None = None
+
+    @field_validator('currency')
+    @classmethod
+    def valid_currency(cls, value):
+        if not re.fullmatch(r'[A-Z]{3}', value):
+            raise ValueError('currency must be a three-letter uppercase code')
+        return value
+
+    @field_validator('cash_balance', 'available_cash', 'buying_power')
+    @classmethod
+    def decimal_values(cls, value):
+        if value is not None:
+            decimal_text(value)
+        return value
+
+
+class BrokerPosition(Record):
+    provider_instrument_id: str
+    instrument_id: str | None = None
+    asset_class: str = 'unknown'
+    quantity: str
+    available_quantity: str | None = None
+    average_cost: str | None = None
+    market_value: str | None = None
+    currency: str | None = None
+
+    @field_validator('provider_instrument_id', 'instrument_id', 'asset_class')
+    @classmethod
+    def non_blank_position_identity(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError('position identity fields must not be blank')
+        return value
+
+    @field_validator('quantity', 'available_quantity', 'average_cost', 'market_value')
+    @classmethod
+    def decimal_values(cls, value):
+        if value is not None:
+            decimal_text(value)
+        return value
+
+    @field_validator('currency')
+    @classmethod
+    def valid_currency(cls, value):
+        if value is not None and not re.fullmatch(r'[A-Z]{3}', value):
+            raise ValueError('currency must be a three-letter uppercase code')
+        return value
+
+
+class BrokerAccountSnapshot(Record):
+    snapshot_id: str
+    account: BrokerAccount
+    captured_at: AwareDatetime
+    synced_at: AwareDatetime
+    state: Literal['complete', 'partial', 'stale']
+    balances: list[BrokerBalance] = Field(default_factory=list)
+    positions: list[BrokerPosition] = Field(default_factory=list)
+    missing_sections: list[str] = Field(default_factory=list)
+    source_revision: str | None = None
+
+    @field_validator('snapshot_id')
+    @classmethod
+    def non_blank_snapshot_id(cls, value):
+        if not value.strip():
+            raise ValueError('snapshot_id must not be blank')
+        return value
+
+    @model_validator(mode='after')
+    def state_matches_missing_sections(self):
+        if self.state == 'complete' and self.missing_sections:
+            raise ValueError('complete account snapshot cannot have missing sections')
+        if self.state == 'partial' and not self.missing_sections:
+            raise ValueError('partial account snapshot must list missing sections')
+        if len(set(self.missing_sections)) != len(self.missing_sections):
+            raise ValueError('missing account sections must be unique')
+        return self
 
 
 def validate_broker_read_operation(value: str) -> BrokerReadOperation:
