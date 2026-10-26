@@ -105,6 +105,32 @@
         "title": "PaperPrepare",
         "type": "object"
       },
+      "ProviderPing": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "service": {
+            "default": "market-data",
+            "title": "Service",
+            "type": "string"
+          }
+        },
+        "title": "ProviderPing",
+        "type": "object"
+      },
       "RunRequest": {
         "additionalProperties": false,
         "properties": {
@@ -505,6 +531,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ProviderPing"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Value"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

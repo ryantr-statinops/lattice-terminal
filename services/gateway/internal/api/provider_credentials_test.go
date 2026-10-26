@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,6 +36,14 @@ func (s *credentialWriterStub) HasProvider(provider string) (bool, error) {
 	return provider == s.configuredProvider, s.err
 }
 
+func (s *credentialWriterStub) Get(provider, service string) ([]byte, error) {
+	s.provider, s.service = provider, service
+	if s.credential == "" {
+		return nil, os.ErrNotExist
+	}
+	return []byte(s.credential), s.err
+}
+
 func TestProviderListingReflectsVaultConfigurationWithoutReturningSecrets(t *testing.T) {
 	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/internal/v1/providers" || r.Method != http.MethodGet || r.Header.Get("Authorization") != "Bearer engine-token" {
@@ -57,6 +66,46 @@ func TestProviderListingReflectsVaultConfigurationWithoutReturningSecrets(t *tes
 	}
 	if strings.Contains(response.Body.String(), "private-secret") {
 		t.Fatal("provider listing exposed credential material")
+	}
+}
+
+func TestSSIPingUsesVaultCredentialWithoutReturningItToClient(t *testing.T) {
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if r.URL.Path != "/internal/v1/providers/ssi/ping" || r.Method != http.MethodPost {
+			t.Errorf("unexpected SSI probe request: %s %s", r.Method, r.URL.Path)
+		}
+		if !strings.Contains(string(body), `"consumerSecret":"private-secret"`) || !strings.Contains(string(body), `"service":"market-data"`) {
+			t.Errorf("vault credential was not forwarded to the internal engine: %s", body)
+		}
+		_, _ = w.Write([]byte(`{"id":"ssi","state":"connected","configured":true,"latency_ms":12}`))
+	}))
+	defer engine.Close()
+	credentials := &credentialWriterStub{credential: `{"consumerID":"private-id","consumerSecret":"private-secret"}`}
+	mux := http.NewServeMux()
+	(&API{Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}}, Credentials: credentials}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/providers/ssi/ping", strings.NewReader(`{}`)))
+	if response.Code != http.StatusOK || credentials.provider != "ssi" || credentials.service != "market-data" {
+		t.Fatalf("SSI probe response = %d %s, vault lookup = %s/%s", response.Code, response.Body.String(), credentials.provider, credentials.service)
+	}
+	if strings.Contains(response.Body.String(), "private-id") || strings.Contains(response.Body.String(), "private-secret") {
+		t.Fatal("SSI connection check returned credential material to the client")
+	}
+}
+
+func TestSSIPingRequiresMarketDataCredential(t *testing.T) {
+	engineCalled := false
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		engineCalled = true
+	}))
+	defer engine.Close()
+	mux := http.NewServeMux()
+	(&API{Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}}, Credentials: &credentialWriterStub{}}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/providers/ssi/ping", strings.NewReader(`{}`)))
+	if response.Code != http.StatusBadRequest || engineCalled || !strings.Contains(response.Body.String(), "credentials are not configured") {
+		t.Fatalf("missing SSI credentials response = %d %s, engineCalled=%v", response.Code, response.Body.String(), engineCalled)
 	}
 }
 

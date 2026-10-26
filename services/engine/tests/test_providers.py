@@ -1,5 +1,7 @@
 import unittest
 import urllib.error
+import io
+import json
 from unittest.mock import patch
 from datetime import datetime, timezone
 from kestrel_engine.providers import (
@@ -120,6 +122,36 @@ class TestProviders(unittest.TestCase):
         self.assertTrue(status.configured)
         self.assertIsNone(status.latency_ms)
         self.assertIn('connectivity is unverified', status.error)
+
+    def test_ssi_market_data_ping_requests_official_access_token(self):
+        provider = SsiFastConnectProvider()
+        provider.configure_credentials({'consumer_id': 'private-id', 'consumer_secret': 'private-secret'})
+        response = io.BytesIO(b'{"status":200,"data":{"accessToken":"short-lived-token"}}')
+        with patch('kestrel_engine.providers.urllib.request.urlopen', return_value=response) as open_url:
+            status = provider.ping()
+        self.assertEqual(status.state, 'connected')
+        self.assertTrue(status.configured)
+        self.assertEqual(provider.access_token, 'short-lived-token')
+        request = open_url.call_args.args[0]
+        self.assertEqual(request.full_url, 'https://fc-data.ssi.com.vn/api/v2/Market/AccessToken')
+        self.assertEqual(json.loads(request.data), {'consumerID': 'private-id', 'consumerSecret': 'private-secret'})
+        self.assertEqual(request.get_method(), 'POST')
+
+    def test_ssi_rejected_credentials_do_not_leak_and_listing_does_not_probe(self):
+        provider = SsiFastConnectProvider()
+        provider.configure_credentials({'consumerID': 'private-id', 'consumerSecret': 'private-secret'})
+        denied = urllib.error.HTTPError('https://fc-data.ssi.com.vn/api/v2/Market/AccessToken', 401, 'denied', None, None)
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=denied):
+            status = provider.ping()
+        self.assertEqual(status.state, 'blocked')
+        self.assertNotIn('private-secret', status.error)
+        router = ProviderRouter()
+        router.providers['ssi'].configure_credentials({'consumerID': 'private-id', 'consumerSecret': 'private-secret'})
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=AssertionError('provider listing made a network request')):
+            listing = router.list_statuses()
+        ssi = next(item for item in listing if item.id == 'ssi')
+        self.assertEqual(ssi.state, 'unknown')
+        self.assertTrue(ssi.configured)
 
     def test_listing_providers_does_not_probe_external_network(self):
         router = ProviderRouter()

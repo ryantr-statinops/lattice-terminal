@@ -17,7 +17,7 @@
 
 | Task | Dataset/operation | Bằng chứng/trạng thái |
 |---|---|---|
-| P-ssi-auth-market | Market-data token | DOCS / WAIT_ACCOUNT; theo auth scope và thời hạn token |
+| P-ssi-auth-market | Market-data token | DOCS / WAIT_ACCOUNT; AccessToken probe có mock test offline; chưa kiểm tra credential thật, IP allowlist hoặc quyền dữ liệu |
 | P-ssi-instrument-catalogue | Instruments theo venue | DOCS / WAIT_ACCOUNT |
 | P-ssi-equity-daily-bars | Equity EOD/OHLCV | DOCS / WAIT_ACCOUNT; rights/adjustment cần xác minh |
 | P-ssi-equity-intraday-bars | Equity interval riêng từng resolution | DOCS / WAIT_ACCOUNT; mỗi resolution semantic khác là task riêng |

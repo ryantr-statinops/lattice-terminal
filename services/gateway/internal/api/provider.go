@@ -76,6 +76,40 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 
 	m.HandleFunc("POST /api/v1/providers/{id}/ping", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
+		if !secret.ValidVaultID(id) {
+			JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid provider reference"})
+			return
+		}
+		if id == "ssi" {
+			reader, ok := a.Credentials.(CredentialReader)
+			if !ok {
+				JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provider credential vault is unavailable"})
+				return
+			}
+			credential, err := reader.Get(id, "market-data")
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					JSON(w, http.StatusBadRequest, map[string]string{"error": "SSI market-data credentials are not configured"})
+					return
+				}
+				JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "could not read SSI market-data credentials"})
+				return
+			}
+			if !json.Valid(credential) {
+				JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "SSI market-data credentials are invalid"})
+				return
+			}
+			body, err := json.Marshal(struct {
+				Service    string          `json:"service"`
+				Credential json.RawMessage `json:"credential"`
+			}{Service: "market-data", Credential: credential})
+			if err != nil {
+				JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not prepare SSI connection check"})
+				return
+			}
+			callEngine(w, r, "POST", "/internal/v1/providers/ssi/ping", body)
+			return
+		}
 		callEngine(w, r, "POST", "/internal/v1/providers/"+id+"/ping", nil)
 	})
 

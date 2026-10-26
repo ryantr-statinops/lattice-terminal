@@ -38,6 +38,10 @@ class PaperPrepare(Record):
     limit_price:str
     quantity:str
 
+class ProviderPing(Record):
+    service:str='market-data'
+    credential:dict[str,str]|None=None
+
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.internal_token = token
@@ -71,8 +75,9 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         return provider_router.capabilities.list()
 
     @app.post("/internal/v1/providers/{id}/ping")
-    def ping_provider(id: str):
-        return provider_router.ping(id)
+    def ping_provider(id: str, value:ProviderPing|None=None):
+        if value is None:return provider_router.ping(id)
+        return provider_router.ping(id,value.service,value.credential)
 
     @app.get("/internal/v1/providers/routing")
     def get_routing():

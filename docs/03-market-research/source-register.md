@@ -23,7 +23,7 @@ Các flags độc lập. `false` nghĩa là chưa có evidence trong register, k
 | `SSI-FC-DATA-STREAM` | broker_api | Realtime market-data stream groups | true | false | false | false |
 Official capability references: [REST API list](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/danh-sach-cac-api), [streaming data](https://guide.ssi.com.vn/ssi-products/tieng-viet/fastconnect-data/du-lieu-streaming), [service registration](https://guide.ssi.com.vn/ssi-products/service-registration), [general information](https://guide.ssi.com.vn/ssi-products/general-information). These links establish documentation references only. User entitlement, fees, coverage, quota, exact schema, geography and local-use rights remain unverified.
 
-**Current decision:** production capabilities BLOCKED; no access probe is authorized or performed by this docs change. Both SSI rows remain unchanged. Account-specific access evidence and rights for the exact production purpose are still missing.
+**Current decision:** production capabilities remain BLOCKED. The local app now has an explicit, user-triggered REST AccessToken check backed by an offline mock test; no real account credential or provider endpoint was used during implementation. Both SSI source rows remain unchanged. Account-specific access evidence and rights for the exact production purpose are still missing.
 
 ## Access probes and operating states
 

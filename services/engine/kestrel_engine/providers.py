@@ -360,18 +360,80 @@ class SsiFastConnectProvider(BaseMarketProvider):
     capabilities = ['historical_candles', 'realtime_streaming', 'level2_quotes']
     description = 'Institutional market data feed from SSI Securities. Gated by source policy.'
 
+    def __init__(self, base_url: str = 'https://fc-data.ssi.com.vn/api/v2/Market'):
+        self.base_url = base_url.rstrip('/')
+        self.consumer_id = ''
+        self.consumer_secret = ''
+        self.configured = False
+        self.access_token = ''
+
+    def configure_credentials(self, credential: dict[str, str]) -> None:
+        if not isinstance(credential, dict):
+            raise ValueError('SSI market-data credential document must be an object')
+        consumer_id = credential.get('consumerID') or credential.get('consumer_id')
+        consumer_secret = credential.get('consumerSecret') or credential.get('consumer_secret')
+        if not isinstance(consumer_id, str) or not consumer_id.strip() or not isinstance(consumer_secret, str) or not consumer_secret.strip():
+            raise ValueError('SSI market-data credentials require consumerID and consumerSecret')
+        self.consumer_id = consumer_id
+        self.consumer_secret = consumer_secret
+        self.configured = True
+        self.access_token = ''
+
     def ping(self) -> ProviderStatus:
-        return ProviderStatus(
-            id=self.id,
-            name=self.name,
-            category=self.category,
-            state='blocked',
-            latency_ms=None,
-            capabilities=self.capabilities,
-            description=self.description,
-            configured=False,
-            error='Production capability blocked by source gate policy (docs/03-market-research/source-register.md)',
+        consumer_id, consumer_secret = self.consumer_id, self.consumer_secret
+        configured = bool(consumer_id and consumer_secret)
+        self.consumer_id = ''
+        self.consumer_secret = ''
+        if not configured:
+            return ProviderStatus(
+                id=self.id, name=self.name, category=self.category, state='blocked',
+                latency_ms=None, capabilities=self.capabilities, description=self.description,
+                configured=False, error='Configure SSI FastConnect Data consumerID and consumerSecret before testing access',
+            )
+        body = json.dumps({'consumerID': consumer_id, 'consumerSecret': consumer_secret}).encode()
+        request = urllib.request.Request(
+            f'{self.base_url}/AccessToken',
+            data=body,
+            headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+            method='POST',
         )
+        started = time.perf_counter()
+        try:
+            limiter = getattr(self, '_request_limiter', None)
+            if limiter is not None:
+                limiter.acquire()
+            with urllib.request.urlopen(request, timeout=6.0) as response:
+                payload = json.loads(response.read(1024 * 1024 + 1).decode('utf-8'))
+            data = payload.get('data') if isinstance(payload, dict) else None
+            token = data.get('accessToken') if isinstance(data, dict) else None
+            if not isinstance(token, str) or not token:
+                return ProviderStatus(
+                    id=self.id, name=self.name, category=self.category, state='blocked',
+                    latency_ms=round((time.perf_counter() - started) * 1000, 1),
+                    capabilities=self.capabilities, description=self.description, configured=True,
+                    error='SSI returned no market-data access token',
+                )
+            self.access_token = token
+            return ProviderStatus(
+                id=self.id, name=self.name, category=self.category, state='connected',
+                latency_ms=round((time.perf_counter() - started) * 1000, 1),
+                capabilities=self.capabilities, description=self.description, configured=True,
+            )
+        except urllib.error.HTTPError as error:
+            state = 'blocked' if error.code in (400, 401, 403) else 'offline'
+            return ProviderStatus(
+                id=self.id, name=self.name, category=self.category, state=state,
+                latency_ms=round((time.perf_counter() - started) * 1000, 1),
+                capabilities=self.capabilities, description=self.description, configured=True,
+                error=f'SSI market-data access-token request failed with HTTP {error.code}',
+            )
+        except Exception:
+            return ProviderStatus(
+                id=self.id, name=self.name, category=self.category, state='offline',
+                latency_ms=round((time.perf_counter() - started) * 1000, 1),
+                capabilities=self.capabilities, description=self.description, configured=True,
+                error='SSI market-data access-token request failed; verify service access and network settings',
+            )
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')
@@ -450,7 +512,14 @@ class ProviderRouter:
                 statuses.append(provider.ping())
                 continue
             if provider.id == 'ssi':
-                statuses.append(provider.ping())
+                configured = provider.configured
+                statuses.append(ProviderStatus(
+                    id=provider.id, name=provider.name, category=provider.category,
+                    state='unknown' if configured else 'blocked', latency_ms=None,
+                    capabilities=provider.capabilities, description=provider.description,
+                    configured=configured,
+                    error=None if configured else 'API credentials not configured in settings',
+                ))
                 continue
             configured = bool(
                 getattr(provider, 'api_key', None)
@@ -469,9 +538,13 @@ class ProviderRouter:
             ))
         return statuses
 
-    def ping(self, provider_id: str) -> ProviderStatus:
+    def ping(self, provider_id: str, service: str | None = None, credential: dict[str, str] | None = None) -> ProviderStatus:
         if provider_id not in self.providers:
             raise ValueError(f"Unknown provider: {provider_id}")
+        if credential is not None:
+            if provider_id != 'ssi' or service != 'market-data':
+                raise ValueError('credential probe is not supported for this provider service')
+            self.providers[provider_id].configure_credentials(credential)
         return self.providers[provider_id].ping()
 
     def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
