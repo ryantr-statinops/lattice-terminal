@@ -1,6 +1,6 @@
 from datetime import date,datetime,timedelta,timezone
 import pytest
-from kestrel_engine.execution import Order,RulePack,RulePackRegistry,quote_fill
+from kestrel_engine.execution import FillModel,FillModelRegistry,Order,RulePack,RulePackRegistry,quote_fill
 from kestrel_engine.stream import MarketEvent
 
 def fixture():
@@ -46,3 +46,26 @@ def test_rule_pack_registry_rejects_overlapping_rules_for_same_scope():
     overlapping=rule.model_copy(update={'id':'OVERLAPPING'})
     with pytest.raises(ValueError,match='overlapping rule pack'):
         RulePackRegistry([rule,overlapping])
+
+def test_fill_model_registry_resolves_only_declared_session_and_date_coverage():
+    rule,_,_=fixture()
+    model=FillModel(
+        id='synthetic-quote-crossing',venue='HOSE',board='REGULAR',instrument_class='equity',
+        order_type='LO',session=rule.session,effective_from=date(2026,1,1),effective_to=date(2026,12,31),
+        implementation='displayed_quote_crossing',synthetic=True,
+    )
+    registry=FillModelRegistry([model])
+    assert registry.resolve('HOSE','REGULAR','equity','LO',rule.session,date(2026,10,1)) is model
+    with pytest.raises(ValueError,match='no fill model'):
+        registry.resolve('HOSE','REGULAR','equity','LO','auction',date(2026,10,1))
+    with pytest.raises(ValueError,match='no fill model'):
+        registry.resolve('HOSE','REGULAR','equity','LO',rule.session,date(2027,1,1))
+
+def test_fill_model_registry_requires_evidence_before_production_use():
+    model=FillModel(
+        id='unverified',venue='HOSE',board='REGULAR',instrument_class='equity',order_type='LO',
+        session='continuous',effective_from=date(2026,1,1),effective_to=date(2026,12,31),
+        implementation='displayed_quote_crossing',synthetic=False,
+    )
+    with pytest.raises(ValueError,match='verified evidence'):
+        FillModelRegistry([model]).resolve('HOSE','REGULAR','equity','LO','continuous',date(2026,10,1))

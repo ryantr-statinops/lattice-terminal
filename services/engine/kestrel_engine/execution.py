@@ -81,6 +81,79 @@ class RulePackRegistry:
             raise ValueError('ambiguous effective-dated rule pack')
         return matches[0]
 
+class FillModel(Record):
+    id: str
+    venue: str
+    board: str
+    instrument_class: str
+    order_type: str
+    session: str
+    effective_from: date
+    effective_to: date
+    implementation: Literal['displayed_quote_crossing']
+    synthetic: bool = False
+    implemented: bool = True
+    verified: bool = False
+    evidence: list[str] = []
+
+    def check(self, day: date) -> None:
+        if not self.effective_from <= day <= self.effective_to:
+            raise ValueError('no effective-dated fill model')
+        if not self.implemented:
+            raise ValueError('fill model implementation unavailable')
+        if not self.synthetic and (not self.verified or not self.evidence):
+            raise ValueError('production fill model requires verified evidence')
+
+
+class FillModelRegistry:
+    """Select a fill implementation only for its declared market coverage."""
+
+    def __init__(self, models: Iterable[FillModel] = ()):
+        self._models: dict[str, FillModel] = {}
+        for model in models:
+            self.register(model)
+
+    def register(self, model: FillModel) -> None:
+        if model.id in self._models:
+            raise ValueError(f'duplicate fill model id: {model.id}')
+        for existing in self._models.values():
+            same_scope = (
+                existing.venue == model.venue
+                and existing.board == model.board
+                and existing.instrument_class == model.instrument_class
+                and existing.order_type == model.order_type
+                and existing.session == model.session
+            )
+            overlaps = model.effective_from <= existing.effective_to and existing.effective_from <= model.effective_to
+            if same_scope and overlaps:
+                raise ValueError(f'overlapping fill model coverage: {existing.id} and {model.id}')
+        self._models[model.id] = model
+
+    def resolve(
+        self,
+        venue: str,
+        board: str,
+        instrument_class: str,
+        order_type: str,
+        session: str,
+        day: date,
+    ) -> FillModel:
+        matches = [
+            model for model in self._models.values()
+            if model.venue == venue
+            and model.board == board
+            and model.instrument_class == instrument_class
+            and model.order_type == order_type
+            and model.session == session
+            and model.effective_from <= day <= model.effective_to
+        ]
+        if not matches:
+            raise ValueError('no fill model for venue, class, order type, session, and date')
+        if len(matches) > 1:
+            raise ValueError('ambiguous fill model coverage')
+        matches[0].check(day)
+        return matches[0]
+
 class Order(Record):
     id:str
     instrument_id:str
