@@ -1,6 +1,6 @@
 from datetime import date,datetime,timedelta,timezone
 import pytest
-from kestrel_engine.execution import FillModel,FillModelRegistry,Order,RulePack,RulePackRegistry,quote_fill
+from kestrel_engine.execution import CalendarRegistry,FillModel,FillModelRegistry,MarketCalendar,Order,RulePack,RulePackRegistry,quote_fill
 from kestrel_engine.stream import MarketEvent
 
 def fixture():
@@ -69,3 +69,16 @@ def test_fill_model_registry_requires_evidence_before_production_use():
     )
     with pytest.raises(ValueError,match='verified evidence'):
         FillModelRegistry([model]).resolve('HOSE','REGULAR','equity','LO','continuous',date(2026,10,1))
+
+def test_calendar_registry_resolves_effective_venue_calendar():
+    calendar=MarketCalendar(
+        id='HOSE-2026',venue='HOSE',board='REGULAR',effective_from=date(2026,1,1),effective_to=date(2026,12,31),
+        trading_dates=(date(2026,10,1),date(2026,10,2)),synthetic=True,
+    )
+    registry=CalendarRegistry([calendar])
+    assert registry.resolve('HOSE','REGULAR',date(2026,10,1)) is calendar
+    assert calendar.settlement(date(2026,10,1),1)==date(2026,10,2)
+    with pytest.raises(ValueError,match='no calendar'):
+        registry.resolve('HNX','REGULAR',date(2026,10,1))
+    with pytest.raises(ValueError,match='non-trading'):
+        registry.resolve('HOSE','REGULAR',date(2026,10,3))

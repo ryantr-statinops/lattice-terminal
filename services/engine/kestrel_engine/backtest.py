@@ -2,10 +2,12 @@
 from dataclasses import dataclass
 from datetime import datetime,timedelta
 from decimal import Decimal
+import hashlib
+import json
 from pathlib import Path
 from types import MappingProxyType
 import numpy as np
-from .execution import Order,quote_fill
+from .execution import MarketCalendar,Order,quote_fill
 from .stream import Reconciler
 from .tapes import TapeRepository
 
@@ -16,8 +18,11 @@ class HistoricalView:
     positions:MappingProxyType
 
 class Replay:
-    def __init__(self,events,rules,capital):
-        self.events=events;self.rules=rules;self.initial=Decimal(capital)
+    def __init__(self,events,rules,capital,calendar:MarketCalendar|None=None):
+        self.events=events;self.rules=rules.model_copy(deep=True);self.calendar=(calendar or MarketCalendar.from_rule_pack(self.rules)).model_copy(deep=True);self.initial=Decimal(capital)
+        if (self.calendar.venue,self.calendar.board)!=(self.rules.venue,self.rules.board):raise ValueError('calendar venue/board does not match selected rule pack')
+        frozen_calendar=json.dumps(self.calendar.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
+        self.calendar_snapshot_id=hashlib.sha256(frozen_calendar.encode()).hexdigest()
         if not self.initial.is_finite() or self.initial<=0:raise ValueError('positive decimal capital required')
         self.cash=self.initial;self.orders=[];self.reserved={};self.positions={};self.settled={};self.pending_shares=[];self.pending_cash=[];self.sell_reserved={};self.fills=[];self.curve=[];self.marks={}
     def settle(self,day):
@@ -49,6 +54,7 @@ class Replay:
         state=Reconciler(timedelta(seconds=5));state.reconcile(self.events[0].event_time,self.events[0].sequence-1)
         visible=[]
         for event in self.events:
+            self.calendar.check(event.event_time.date())
             self.settle(event.event_time.date())
             fresh=state.apply(event)
             if not fresh:raise ValueError('historical event gap/stale/order mismatch; replay blocked')
@@ -58,7 +64,7 @@ class Replay:
                 order=pending['order']
                 if pending['remaining']<=0:continue
                 available=event.model_copy(update={'bid_size':str(bid_left),'ask_size':str(ask_left)})
-                fill=quote_fill(order,available,self.rules,fresh,str(pending['remaining']))
+                fill=quote_fill(order,available,self.rules,fresh,str(pending['remaining']),self.calendar)
                 if fill is None:continue
                 q=Decimal(fill.quantity);price=Decimal(fill.price);fee=Decimal(fill.fee);tax=Decimal(fill.tax)
                 if order.side=='buy':ask_left-=q
@@ -80,7 +86,7 @@ class Replay:
             self.curve.append((event.event_time.isoformat(),str(self.nav())))
         self.cash+=sum(self.reserved.values());self.reserved.clear()
         values=np.array([float(v) for _,v in self.curve]);peak=np.maximum.accumulate(values);drawdown=(values/peak-1)
-        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'rule_pack':self.rules.id,'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
+        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'rule_pack':self.rules.id,'calendar_id':self.calendar.id,'calendar_snapshot_id':self.calendar_snapshot_id,'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
 
 class BacktestContext:
     def __init__(self,base):self._base=base;self.params=base.params;self._report=None

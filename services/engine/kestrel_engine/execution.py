@@ -2,7 +2,7 @@
 from datetime import date
 from decimal import Decimal,ROUND_FLOOR
 from typing import Iterable,Literal
-from pydantic import AwareDatetime,Field,field_validator
+from pydantic import AwareDatetime,ConfigDict,Field,field_validator
 from .models import Record,decimal_text
 from .stream import MarketEvent
 
@@ -79,6 +79,88 @@ class RulePackRegistry:
             raise ValueError('no effective-dated rule pack for venue, board, class, and date')
         if len(matches) > 1:
             raise ValueError('ambiguous effective-dated rule pack')
+        return matches[0]
+
+class MarketCalendar(Record):
+    """Immutable trading-date snapshot selected for one venue and board."""
+
+    model_config = ConfigDict(extra='forbid', frozen=True)
+    id: str
+    venue: str
+    board: str
+    effective_from: date
+    effective_to: date
+    trading_dates: tuple[date, ...] = Field(min_length=1)
+    synthetic: bool = False
+    verified: bool = False
+    evidence: tuple[str, ...] = ()
+
+    @field_validator('trading_dates')
+    @classmethod
+    def ordered_unique_dates(cls, value):
+        if tuple(sorted(set(value))) != value:
+            raise ValueError('calendar trading dates must be unique and ordered')
+        return value
+
+    def check(self, day: date) -> None:
+        if not self.effective_from <= day <= self.effective_to:
+            raise ValueError('calendar date outside effective coverage')
+        if day not in self.trading_dates:
+            raise ValueError('calendar marks date as non-trading')
+        if not self.synthetic and (not self.verified or not self.evidence):
+            raise ValueError('production calendar requires verified evidence')
+
+    def settlement(self, day: date, settlement_days: int) -> date:
+        self.check(day)
+        index = self.trading_dates.index(day) + settlement_days
+        if index >= len(self.trading_dates):
+            raise ValueError('calendar settlement coverage missing')
+        return self.trading_dates[index]
+
+    @classmethod
+    def from_rule_pack(cls, rules: RulePack) -> 'MarketCalendar':
+        return cls(
+            id=f'{rules.id}:calendar',
+            venue=rules.venue,
+            board=rules.board,
+            effective_from=rules.effective_from,
+            effective_to=rules.effective_to,
+            trading_dates=tuple(sorted(set(rules.settlement_calendar))),
+            synthetic=rules.synthetic,
+            verified=rules.verified,
+            evidence=tuple(rules.evidence),
+        )
+
+
+class CalendarRegistry:
+    """Resolve effective-dated calendars without overlapping venue/board coverage."""
+
+    def __init__(self, calendars: Iterable[MarketCalendar] = ()):
+        self._calendars: dict[str, MarketCalendar] = {}
+        for calendar in calendars:
+            self.register(calendar)
+
+    def register(self, calendar: MarketCalendar) -> None:
+        if calendar.id in self._calendars:
+            raise ValueError(f'duplicate calendar id: {calendar.id}')
+        for existing in self._calendars.values():
+            same_scope = existing.venue == calendar.venue and existing.board == calendar.board
+            overlaps = calendar.effective_from <= existing.effective_to and existing.effective_from <= calendar.effective_to
+            if same_scope and overlaps:
+                raise ValueError(f'overlapping calendar coverage: {existing.id} and {calendar.id}')
+        self._calendars[calendar.id] = calendar
+
+    def resolve(self, venue: str, board: str, day: date) -> MarketCalendar:
+        matches = [
+            calendar for calendar in self._calendars.values()
+            if calendar.venue == venue and calendar.board == board
+            and calendar.effective_from <= day <= calendar.effective_to
+        ]
+        if not matches:
+            raise ValueError('no calendar for venue, board, and date')
+        if len(matches) > 1:
+            raise ValueError('ambiguous calendar coverage')
+        matches[0].check(day)
         return matches[0]
 
 class FillModel(Record):
@@ -184,16 +266,17 @@ class Fill(Record):
     simulated:Literal[True]=True
     model:str='displayed-quote-crossing; queue priority not reconstructed'
 
-def validate_order(order:Order,rules:RulePack,day:date):
+def validate_order(order:Order,rules:RulePack,day:date,calendar:MarketCalendar|None=None):
     rules.check(day)
+    if calendar is not None:calendar.check(day)
     parts=order.instrument_id.split(':')
     if len(parts)!=4 or parts[:3]!=[rules.venue,rules.board,rules.instrument_class]:raise ValueError('instrument venue/board/class does not match rule pack')
     if order.order_type not in rules.order_types:raise ValueError('order type unsupported for venue/rules')
     if order.order_type!='LO':raise ValueError('auction/market-order fill capability not yet verified or implemented')
     if Decimal(order.limit_price)%Decimal(rules.tick)!=0 or Decimal(order.quantity)%Decimal(rules.lot)!=0:raise ValueError('tick/lot violation')
 
-def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining:str|None=None)->Fill|None:
-    validate_order(order,rules,event.event_time.date())
+def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining:str|None=None,calendar:MarketCalendar|None=None)->Fill|None:
+    validate_order(order,rules,event.event_time.date(),calendar)
     if not fresh or event.instrument_id!=order.instrument_id or event.kind!='quote' or event.session!=rules.session or event.trading_status!='trading':return None
     if event.event_time<=order.created_at:return None
     if rules.synthetic!=event.is_synthetic:raise ValueError('synthetic/production boundary mismatch')
@@ -209,4 +292,5 @@ def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining
     amount=(amount/Decimal(rules.lot)).to_integral_value(rounding=ROUND_FLOOR)*Decimal(rules.lot)
     if amount<=0:return None
     gross=p*amount
-    return Fill(order_id=order.id,instrument_id=order.instrument_id,side=order.side,quantity=str(amount),price=str(p),fee=str(gross*Decimal(rules.fee_rate)),tax=str(gross*Decimal(rules.sell_tax_rate) if order.side=='sell' else Decimal(0)),event_id=event.id,event_time=event.event_time,settlement_date=rules.settlement(event.event_time.date()),rule_pack_id=rules.id)
+    settlement_date=calendar.settlement(event.event_time.date(),rules.settlement_days) if calendar is not None else rules.settlement(event.event_time.date())
+    return Fill(order_id=order.id,instrument_id=order.instrument_id,side=order.side,quantity=str(amount),price=str(p),fee=str(gross*Decimal(rules.fee_rate)),tax=str(gross*Decimal(rules.sell_tax_rate) if order.side=='sell' else Decimal(0)),event_id=event.id,event_time=event.event_time,settlement_date=settlement_date,rule_pack_id=rules.id)
