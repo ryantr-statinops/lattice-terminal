@@ -1,10 +1,10 @@
 # Thị trường Việt Nam và SSI FastConnect Data
 
-**Review:** 2026-10-18; official-documentation review only. No account, endpoint test, entitlement or storage/display right has been verified.
+**Review:** 2026-10-26; official-documentation review only. No account, endpoint test, entitlement or storage/display right has been verified.
 
 ## Quyết định sản phẩm
 
-Thị trường Việt Nam và SSI FastConnect Data là hướng market-data đầu tiên. Chỉ bật endpoint/feed phù hợp sau khi xác minh entitlement, điều khoản dịch vụ, quota, coverage, schema và quyền xử lý/lưu local. Không tích hợp FastConnect Trading. Endpoint được tài liệu hóa không đồng nghĩa tài khoản có quyền truy cập hoặc project có quyền sử dụng theo mọi cách.
+SSI is one candidate in the Vietnamese multi-provider plan. Research FastConnect Data separately from FastConnect Trading. Product scope permits only read-only account queries; no order, transfer or other state-changing Trading operation may be integrated. Official documentation does not establish the user's account entitlement or local-use rights.
 
 ## Khả năng SSI công bố
 
@@ -35,11 +35,17 @@ Tài liệu dịch vụ có nhắc market codes `HOSE`, `HNX`, `UPCOM`, `DER`, `
 
 ## Đăng ký, credentials và quota
 
-[Hướng dẫn đăng ký dịch vụ SSI](https://guide.ssi.com.vn/ssi-products/service-registration) cho biết khách hàng cần đăng ký FastConnect, có tài khoản SSI và được chấp thuận; quy trình hướng dẫn tạo API key tại iBoard. ConsumerID/ConsumerSecret là thông tin bí mật; chỉ nhập vào local secret/config flow đã được triển khai, tuyệt đối không đưa lên chat, commit, log hoặc frontend bundle. FastConnect Data token endpoint tài liệu hóa ConsumerID/ConsumerSecret; không lấy nhầm credentials hoặc phạm vi của FastConnect Trading.
+[Hướng dẫn đăng ký dịch vụ SSI](https://guide.ssi.com.vn/ssi-products/service-registration) yêu cầu tài khoản SSI và đăng ký được chấp thuận trước khi tạo API key tại iBoard. Hướng dẫn cũng yêu cầu đăng ký fixed IP; cần xác nhận điều kiện áp dụng cho tài khoản cụ thể. General Information liệt kê ConsumerID, ConsumerSecret và PrivateKey cho FastConnect API; mỗi service/capability chỉ nhận thông tin cần thiết cho thao tác được phép. Secrets không đưa vào chat, commit, log hay frontend bundle.
 
-[General Information](https://guide.ssi.com.vn/ssi-products/general-information) mô tả giới hạn API theo từng API và connection key, nhưng không công bố số quota áp dụng cho tài khoản cụ thể; SSI có thể xác nhận/nâng giới hạn. Streaming được khuyến nghị cho dữ liệu realtime thay cho polling dày. Hướng dẫn đăng ký mô tả thời hạn dịch vụ một năm và cần gia hạn. Tài liệu có nhắc lựa chọn fixed IP trong quy trình đăng ký; chưa xác minh đây là yêu cầu bắt buộc với entitlement cụ thể của người dùng.
+[General Information](https://guide.ssi.com.vn/ssi-products/general-information) mô tả quota theo API và connection key, nhưng không công bố mức cụ thể cho tài khoản. Streaming được khuyến nghị thay cho polling dày; dịch vụ có thời hạn một năm và cần gia hạn. Fixed IP được nêu trong hướng dẫn đăng ký. Xác nhận quota, phí, IP và renewal của tài khoản trước khi bật kết nối.
 
 Chưa có account/entitlement của người dùng để xác minh giá, phí, endpoint access, số kết nối đồng thời, request/subscription limits, rate reset, history depth, retention hoặc vùng/địa chỉ IP được phép. Không yêu cầu người dùng gửi secret để hoàn thành docs.
+
+## Broker account read-only
+
+[FastConnect API overview](https://guide.ssi.com.vn/ssi-products) phân biệt FC Data và FC Trading. Trading API bao gồm cả truy vấn thông tin tài khoản lẫn thao tác đặt/sửa/hủy lệnh; dự án chỉ nghiên cứu các query đọc cần thiết như balances, holdings/portfolio và lịch sử hoạt động. Phải lập allowlist theo từng method/endpoint; không dùng nguyên SDK Trading với các thao tác ghi bị để sẵn.
+
+[Trading connection guide](https://guide.ssi.com.vn/ssi-products/fastconnect-trading/connection-guide) mô tả access token tối đa 8 giờ; account query cần token. OTP/auth code có thể là PIN, SMS, email hoặc SmartOTP theo cách đăng ký. Không lưu OTP như secret dài hạn. Phải xác minh account read entitlement riêng với market-data entitlement; account snapshots chỉ hiển thị riêng và không ghi vào fund ledger local.
 
 ## Rights và trạng thái nguồn
 
@@ -49,6 +55,7 @@ Source register keeps SSI REST and streaming separate. Both currently have `docu
 
 ## Yêu cầu market contract cần chốt
 
+- Tài liệu API và stream nêu các mã thị trường gồm HOSE, HNX, UPCOM, DER và BOND; streaming còn nêu HNXBOND. Đây là market code evidence, chưa chứng minh các market code xuất hiện trong mọi endpoint hoặc entitlement. Tài liệu streaming mô tả cash và derivatives; khả năng dữ liệu trái phiếu cần đối chiếu từng endpoint.
 - Canonical instrument identity phải giữ venue, board/market type, native symbol, instrument class và lifecycle dates; không dùng ticker đơn lẻ làm identity.
 - Giữ payload timestamp, timezone, resolution, observation/received time và publication/availability time riêng. Chuẩn hóa UTC nhưng lưu unit/original value theo policy.
 - Tách regular board, auction/session, odd lot, derivative và bond nếu SSI feed trả về chúng; không nhập chung candle series trước khi semantics được hiểu.
@@ -58,4 +65,6 @@ Source register keeps SSI REST and streaming separate. Both currently have `docu
 
 ## Các nguồn khác
 
-DNSE, news RSS/disclosures và Vnstock vẫn là nguồn khảo sát, không thuộc V1 market adapter đã chọn. News engine là workstream riêng; xem [News ingestion](../05-news-ingestion/README.md). Không dùng SDK license để suy ra quyền upstream data.
+SSI FastConnect Data documents daily/reference APIs and realtime stream groups `F`, `X`/`X-Quote`/`X-Trade`, `B`, `R` and `MI`; market-specific quote depth differs. The docs include derivatives/bond market codes in some places, which does not prove every API/feed supports each market. API examples may use zero for absent quote levels; map those values using feed semantics rather than treating them as zero-priced levels. Source approval remains independently split for REST, streaming and account-read capabilities.
+
+News engine is an independent workstream; see [News ingestion](../05-news-ingestion/README.md). Do not infer upstream rights from an SDK license.
