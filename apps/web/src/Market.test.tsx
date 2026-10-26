@@ -60,6 +60,9 @@ describe('Market ECharts chart',()=>{
   expect(option.tooltip.formatter([{axisValueLabel:'20/10/2026',value:[110,109,108,115]}])).toContain('High: 115');
   expect(screen.getByText(/Currency: VND · Prices: VND\/share · Volume: share/)).toBeDefined();
   expect(screen.getByText(/Source: provider-fixture · Revision: 2/)).toBeDefined();
+  expect(screen.getByText(/Chart and indicator analysis: available from this candle snapshot/)).toBeDefined();
+  expect(screen.getByText(/Strategy signals: require a separately declared live or replay feed/)).toBeDefined();
+  expect(screen.getByText(/Simulation: unavailable from OHLC candles alone/)).toBeDefined();
   expect(screen.getByRole('columnheader',{name:'OPEN · VND/share'})).toBeDefined();
   expect(screen.getByRole('columnheader',{name:'VOLUME · share'})).toBeDefined();
   resizeCallback?.([{contentRect:{width:640}} as ResizeObserverEntry],{} as ResizeObserver);
