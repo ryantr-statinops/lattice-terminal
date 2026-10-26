@@ -158,14 +158,37 @@ class AtomicDatasetPublisher:
         table = pq.read_table(parquet_path)
         if table.num_rows != manifest.get('row_count'):
             raise ValueError('dataset snapshot row count mismatch')
+        canonical_records = []
+        for row in table.to_pylist():
+            canonical_records.append(DatasetEnvelope(
+                provider_id=row['provider_id'], dataset=row['dataset'], source_id=row['source_id'],
+                observed_at=row['observed_at'], available_at=row['available_at'], published_at=row['published_at'],
+                revision=row['revision'], schema_version=row['schema_version'], parser_version=row['parser_version'],
+                unit=row['unit'], currency=row['currency'], source_timezone=row['source_timezone'],
+                temporal_semantics=row['temporal_semantics'], adjustment_state=row['adjustment_state'], quality=row['quality'],
+                payload=json.loads(row['payload_json']),
+            ).model_dump(mode='json'))
+        canonical_records.sort(key=lambda item: (
+            item['available_at'], item['revision'],
+            json.dumps(item['payload'], sort_keys=True, separators=(',', ':'), ensure_ascii=False),
+        ))
+        scope_identity = {key: manifest[key] for key in (
+            'capability_id', 'endpoint', 'terms_reference', 'entitlement_reference', 'expires_at',
+        )}
+        expected_identity = hashlib.sha256(json.dumps(
+            {'scope': scope_identity, 'records': canonical_records},
+            sort_keys=True, separators=(',', ':'), ensure_ascii=False,
+        ).encode('utf-8')).hexdigest()
+        if expected_identity != snapshot_id:
+            raise ValueError('dataset snapshot identity mismatch')
         return manifest
 
-    def load(self, snapshot_id: str) -> tuple[dict, list[DatasetEnvelope]]:
+    def load(self, snapshot_id: str, now: datetime | None = None) -> tuple[dict, list[DatasetEnvelope]]:
         if len(snapshot_id) != 64 or any(value not in '0123456789abcdef' for value in snapshot_id):
             raise ValueError('invalid dataset snapshot identity')
         target = self.root / 'datasets' / snapshot_id
         manifest = self._load_manifest(target, snapshot_id)
-        if self._is_expired(manifest, datetime.now(timezone.utc)):
+        if self._is_expired(manifest, now or datetime.now(timezone.utc)):
             raise ValueError('dataset snapshot retention authorization expired')
         table = pq.read_table(target / 'records.parquet')
         envelopes = []

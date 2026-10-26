@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -11,7 +11,7 @@ from kestrel_engine.sources import SourceBlocked, SourceGate
 CAPABILITY = 'ssi:market-data:instruments.equity:HOSE'
 
 
-def gate(root: Path, *, approved=True, fields=None):
+def gate(root: Path, *, approved=True, fields=None, expires_at='2999-01-01T00:00:00Z'):
     root.mkdir(parents=True, exist_ok=True)
     source_gate = SourceGate(root, [CAPABILITY])
     scope = {
@@ -24,7 +24,7 @@ def gate(root: Path, *, approved=True, fields=None):
         'export_allowed': False,
         'terms_reference': 'terms-ssi-market',
         'entitlement_reference': 'entitlement-ssi',
-        'expires_at': '2999-01-01T00:00:00Z',
+        'expires_at': expires_at,
     }
     source_gate.path.write_text(json.dumps([{
         'id': CAPABILITY,
@@ -81,19 +81,34 @@ def test_dataset_publisher_fails_closed_without_rights_or_for_unapproved_fields(
 
 
 def test_expired_dataset_snapshots_are_removed_and_cannot_be_loaded(tmp_path):
-    publisher = AtomicDatasetPublisher(tmp_path / 'market', gate(tmp_path))
+    now = datetime.now(timezone.utc)
+    expiration = now.replace(microsecond=0)
+    publisher = AtomicDatasetPublisher(tmp_path / 'market', gate(
+        tmp_path, expires_at=(expiration + timedelta(hours=1)).isoformat(),
+    ))
     expired = publisher.publish(CAPABILITY, 'Market/Securities', [envelope('OLD', 'Expired')])
+    future = expiration + timedelta(hours=3)
+    gate(tmp_path, expires_at=future.isoformat())
     retained = publisher.publish(CAPABILITY, 'Market/Securities', [envelope('NEW', 'Retained')])
-    expired_manifest_path = tmp_path / 'market' / 'datasets' / expired['snapshot_id'] / 'manifest.json'
-    expired_manifest = json.loads(expired_manifest_path.read_text(encoding='utf-8'))
-    expired_manifest['expires_at'] = '2020-01-01T00:00:00+00:00'
-    expired_manifest_path.write_text(json.dumps(expired_manifest), encoding='utf-8')
+    expiry_check = expiration + timedelta(hours=2)
 
     with pytest.raises(ValueError, match='retention authorization expired'):
-        publisher.load(expired['snapshot_id'])
-    assert publisher.prune_expired() == [expired['snapshot_id']]
+        publisher.load(expired['snapshot_id'], now=expiry_check)
+    assert publisher.prune_expired(now=expiry_check) == [expired['snapshot_id']]
     assert not (tmp_path / 'market' / 'datasets' / expired['snapshot_id']).exists()
-    assert publisher.load(retained['snapshot_id'])[0]['snapshot_id'] == retained['snapshot_id']
+    assert publisher.load(retained['snapshot_id'], now=expiry_check)[0]['snapshot_id'] == retained['snapshot_id']
+
+
+def test_snapshot_identity_protects_retention_metadata_from_edits(tmp_path):
+    publisher = AtomicDatasetPublisher(tmp_path / 'market', gate(tmp_path))
+    snapshot = publisher.publish(CAPABILITY, 'Market/Securities', [envelope('AAA', 'Alpha')])
+    manifest_path = tmp_path / 'market' / 'datasets' / snapshot['snapshot_id'] / 'manifest.json'
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    manifest['expires_at'] = '2998-01-01T00:00:00+00:00'
+    manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+
+    with pytest.raises(ValueError, match='snapshot identity mismatch'):
+        publisher.load(snapshot['snapshot_id'])
 
 
 def test_dataset_publisher_requires_one_provider_and_dataset_and_rejects_quarantine(tmp_path):
