@@ -353,6 +353,16 @@ class RoutingPolicy(BaseModel):
     financials_provider: str = 'tcbs'
     fallback_enabled: bool = True
 
+
+ROUTING_CAPABILITY_GROUPS = {
+    'historical_provider': {'historical_candles', 'intraday_candles', 'eod_daily'},
+    'realtime_provider': {
+        'realtime_ticks', 'realtime_streaming', 'quotes', 'orderbook', 'offline_replay',
+    },
+    'financials_provider': {'financials', 'valuation_ratios'},
+}
+
+
 class ProviderRouter:
     """Manages provider routing, fallback execution and local caching."""
     def __init__(self, cache_dir: Path | None = None):
@@ -399,8 +409,16 @@ class ProviderRouter:
         return self.providers[provider_id].ping()
 
     def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
-        self.policy = self.policy.model_copy(update=patch)
-        return self.policy
+        candidate = RoutingPolicy.model_validate(self.policy.model_dump() | patch)
+        for field, required_capabilities in ROUTING_CAPABILITY_GROUPS.items():
+            provider_id = getattr(candidate, field)
+            provider = self.providers.get(provider_id)
+            if provider is None:
+                raise ValueError(f'unknown provider for {field}: {provider_id}')
+            if not required_capabilities.intersection(provider.capabilities):
+                raise ValueError(f'{provider_id} does not declare {field} coverage')
+        self.policy = candidate
+        return candidate
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         primary_id = self.policy.historical_provider

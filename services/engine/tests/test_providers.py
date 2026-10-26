@@ -36,6 +36,26 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(updated.historical_provider, 'tcbs')
         self.assertFalse(updated.fallback_enabled)
 
+    def test_routing_policy_rejects_provider_without_role_coverage(self):
+        router = ProviderRouter()
+        with self.assertRaisesRegex(ValueError, 'does not declare realtime_provider coverage'):
+            router.update_policy({'realtime_provider': 'tcbs'})
+        self.assertEqual(router.policy.realtime_provider, 'fixture')
+        with self.assertRaisesRegex(ValueError, 'unknown provider for historical_provider'):
+            router.update_policy({'historical_provider': 'unknown-provider'})
+        self.assertEqual(router.policy.historical_provider, 'vndirect')
+
+    def test_routing_policy_accepts_declared_provider_role_coverage(self):
+        router = ProviderRouter()
+        updated = router.update_policy({
+            'historical_provider': 'fixture',
+            'realtime_provider': 'dnse',
+            'financials_provider': 'tcbs',
+        })
+        self.assertEqual(updated.historical_provider, 'fixture')
+        self.assertEqual(updated.realtime_provider, 'dnse')
+        self.assertEqual(updated.financials_provider, 'tcbs')
+
     def test_fixture_provider_lifecycle(self):
         p = SyntheticFixtureProvider()
         status = p.ping()
