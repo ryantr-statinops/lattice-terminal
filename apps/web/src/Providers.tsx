@@ -21,9 +21,12 @@ export type ProviderStatus = {
 };
 
 export type ProviderCapability = {
+  capability_id: string;
   provider_id: string;
+  service: string;
   dataset: string;
   asset_class: string;
+  venue: string;
   venues: string[];
   documented: boolean;
   implemented: boolean;
@@ -172,8 +175,8 @@ export function Providers() {
                     {capabilities.data
                       ?.filter(capability => capability.provider_id === p.id)
                       .map(capability => (
-                        <div key={`${capability.dataset}:${capability.asset_class}`} style={{borderTop: '1px solid var(--border)', paddingTop: 4}}>
-                          <strong>{capability.dataset} · {capability.asset_class}</strong>
+                        <div key={capability.capability_id} style={{borderTop: '1px solid var(--border)', paddingTop: 4}}>
+                          <strong>{capability.service} · {capability.dataset} · {capability.asset_class} · {capability.venue}</strong>
                           <div>Documentation: {capability.documented ? 'documented' : 'unverified'}</div>
                           <div>Adapter: {capability.implemented ? 'implemented' : 'not implemented'}</div>
                           <div>Access: {capability.access_state}</div>

@@ -74,9 +74,12 @@ class ProviderStatus(BaseModel):
     configured: bool = True
 
 class ProviderCapability(BaseModel):
+    capability_id: str
     provider_id: str
+    service: str
     dataset: str
     asset_class: str
+    venue: str = 'unknown'
     venues: list[str] = Field(default_factory=list)
     documented: bool = False
     implemented: bool = False
@@ -89,42 +92,63 @@ class ProviderCapabilityRegistry:
     """Dataset-level claims kept separate from transient provider health."""
 
     def __init__(self):
-        self._items = [
-            ProviderCapability(
-                provider_id='vndirect', dataset='candles.1d', asset_class='equity',
-                venues=['HOSE', 'HNX', 'UPCOM'], documented=False, implemented=True,
-                access_state='unknown', rights_state='unverified',
-                evidence='Observed DChart UDF adapter; API contract and rights unverified.',
-            ),
-            ProviderCapability(
-                provider_id='vndirect', dataset='candles.1m', asset_class='equity',
-                venues=['HOSE', 'HNX', 'UPCOM'], documented=False, implemented=True,
-                access_state='unknown', rights_state='unverified',
-                evidence='Observed DChart UDF adapter; API contract and rights unverified.',
-            ),
-            ProviderCapability(
-                provider_id='tcbs', dataset='candles', asset_class='equity',
-                documented=True, implemented=False, access_state='unknown',
-                rights_state='unknown', evidence='Official OpenAPI documented; adapter is not implemented.',
-            ),
-            ProviderCapability(
-                provider_id='dnse', dataset='market-data', asset_class='multiple',
-                documented=True, implemented=False, access_state='unknown',
-                rights_state='unknown', evidence='Official API documented; dataset adapters are not implemented.',
-            ),
-            ProviderCapability(
-                provider_id='ssi', dataset='market-data', asset_class='multiple',
-                documented=True, implemented=False, access_state='blocked',
-                rights_state='unknown', health_state='blocked',
-                evidence='Capability remains gated until source access and rights are approved.',
-            ),
-        ]
+        self._items: list[ProviderCapability] = []
+
+        def add(provider_id: str, service: str, dataset: str, asset_class: str, venue: str, *,
+                documented: bool, implemented: bool, rights_state: str = 'unknown', evidence: str = ''):
+            capability_id = ':'.join((provider_id, service, dataset, asset_class, venue))
+            self._items.append(ProviderCapability(
+                capability_id=capability_id, provider_id=provider_id, service=service,
+                dataset=dataset, asset_class=asset_class, venue=venue,
+                venues=[] if venue == 'unknown' else [venue], documented=documented,
+                implemented=implemented, access_state='unknown', rights_state=rights_state,
+                health_state='unknown', evidence=evidence,
+            ))
+
+        for venue in ('HOSE', 'HNX', 'UPCOM'):
+            for dataset in ('candles.1d', 'candles.1m'):
+                add(
+                    'vndirect', 'dchart-community', dataset, 'equity', venue,
+                    documented=False, implemented=True, rights_state='unverified',
+                    evidence='DChart UDF route is observed in the repository; official API and local-use rights are unverified.',
+                )
+
+        for venue in ('HOSE', 'HNX', 'UPCOM'):
+            add(
+                'tcbs', 'openapi', 'instruments.equity', 'equity', venue,
+                documented=True, implemented=False, evidence='Official iFlash catalogue documents these equity venues; access and rights are unverified.',
+            )
+        for service, dataset, asset_class, evidence in (
+            ('openapi', 'candles.intraday', 'equity', 'Official iFlash bars document minute/hour intervals; exact class coverage and rights are unverified.'),
+            ('openapi', 'candles.long_term', 'equity', 'Official iFlash long-term bars document daily/weekly/monthly intervals; adjustments and rights are unverified.'),
+            ('openapi', 'trades.history', 'equity', 'Official iFlash price-history endpoint documents paginated trade-like records; retention and semantics are unverified.'),
+            ('community', 'candles', 'equity', 'Legacy TCBS community source is separate; current adapter refuses silent VNDIRECT substitution.'),
+        ):
+            add('tcbs', service, dataset, asset_class, 'unknown', documented=service == 'openapi', implemented=False, rights_state='unverified', evidence=evidence)
+
+        for asset_class in ('equity', 'derivative', 'index'):
+            add(
+                'dnse', 'market-data', 'candles.ohlcv', asset_class, 'unknown',
+                documented=True, implemented=False,
+                evidence='DNSE public market-data catalogue documents historical OHLC by market family; exact venue, schema and rights require confirmation.',
+            )
+        for dataset, asset_class, evidence in (
+            ('instruments.details', 'equity', 'SSI SecuritiesDetails documents stock security type and exchange fields.'),
+            ('instruments.details', 'covered_warrant', 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
+            ('instruments.details', 'derivative', 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
+            ('instruments.details', 'etf', 'SSI SecuritiesDetails documents EF security type; exact venue coverage requires account inventory.'),
+            ('instruments.details', 'bond', 'SSI SecuritiesDetails documents BO security type; board and rights require account inventory.'),
+            ('instruments.details', 'fund', 'SSI SecuritiesDetails documents OF and MF security types; exact venue and rights require account inventory.'),
+        ):
+            add('ssi', 'market-data', dataset, asset_class, 'unknown', documented=True, implemented=False, rights_state='unverified', evidence=evidence)
 
     def list(self) -> list[ProviderCapability]:
         return list(self._items)
 
     def source_ids(self) -> list:
-        return [f'{item.provider_id}:{item.dataset}' for item in self._items]
+        exact = [item.capability_id for item in self._items]
+        legacy = [f'{item.provider_id}:{item.dataset}' for item in self._items]
+        return list(dict.fromkeys([*exact, *legacy]))
 
 class BaseMarketProvider(ABC):
     id: str

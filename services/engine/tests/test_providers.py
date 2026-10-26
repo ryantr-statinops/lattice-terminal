@@ -228,5 +228,16 @@ class TestProviders(unittest.TestCase):
         self.assertTrue(vndirect_daily.implemented)
         self.assertEqual(vndirect_daily.rights_state, 'unverified')
 
+    def test_capability_registry_uses_unique_service_dataset_class_venue_ids(self):
+        items = ProviderRouter().capabilities.list()
+        ids = [item.capability_id for item in items]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(all(item.asset_class != 'multiple' for item in items))
+        self.assertTrue(all(item.capability_id.endswith(':' + item.venue) for item in items))
+        tcbs_services = {item.service for item in items if item.provider_id == 'tcbs'}
+        self.assertEqual(tcbs_services, {'community', 'openapi'})
+        ssi_classes = {item.asset_class for item in items if item.provider_id == 'ssi'}
+        self.assertEqual(ssi_classes, {'equity', 'covered_warrant', 'derivative', 'etf', 'bond', 'fund'})
+
 if __name__ == '__main__':
     unittest.main()

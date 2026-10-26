@@ -44,9 +44,12 @@ const mockRouting: RoutingPolicy = {
 
 const mockCapabilities: ProviderCapability[] = [
   {
+    capability_id: 'vndirect:dchart-community:candles.1d:equity:HOSE',
     provider_id: 'vndirect',
+    service: 'dchart-community',
     dataset: 'candles.1d',
     asset_class: 'equity',
+    venue: 'HOSE',
     venues: ['HOSE'],
     documented: false,
     implemented: true,
@@ -56,9 +59,12 @@ const mockCapabilities: ProviderCapability[] = [
     evidence: 'Adapter observed; access and rights remain unverified.',
   },
   {
+    capability_id: 'ssi:market-data:instruments.details:equity:unknown',
     provider_id: 'ssi',
-    dataset: 'market-data',
-    asset_class: 'multiple',
+    service: 'market-data',
+    dataset: 'instruments.details',
+    asset_class: 'equity',
+    venue: 'unknown',
     venues: [],
     documented: true,
     implemented: false,
