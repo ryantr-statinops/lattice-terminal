@@ -13,6 +13,7 @@
     "GET /api/v1/portfolio/export",
     "GET /api/v1/positions",
     "GET /api/v1/providers",
+    "GET /api/v1/providers/capabilities",
     "GET /api/v1/providers/routing",
     "GET /api/v1/ready",
     "GET /api/v1/runs",
