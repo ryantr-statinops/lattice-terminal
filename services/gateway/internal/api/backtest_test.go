@@ -12,15 +12,21 @@ import (
 func TestFrozenTrainRejectsChangedHelpersAndCapital(t *testing.T) {
 	root := t.TempDir()
 	repo := t.TempDir()
-	os.MkdirAll(filepath.Join(repo, "services", "engine", "kestrel_engine"), 0700)
-	os.WriteFile(filepath.Join(repo, "services", "engine", "uv.lock"), []byte("lock"), 0600)
+	if err := os.MkdirAll(filepath.Join(repo, "services", "engine", "kestrel_engine"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "services", "engine", "uv.lock"), []byte("lock"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	db, err := store.Open(root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 	w := workspace.Workspace{Root: root, Repository: repo}
-	w.Write("backtest", "main.py", "KESTREL_KIND='backtest'\ndef run(context): pass", false)
+	if err := w.Write("backtest", "main.py", "KESTREL_KIND='backtest'\ndef run(context): pass", false); err != nil {
+		t.Fatalf("create backtest entrypoint: %v", err)
+	}
 	params := json.RawMessage(`{"stage":"train","capital":"1000"}`)
 	snapshot, err := w.Snapshot("backtest", "main.py", params)
 	if err != nil {
@@ -42,7 +48,9 @@ func TestFrozenTrainRejectsChangedHelpersAndCapital(t *testing.T) {
 	if a.validateBacktest("backtest", current, json.RawMessage(`{"stage":"test","capital":"2000","train_run_id":"train"}`)) == nil {
 		t.Fatal("changed capital accepted")
 	}
-	os.WriteFile(filepath.Join(repo, "services", "engine", "kestrel_engine", "core.py"), []byte("changed_engine=True"), 0600)
+	if err := os.WriteFile(filepath.Join(repo, "services", "engine", "kestrel_engine", "core.py"), []byte("changed_engine=True"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	engineChanged, err := w.Snapshot("backtest", "main.py", test)
 	if err != nil {
 		t.Fatal(err)
@@ -50,8 +58,12 @@ func TestFrozenTrainRejectsChangedHelpersAndCapital(t *testing.T) {
 	if a.validateBacktest("backtest", engineChanged, test) == nil {
 		t.Fatal("changed engine accepted")
 	}
-	os.Remove(filepath.Join(repo, "services", "engine", "kestrel_engine", "core.py"))
-	w.Write("backtest", "helper.py", "future_data=True", false)
+	if err := os.Remove(filepath.Join(repo, "services", "engine", "kestrel_engine", "core.py")); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Write("backtest", "helper.py", "future_data=True", false); err != nil {
+		t.Fatal(err)
+	}
 	changed, err := w.Snapshot("backtest", "main.py", test)
 	if err != nil {
 		t.Fatal(err)

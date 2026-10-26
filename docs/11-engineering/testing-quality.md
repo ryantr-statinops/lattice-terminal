@@ -15,4 +15,6 @@ Coverage includes decimal/idempotent/concurrent finance, immutable snapshots, in
 
 Windows smoke covers auth/routes/Market/Quant/research artifacts/Train-Test, wrong-kind rejection, Manual/Strategy, lock, CSV, >200 SSE events, stop/restart and backup/restore/new profile. CI config exists; local results don't prove remote CI ran because changes aren't pushed.
 
+Windows sandbox restrictions can prevent atomic rename inside test temporary directories. Run the failing test with an authorized host process to distinguish this environment error from an application failure. Test setup must check workspace writes before snapshotting; a failed entrypoint write must report its original error, rather than continuing with `entrypoint missing`. Do not skip snapshot checks or weaken path/rename protections to make restricted execution pass.
+
 No test authorizes SSI or proves real-market fills. Actual provider pagination/gaps, calendars/actions/settlement and rights need evidence and new tests. Exact outcomes/warnings: [progress](../13-rebuild/progress.md).
