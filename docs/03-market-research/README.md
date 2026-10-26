@@ -10,7 +10,8 @@
 4. [TCBS OpenAPI capabilities](tcbs-openapi.md).
 5. [VPBankS NeoAPI capabilities](vpbanks-neoapi.md).
 6. [VNDIRECT DChart, DataFeed and Open API](vndirect.md).
-7. [Source register and approval gates](source-register.md).
-8. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
+7. [FiinGroup DataFeed capabilities](fiingroup.md).
+8. [Source register and approval gates](source-register.md).
+9. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
 
 Official documentation proves documented capability, not entitlement or rights. Provider status must distinguish documentation, configuration, access, rights and operating approval. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
