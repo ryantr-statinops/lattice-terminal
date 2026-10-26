@@ -183,6 +183,66 @@ class BaseMarketProvider(ABC):
         """List instruments supported by this provider."""
         ...
 
+
+def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    """Normalize only SSI HOSE stocks; other security types stay with their own adapters."""
+    status = str(payload.get('status', '')).strip().casefold()
+    if status not in {'success', '200'}:
+        raise ValueError('SSI returned an unsuccessful SecuritiesDetails response')
+    data = payload.get('data')
+    if not isinstance(data, list):
+        raise ValueError('SSI SecuritiesDetails data must be a list')
+
+    details: list[dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            raise ValueError('SSI SecuritiesDetails row must be an object')
+        nested = item.get('RepeatedInfo') or item.get('repeatedinfoList') or item.get('RepeatedInfoList')
+        if nested is None:
+            details.append(item)
+        elif isinstance(nested, list):
+            if any(not isinstance(value, dict) for value in nested):
+                raise ValueError('SSI repeated security details must be objects')
+            details.extend(nested)
+        else:
+            raise ValueError('SSI repeated security details must be a list')
+
+    instruments: dict[str, Instrument] = {}
+    for detail in details:
+        security_type = str(detail.get('SecType') or '').strip().upper()
+        if security_type not in {'ST', 'S'}:
+            continue
+        exchange = str(detail.get('Exchange') or detail.get('MarketId') or detail.get('Market') or '').strip().upper()
+        if exchange and exchange != 'HOSE':
+            raise ValueError('SSI HOSE catalogue contained a security from another venue')
+        symbol = str(detail.get('Symbol') or '').strip().upper()
+        if not symbol:
+            raise ValueError('SSI HOSE stock is missing its symbol')
+        isin = str(detail.get('Isin') or '').strip().upper()
+        instrument_id = f'SSI:ISIN:{isin}' if isin else f'SSI:HOSE:{symbol}'
+        name = str(detail.get('SymbolName') or detail.get('SymbolEngName') or symbol).strip()
+        metadata = {
+            key: str(detail[source])
+            for source, key in (
+                ('Issuer', 'issuer'), ('LotSize', 'lot_size'),
+                ('IssueDate', 'issue_date'), ('FirstTradingDate', 'first_trading_date'),
+                ('LastTradingDate', 'last_trading_date'), ('ListedShare', 'listed_share'),
+            )
+            if detail.get(source) not in (None, '')
+        }
+        if isin:
+            metadata['isin'] = isin
+        instrument = Instrument(
+            id=instrument_id, venue='HOSE', board='unknown', native_symbol=symbol,
+            instrument_class='equity', name=name, metadata=metadata,
+            source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        previous = instruments.get(instrument.id)
+        if previous is not None and previous != instrument:
+            raise ValueError('SSI HOSE catalogue has conflicting stock identities')
+        instruments[instrument.id] = instrument
+    return sorted(instruments.values(), key=lambda value: (value.native_symbol, value.id))
+
 class VndirectCommunityProvider(BaseMarketProvider):
     """Free public TradingView UDF provider hosted by VNDIRECT (dchart-api)."""
     id = 'vndirect'

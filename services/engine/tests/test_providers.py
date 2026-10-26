@@ -13,9 +13,41 @@ from kestrel_engine.providers import (
     SsiFastConnectProvider,
     DnseBrokerProvider,
     TcbsCommunityProvider,
+    normalize_ssi_hose_equity_catalogue,
 )
 
 class TestProviders(unittest.TestCase):
+    def test_ssi_hose_catalogue_normalizes_only_stock_security_types(self):
+        payload = {
+            'status': 'Success',
+            'totalRecord': 4,
+            'data': [{
+                'RepeatedInfo': [
+                    {'SecType': 'ST', 'Isin': 'vn000000aaa1', 'Symbol': 'aaa', 'SymbolName': 'Alpha JSC', 'Exchange': 'HOSE', 'LotSize': '100'},
+                    {'SecType': 'CW', 'Isin': 'vn000000aaa2', 'Symbol': 'aaa1', 'SymbolName': 'Alpha warrant', 'Exchange': 'HOSE'},
+                    {'SecType': 'FU', 'Symbol': 'VN30F1M', 'SymbolName': 'VN30 futures', 'Exchange': 'DER'},
+                    {'Symbol': 'UNKNOWN', 'SymbolName': 'Unclassified security', 'Exchange': 'HOSE'},
+                ],
+            }],
+        }
+
+        instruments = normalize_ssi_hose_equity_catalogue(payload)
+
+        self.assertEqual(len(instruments), 1)
+        self.assertEqual(instruments[0].id, 'SSI:ISIN:VN000000AAA1')
+        self.assertEqual(instruments[0].venue, 'HOSE')
+        self.assertEqual(instruments[0].instrument_class, 'equity')
+        self.assertEqual(instruments[0].metadata, {'isin': 'VN000000AAA1', 'lot_size': '100'})
+        self.assertIsNone(instruments[0].currency)
+        self.assertFalse(instruments[0].is_synthetic)
+
+    def test_ssi_hose_catalogue_fails_closed_for_another_venue(self):
+        with self.assertRaisesRegex(ValueError, 'another venue'):
+            normalize_ssi_hose_equity_catalogue({
+                'status': 'Success',
+                'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HNX'}],
+            })
+
     def test_read_retry_uses_exponential_backoff_for_transient_errors(self):
         operation = unittest.mock.Mock(side_effect=[
             urllib.error.URLError('temporary network failure'),
