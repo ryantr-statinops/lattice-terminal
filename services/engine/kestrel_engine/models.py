@@ -249,6 +249,24 @@ class FinancialStatement(Record):
             decimal_text(value)
         return values
 
+class ValueSeriesPoint(Record):
+    series_id: str
+    observation_time: AwareDatetime
+    published_at: AwareDatetime | None = None
+    available_at: AwareDatetime
+    value: str
+    unit: str
+    currency: str | None = None
+    geography: str | None = None
+    source_id: str
+    revision: str = '0'
+
+    @field_validator('value')
+    @classmethod
+    def finite_series_value(cls, value):
+        decimal_text(value)
+        return value
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []

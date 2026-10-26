@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,Trade,decimal_text
+from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,Trade,ValueSeriesPoint,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -157,3 +157,15 @@ def test_financial_statement_preserves_publication_time_and_units():
     )
     assert statement.published_at == published
     assert statement.values['revenue'] == '1000.25'
+
+
+def test_value_series_point_represents_non_candle_data():
+    point = ValueSeriesPoint(
+        series_id='macro:vn:policy-rate',
+        observation_time=datetime.fromisoformat('2026-10-01T00:00:00+00:00'),
+        published_at=datetime.fromisoformat('2026-10-05T00:00:00+00:00'),
+        available_at=datetime.fromisoformat('2026-10-05T00:01:00+00:00'),
+        value='4.5', unit='percent', geography='VN', source_id='fixture',
+    )
+    assert point.published_at < point.available_at
+    assert point.value == '4.5'
