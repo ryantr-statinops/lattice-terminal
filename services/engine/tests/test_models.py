@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,Instrument,Trade,decimal_text
+from kestrel_engine.models import Candle,Instrument,Quote,Trade,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -86,4 +86,20 @@ def test_trade_record_preserves_event_and_availability_times():
             instrument_id='vn-equity:HOSE:HPG', trade_id='trade-2',
             event_time=event, available_at=event, price='25.10',
             quantity='0', source_id='fixture',
+        )
+
+
+def test_quote_record_validates_bid_ask_and_sizes():
+    event = datetime.fromisoformat('2026-10-26T03:00:00+00:00')
+    quote = Quote(
+        instrument_id='vn-equity:HOSE:HPG', event_time=event,
+        available_at=event, bid_price='25.10', bid_size='100',
+        ask_price='25.15', ask_size='200', source_id='fixture',
+    )
+    assert quote.bid_price == '25.10'
+    with pytest.raises(ValueError, match='bid price cannot exceed ask price'):
+        Quote(
+            instrument_id='vn-equity:HOSE:HPG', event_time=event,
+            available_at=event, bid_price='25.20', ask_price='25.15',
+            source_id='fixture',
         )

@@ -119,6 +119,41 @@ class Trade(Record):
             raise ValueError('trade quantity must be positive')
         return value
 
+class Quote(Record):
+    instrument_id: str
+    event_time: AwareDatetime
+    available_at: AwareDatetime
+    bid_price: str | None = None
+    bid_size: str | None = None
+    ask_price: str | None = None
+    ask_size: str | None = None
+    source_id: str
+    revision: str = '0'
+
+    @field_validator('bid_price', 'ask_price')
+    @classmethod
+    def valid_quote_prices(cls, value):
+        if value is not None:
+            decimal_text(value)
+            if Decimal(value) <= 0:
+                raise ValueError('quote price must be positive')
+        return value
+
+    @field_validator('bid_size', 'ask_size')
+    @classmethod
+    def valid_quote_sizes(cls, value):
+        if value is not None:
+            decimal_text(value)
+            if Decimal(value) < 0:
+                raise ValueError('quote size must not be negative')
+        return value
+
+    @model_validator(mode='after')
+    def ordered_market(self):
+        if self.bid_price is not None and self.ask_price is not None and Decimal(self.bid_price) > Decimal(self.ask_price):
+            raise ValueError('bid price cannot exceed ask price')
+        return self
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []
