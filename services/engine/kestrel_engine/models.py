@@ -59,7 +59,7 @@ class ProviderInstrumentAlias(Record):
 
 class Candle(Record):
     instrument_id: str
-    interval: Literal['1d','1m']
+    interval: Literal['1m','5m','15m','30m','1h','1d','1w','1mo']
     open_time: AwareDatetime
     close_time: AwareDatetime
     available_at: AwareDatetime

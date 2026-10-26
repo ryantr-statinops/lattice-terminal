@@ -65,3 +65,9 @@ def test_instrument_preserves_asset_specific_metadata():
     )
     assert instrument.metadata['underlying'] == 'VN30'
     assert instrument.metadata['multiplier'] == '100000'
+
+
+def test_candle_contract_accepts_additional_intervals():
+    root=Path(__file__).resolve().parents[3]
+    raw=json.loads((root/'data/fixtures/SYN01.json').read_text())['candles'][0]
+    assert Candle.model_validate(raw | {'interval':'15m'}).interval == '15m'
