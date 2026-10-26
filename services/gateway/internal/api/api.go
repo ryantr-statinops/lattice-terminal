@@ -33,6 +33,10 @@ type CredentialWriter interface {
 	Delete(provider, service string) error
 }
 
+type CredentialPresence interface {
+	HasProvider(provider string) (bool, error)
+}
+
 func JSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

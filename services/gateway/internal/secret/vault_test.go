@@ -131,3 +131,32 @@ func TestVaultDeleteRemovesCredential(t *testing.T) {
 		t.Fatalf("deleted credential still present: %v", err)
 	}
 }
+
+func TestVaultChecksProviderConfigurationWithoutReturningSecrets(t *testing.T) {
+	vault, err := newVault(t.TempDir(), bytes.Repeat([]byte{4}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	configured, err := vault.HasProvider("ssi")
+	if err != nil || configured {
+		t.Fatalf("empty provider status = %v, %v", configured, err)
+	}
+	if err = vault.Set("ssi", "market-data", []byte(`{"consumer_secret":"private-value"}`)); err != nil {
+		t.Fatal(err)
+	}
+	configured, err = vault.HasProvider("ssi")
+	if err != nil || !configured {
+		t.Fatalf("saved provider status = %v, %v", configured, err)
+	}
+	configured, err = vault.HasProvider("dnse")
+	if err != nil || configured {
+		t.Fatalf("unrelated provider status = %v, %v", configured, err)
+	}
+	if err = vault.Delete("ssi", "market-data"); err != nil {
+		t.Fatal(err)
+	}
+	configured, err = vault.HasProvider("ssi")
+	if err != nil || configured {
+		t.Fatalf("deleted provider status = %v, %v", configured, err)
+	}
+}

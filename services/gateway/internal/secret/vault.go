@@ -186,6 +186,27 @@ func (v *Vault) Get(provider, service string) ([]byte, error) {
 	return plaintext, nil
 }
 
+// HasProvider reports whether the encrypted vault contains any service record
+// for a provider without decrypting or returning credential values.
+func (v *Vault) HasProvider(provider string) (bool, error) {
+	if !ValidVaultID(provider) {
+		return false, errors.New("invalid provider credential reference")
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	doc, err := v.read()
+	if err != nil {
+		return false, err
+	}
+	prefix := provider + "/"
+	for reference := range doc.Records {
+		if strings.HasPrefix(reference, prefix) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Delete removes one credential record and atomically persists the vault.
 func (v *Vault) Delete(provider, service string) error {
 	if !ValidVaultID(provider) || !ValidVaultID(service) {

@@ -44,7 +44,30 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 	}
 
 	m.HandleFunc("GET /api/v1/providers", func(w http.ResponseWriter, r *http.Request) {
-		callEngine(w, r, "GET", "/internal/v1/providers", nil)
+		if a.Engine == nil || a.Engine.Engine == nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "engine unavailable"})
+			return
+		}
+		var statuses []map[string]any
+		if err := a.Engine.call(r.Context(), "GET", "/providers", nil, &statuses); err != nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "could not read provider status"})
+			return
+		}
+		reader, canRead := a.Credentials.(CredentialPresence)
+		for _, status := range statuses {
+			provider, _ := status["id"].(string)
+			configured := false
+			if canRead {
+				var err error
+				configured, err = reader.HasProvider(provider)
+				if err != nil {
+					JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "could not read provider configuration state"})
+					return
+				}
+			}
+			status["configured"] = configured
+		}
+		JSON(w, http.StatusOK, statuses)
 	})
 
 	m.HandleFunc("GET /api/v1/providers/capabilities", func(w http.ResponseWriter, r *http.Request) {

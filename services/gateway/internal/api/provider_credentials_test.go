@@ -1,20 +1,24 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"kestrel-terminal/gateway/internal/host"
 )
 
 type credentialWriterStub struct {
-	provider   string
-	service    string
-	credential string
-	err        error
-	deleted    bool
+	provider           string
+	service            string
+	credential         string
+	configuredProvider string
+	err                error
+	deleted            bool
 }
 
 func (s *credentialWriterStub) Set(provider, service string, credential []byte) error {
@@ -25,6 +29,35 @@ func (s *credentialWriterStub) Set(provider, service string, credential []byte) 
 func (s *credentialWriterStub) Delete(provider, service string) error {
 	s.provider, s.service, s.deleted = provider, service, true
 	return s.err
+}
+
+func (s *credentialWriterStub) HasProvider(provider string) (bool, error) {
+	return provider == s.configuredProvider, s.err
+}
+
+func TestProviderListingReflectsVaultConfigurationWithoutReturningSecrets(t *testing.T) {
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/internal/v1/providers" || r.Method != http.MethodGet || r.Header.Get("Authorization") != "Bearer engine-token" {
+			t.Fatalf("unexpected provider status request: %s %s", r.Method, r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`[{"id":"ssi","configured":false,"state":"blocked"},{"id":"dnse","configured":true,"state":"unknown"}]`))
+	}))
+	defer engine.Close()
+	credentials := &credentialWriterStub{credential: "private-secret", configuredProvider: "ssi"}
+	mux := http.NewServeMux()
+	(&API{Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}}, Credentials: credentials}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/providers", nil))
+	var statuses []map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &statuses); err != nil || response.Code != http.StatusOK {
+		t.Fatalf("provider listing response = %d %s (%v)", response.Code, response.Body.String(), err)
+	}
+	if statuses[0]["configured"] != true || statuses[1]["configured"] != false {
+		t.Fatalf("provider configured state did not come from the vault: %#v", statuses)
+	}
+	if strings.Contains(response.Body.String(), "private-secret") {
+		t.Fatal("provider listing exposed credential material")
+	}
 }
 
 func TestProviderCredentialWriteIsWriteOnly(t *testing.T) {
