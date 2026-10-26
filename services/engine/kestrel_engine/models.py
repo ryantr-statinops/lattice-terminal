@@ -217,6 +217,11 @@ class DatasetEnvelope(Record):
     parser_version: str
     unit: str = 'unknown'
     currency: str | None = None
+    source_timezone: str = 'unknown'
+    temporal_semantics: Literal[
+        'event_time','observation_time','period_end','not_time_series','unknown',
+    ] = 'unknown'
+    adjustment_state: Literal['raw','adjusted','not_applicable','unknown'] = 'unknown'
     quality: Literal['complete','partial','stale','quarantined','unknown'] = 'unknown'
     payload: Any
 

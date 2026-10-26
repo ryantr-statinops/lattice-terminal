@@ -162,6 +162,8 @@ def test_dataset_envelope_keeps_provenance_revision_and_publication_time():
     assert envelope.revision == '3'
     assert envelope.published_at < envelope.available_at
     assert envelope.payload['unit'] == 'percent'
+    assert envelope.temporal_semantics == 'unknown'
+    assert envelope.adjustment_state == 'unknown'
 
 
 def test_corporate_action_keeps_announcement_and_effective_dates():

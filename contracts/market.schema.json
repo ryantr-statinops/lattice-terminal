@@ -279,6 +279,17 @@
   "DatasetEnvelope": {
     "additionalProperties": false,
     "properties": {
+      "adjustment_state": {
+        "default": "unknown",
+        "enum": [
+          "raw",
+          "adjusted",
+          "not_applicable",
+          "unknown"
+        ],
+        "title": "Adjustment State",
+        "type": "string"
+      },
       "available_at": {
         "format": "date-time",
         "title": "Available At",
@@ -351,6 +362,23 @@
       },
       "source_id": {
         "title": "Source Id",
+        "type": "string"
+      },
+      "source_timezone": {
+        "default": "unknown",
+        "title": "Source Timezone",
+        "type": "string"
+      },
+      "temporal_semantics": {
+        "default": "unknown",
+        "enum": [
+          "event_time",
+          "observation_time",
+          "period_end",
+          "not_time_series",
+          "unknown"
+        ],
+        "title": "Temporal Semantics",
         "type": "string"
       },
       "unit": {
