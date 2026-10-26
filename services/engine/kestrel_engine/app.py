@@ -157,6 +157,10 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def ingest_ssi_hnx_equity_catalogue(value:SsiCatalogueIngest):
         return _ingest_ssi_equity_catalogue(value,'HNX')
 
+    @app.post('/internal/v1/market/catalogues/ssi/upcom-equity')
+    def ingest_ssi_upcom_equity_catalogue(value:SsiCatalogueIngest):
+        return _ingest_ssi_equity_catalogue(value,'UPCOM')
+
     @app.post('/internal/v1/market/catalogues/ssi/hose-indices')
     def ingest_ssi_hose_index_catalogue(value:SsiIndexCatalogueIngest):
         capability_id='ssi:market-data:instruments.index:index:HOSE'

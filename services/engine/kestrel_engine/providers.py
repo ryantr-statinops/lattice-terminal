@@ -137,6 +137,7 @@ class ProviderCapabilityRegistry:
         for dataset, asset_class, venue, implemented, evidence in (
             ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.details', 'equity', 'HNX', True, 'SSI SecuritiesDetails documents HNX stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('instruments.details', 'equity', 'UPCOM', True, 'SSI SecuritiesDetails documents UPCOM stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
@@ -196,8 +197,8 @@ class BaseMarketProvider(ABC):
 def normalize_ssi_equity_catalogue(payload: dict[str, Any], venue: str) -> list[Instrument]:
     """Normalize SSI stock details for one explicitly selected exchange."""
     venue = venue.strip().upper()
-    if venue not in {'HOSE', 'HNX'}:
-        raise ValueError('SSI equity catalogue supports only HOSE and HNX')
+    if venue not in {'HOSE', 'HNX', 'UPCOM'}:
+        raise ValueError('SSI equity catalogue supports only HOSE, HNX, and UPCOM')
     status = str(payload.get('status', '')).strip().casefold()
     if status not in {'success', '200'}:
         raise ValueError('SSI returned an unsuccessful SecuritiesDetails response')
@@ -262,6 +263,10 @@ def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrum
 
 def normalize_ssi_hnx_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
     return normalize_ssi_equity_catalogue(payload, 'HNX')
+
+
+def normalize_ssi_upcom_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    return normalize_ssi_equity_catalogue(payload, 'UPCOM')
 
 
 def normalize_ssi_index_catalogue(rows: list[dict[str, Any]], exchange: str) -> list[Instrument]:
@@ -872,8 +877,8 @@ class SsiFastConnectProvider(BaseMarketProvider):
 
     def _fetch_equity_catalogue_page(self, venue: str, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
         venue = venue.strip().upper()
-        if venue not in {'HOSE', 'HNX'}:
-            raise ValueError('SSI equity catalogue supports only HOSE and HNX')
+        if venue not in {'HOSE', 'HNX', 'UPCOM'}:
+            raise ValueError('SSI equity catalogue supports only HOSE, HNX, and UPCOM')
         if isinstance(page_index, bool) or page_index < 1 or page_index > 10:
             raise ValueError('SSI SecuritiesDetails page index must be between 1 and 10')
         payload = self.get_json(
@@ -889,10 +894,13 @@ class SsiFastConnectProvider(BaseMarketProvider):
     def fetch_hnx_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
         return self._fetch_equity_catalogue_page('HNX', page_index, credential=credential)
 
+    def fetch_upcom_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue_page('UPCOM', page_index, credential=credential)
+
     def _fetch_equity_catalogue(self, venue: str, *, credential: dict[str, str]) -> list[Instrument]:
         venue = venue.strip().upper()
-        if venue not in {'HOSE', 'HNX'}:
-            raise ValueError('SSI equity catalogue supports only HOSE and HNX')
+        if venue not in {'HOSE', 'HNX', 'UPCOM'}:
+            raise ValueError('SSI equity catalogue supports only HOSE, HNX, and UPCOM')
         first_page = self.get_json(
             'SecuritiesDetails',
             {'market': venue, 'pageIndex': 1, 'pageSize': 1000},
@@ -925,6 +933,9 @@ class SsiFastConnectProvider(BaseMarketProvider):
 
     def fetch_hnx_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         return self._fetch_equity_catalogue('HNX', credential=credential)
+
+    def fetch_upcom_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue('UPCOM', credential=credential)
 
     def fetch_hose_index_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:

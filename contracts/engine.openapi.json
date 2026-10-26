@@ -581,6 +581,42 @@
         "summary": "Ingest Ssi Hose Index Catalogue"
       }
     },
+    "/internal/v1/market/catalogues/ssi/upcom-equity": {
+      "post": {
+        "operationId": "ingest_ssi_upcom_equity_catalogue_internal_v1_market_catalogues_ssi_upcom_equity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiCatalogueIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Upcom Equity Catalogue"
+      }
+    },
     "/internal/v1/market/datasets": {
       "get": {
         "operationId": "dataset_snapshots_internal_v1_market_datasets_get",

@@ -186,6 +186,54 @@ def test_ssi_hnx_equity_catalogue_checks_store_rights_before_provider_access(tmp
     assert not called
 
 
+def test_ssi_upcom_equity_catalogue_ingest_publishes_only_under_upcom_capability(tmp_path):
+    capability_id = 'ssi:market-data:instruments.details:equity:UPCOM'
+    fields = ['id', 'venue', 'board', 'native_symbol', 'instrument_class', 'name', 'currency', 'metadata', 'isin', 'source_id', 'is_synthetic']
+    (tmp_path / 'source-policy.json').write_text(json.dumps([{
+        'id': capability_id, 'documented': True, 'access_tested': True, 'rights_confirmed': True,
+        'approved': True, 'access_reference': 'access-test', 'rights_reference': 'rights-test',
+        'approval_reference': 'approval-test', 'scope': {
+            'endpoints': ['Market/SecuritiesDetails'], 'purposes': ['store', 'display'], 'fields': fields,
+            'request_limit': 10, 'timeout_seconds': 6, 'retention_allowed': True,
+            'export_allowed': False, 'terms_reference': 'terms-test',
+            'entitlement_reference': 'entitlement-test', 'expires_at': '2099-01-01T00:00:00Z',
+        },
+    }]), encoding='utf-8')
+    app = create_app('test-token', str(tmp_path))
+    credential_seen = {}
+    app.state.provider_router.providers['ssi'].fetch_upcom_equity_catalogue = lambda *, credential: (
+        credential_seen.update(credential) or [Instrument(
+            id='SSI:ISIN:VN000000UPC1', venue='UPCOM', board='unknown', native_symbol='UPCA',
+            instrument_class='equity', name='UPCOM Alpha', metadata={'isin': 'VN000000UPC1'},
+            source_id='SSI-FC-DATA', is_synthetic=False,
+        )]
+    )
+    with TestClient(app) as client:
+        response = client.post('/internal/v1/market/catalogues/ssi/upcom-equity', headers={
+            'Authorization': 'Bearer test-token',
+        }, json={'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'}})
+        catalogue = client.get('/internal/v1/market/instruments?provider_id=ssi', headers={'Authorization': 'Bearer test-token'})
+
+    assert response.status_code == 200
+    assert response.json()['row_count'] == 1
+    assert credential_seen == {'consumerID': 'local-id', 'consumerSecret': 'local-secret'}
+    assert catalogue.status_code == 200
+    assert catalogue.json()[0]['venue'] == 'UPCOM'
+    assert catalogue.json()[0]['native_symbol'] == 'UPCA'
+
+
+def test_ssi_upcom_equity_catalogue_checks_store_rights_before_provider_access(tmp_path):
+    app = create_app('test-token', str(tmp_path))
+    called = []
+    app.state.provider_router.providers['ssi'].fetch_upcom_equity_catalogue = lambda **_: called.append(True)
+    with TestClient(app) as client:
+        response = client.post('/internal/v1/market/catalogues/ssi/upcom-equity', headers={
+            'Authorization': 'Bearer test-token',
+        }, json={'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'}})
+    assert response.status_code == 400
+    assert not called
+
+
 def test_ssi_hose_daily_ohlc_ingest_publishes_and_reads_market_snapshot(tmp_path):
     catalogue_capability = 'ssi:market-data:instruments.details:equity:HOSE'
     daily_capability = 'ssi:market-data:candles.1d:equity:HOSE'

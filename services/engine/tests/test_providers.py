@@ -19,6 +19,7 @@ from kestrel_engine.providers import (
     normalize_ssi_index_catalogue,
     normalize_ssi_hose_equity_catalogue,
     normalize_ssi_hnx_equity_catalogue,
+    normalize_ssi_upcom_equity_catalogue,
     normalize_ssi_hose_index_catalogue,
     normalize_ssi_hose_index_components,
 )
@@ -250,6 +251,28 @@ class TestProviders(unittest.TestCase):
                 'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HOSE'}],
             })
 
+    def test_ssi_upcom_catalogue_normalizes_only_upcom_stock_security_types(self):
+        payload = {
+            'status': 'Success', 'totalRecord': 2, 'data': [{
+                'RepeatedInfo': [
+                    {'SecType': 'ST', 'Isin': 'vn000000upc1', 'Symbol': 'upca', 'SymbolName': 'UPCOM Alpha', 'Exchange': 'UPCOM'},
+                    {'SecType': 'CW', 'Isin': 'vn000000upc2', 'Symbol': 'upca1', 'SymbolName': 'UPCOM warrant', 'Exchange': 'UPCOM'},
+                ],
+            }],
+        }
+        instruments = normalize_ssi_upcom_equity_catalogue(payload)
+        self.assertEqual(len(instruments), 1)
+        self.assertEqual(instruments[0].id, 'SSI:ISIN:VN000000UPC1')
+        self.assertEqual(instruments[0].venue, 'UPCOM')
+        self.assertEqual(instruments[0].instrument_class, 'equity')
+
+    def test_ssi_upcom_catalogue_fails_closed_for_another_venue(self):
+        with self.assertRaisesRegex(ValueError, 'another venue'):
+            normalize_ssi_upcom_equity_catalogue({
+                'status': 'Success',
+                'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HNX'}],
+            })
+
     def test_ssi_hose_catalogue_page_uses_documented_endpoint_and_paging(self):
         provider = SsiFastConnectProvider()
         credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
@@ -344,6 +367,23 @@ class TestProviders(unittest.TestCase):
         }))
         self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
             'market': 'HNX', 'pageIndex': 2, 'pageSize': 1000,
+        }))
+
+    def test_ssi_upcom_catalogue_reads_each_documented_page(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        first = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'ST', 'Symbol': 'UPCA', 'Exchange': 'UPCOM'}]}
+        second = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'ST', 'Symbol': 'UPCB', 'Exchange': 'UPCOM'}]}
+        with patch.object(provider, 'get_json', side_effect=[first, second]) as get_json:
+            instruments = provider.fetch_upcom_equity_catalogue(credential=credential)
+
+        self.assertEqual([item.native_symbol for item in instruments], ['UPCA', 'UPCB'])
+        self.assertTrue(all(item.venue == 'UPCOM' for item in instruments))
+        self.assertEqual(get_json.call_args_list[0].args, ('SecuritiesDetails', {
+            'market': 'UPCOM', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
+            'market': 'UPCOM', 'pageIndex': 2, 'pageSize': 1000,
         }))
 
     def test_ssi_daily_ohlc_rejects_out_of_scope_instrument_before_network(self):

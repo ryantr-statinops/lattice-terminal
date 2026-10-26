@@ -47,6 +47,15 @@ it('starts the supported SSI HNX equity catalogue sync',async()=>{
  expect(await screen.findByText('SSI HNX catalogue saved as snapshot hnxstocks123.')).toBeDefined();
 });
 
+it('starts the supported SSI UPCOM equity catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'upcomstocks123456'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiUpcomEquity/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI UPCOM stocks'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/upcom-equity',{}));
+ expect(await screen.findByText('SSI UPCOM catalogue saved as snapshot upcomstocks1.')).toBeDefined();
+});
+
 it('starts the supported SSI HOSE index catalogue sync',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});
