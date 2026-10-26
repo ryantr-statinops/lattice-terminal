@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from .market import MarketRepository
+from .datasets import AtomicDatasetPublisher
 from .quant import INDICATORS,calculate
 from .sources import SourceGate
 from .providers import ProviderRouter
@@ -50,6 +51,8 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     runs=RunManager(root)
     provider_router = ProviderRouter(root / 'market')
     gate=SourceGate(root,provider_router.capabilities.source_ids())
+    dataset_publisher=AtomicDatasetPublisher(root/'market',gate)
+    app.state.dataset_publisher=dataset_publisher
 
     @app.on_event('shutdown')
     def stop_workers():runs.close()
@@ -96,6 +99,10 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
 
     @app.get('/internal/v1/market/snapshots')
     def snapshots(): return market.manifests()
+
+    @app.get('/internal/v1/market/datasets')
+    def dataset_snapshots(provider_id:str='',dataset:str=''):
+        return dataset_publisher.manifests(provider_id,dataset)
 
     @app.get('/internal/v1/backtest/data')
     def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]

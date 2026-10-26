@@ -277,6 +277,54 @@
         "summary": "Candles"
       }
     },
+    "/internal/v1/market/datasets": {
+      "get": {
+        "operationId": "dataset_snapshots_internal_v1_market_datasets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dataset",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Dataset",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dataset Snapshots"
+      }
+    },
     "/internal/v1/market/instruments": {
       "get": {
         "operationId": "instruments_internal_v1_market_instruments_get",

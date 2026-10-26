@@ -63,6 +63,9 @@ def test_dataset_publisher_atomically_publishes_and_verifies_parquet(tmp_path):
     assert manifest['terms_reference'] == 'terms-ssi-market'
     assert {record.payload['symbol'] for record in loaded} == {'AAA', 'BBB'}
     assert not any(path.name.startswith('.pending-') for path in (tmp_path / 'market' / 'datasets').iterdir())
+    registry = publisher.manifests(provider_id='ssi', dataset='instruments.equity')
+    assert len(registry) == 1 and registry[0]['snapshot_id'] == first['snapshot_id']
+    assert publisher.manifests(provider_id='other') == []
 
 
 def test_dataset_publisher_fails_closed_without_rights_or_for_unapproved_fields(tmp_path):

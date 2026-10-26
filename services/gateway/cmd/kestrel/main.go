@@ -268,7 +268,7 @@ func run(root, data string, dev bool) error {
 	}
 	mux.Handle("/api/v1/engine/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v1/engine")
-		allowed := r.Method == "GET" && (path == "/market/instruments" || path == "/market/snapshots" || path == "/market/candles" || path == "/market/live-status" || path == "/quant/indicators" || path == "/quant/calculate" || path == "/backtest/data" || path == "/sources")
+		allowed := r.Method == "GET" && (path == "/market/instruments" || path == "/market/snapshots" || path == "/market/datasets" || path == "/market/candles" || path == "/market/live-status" || path == "/quant/indicators" || path == "/quant/calculate" || path == "/backtest/data" || path == "/sources")
 		allowed = allowed || (r.Method == "POST" && path == "/programs/inspect")
 		if !allowed {
 			http.NotFound(w, r)

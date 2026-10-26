@@ -176,3 +176,25 @@ class AtomicDatasetPublisher:
                 payload=json.loads(row['payload_json']),
             ))
         return manifest, envelopes
+
+    def manifests(self, provider_id: str = '', dataset: str = '') -> list[dict]:
+        registry = self.root / 'datasets'
+        if not registry.exists():
+            return []
+        result = []
+        for directory in registry.iterdir():
+            if not directory.is_dir() or directory.name.startswith('.pending-'):
+                continue
+            if len(directory.name) != 64 or any(value not in '0123456789abcdef' for value in directory.name):
+                continue
+            manifest = self._load_manifest(directory, directory.name)
+            if provider_id and manifest['provider_id'] != provider_id:
+                continue
+            if dataset and manifest['dataset'] != dataset:
+                continue
+            result.append({key: manifest[key] for key in (
+                'snapshot_id', 'provider_id', 'dataset', 'source_id', 'row_count',
+                'parser_versions', 'quality', 'available_from', 'available_to',
+                'terms_reference', 'entitlement_reference', 'expires_at',
+            )})
+        return sorted(result, key=lambda item: (item['available_to'], item['snapshot_id']), reverse=True)
