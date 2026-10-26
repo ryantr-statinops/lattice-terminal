@@ -60,6 +60,12 @@ class SsiIndexComponentsIngest(Record):
     credential:dict[str,str]
     index_instrument_id:str
 
+class SsiDailyIndexIngest(Record):
+    credential:dict[str,str]
+    index_instrument_id:str
+    from_date:date
+    to_date:date
+
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.internal_token = token
@@ -195,6 +201,31 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         )]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
+    @app.post('/internal/v1/market/index-series/ssi/hose/daily')
+    def ingest_ssi_hose_daily_index(value:SsiDailyIndexIngest):
+        capability_id='ssi:market-data:indices.daily:index:HOSE'
+        endpoint='Market/DailyIndex'
+        gate.authorize(capability_id,'store',endpoint)
+        if value.from_date>value.to_date:raise ValueError('SSI DailyIndex date range is invalid')
+        index=next((item for item in dataset_publisher.instrument_catalogue(
+            'ssi','ssi:market-data:instruments.index:index:HOSE',
+        ) if item.id==value.index_instrument_id),None)
+        if index is None or index.instrument_class!='index' or index.venue!='HOSE':
+            raise ValueError('index is not present in the authorized SSI HOSE index catalogue')
+        observations=provider_router.providers['ssi'].fetch_hose_daily_index(
+            index,value.from_date,value.to_date,credential=value.credential,
+        )
+        if not observations:raise ValueError('SSI returned no HOSE daily index observations')
+        observed_at=datetime.now(timezone.utc)
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='indices.daily',source_id=observation.source_id,
+            observed_at=observed_at,available_at=observed_at,revision=observation.revision,
+            schema_version='1',parser_version='ssi-daily-index-hose-1',unit='field_specific',
+            source_timezone='Asia/Ho_Chi_Minh',temporal_semantics='observation_time',
+            adjustment_state='not_applicable',quality='unknown',payload=observation.model_dump(mode='json'),
+        ) for observation in observations]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
     @app.post('/internal/v1/market/candles/ssi/hose-equity/daily')
     def ingest_ssi_hose_equity_daily(value:SsiDailyOhlcIngest):
         capability_id='ssi:market-data:candles.1d:equity:HOSE'
@@ -230,6 +261,14 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         if provider_router.policy.datasets.get(route_key)!=capability_id:
             raise ValueError('provider index constituent dataset is not selected in routing policy')
         return dataset_publisher.index_constituent_snapshot(provider_id,index_instrument_id)
+
+    @app.get('/internal/v1/market/provider-index-daily')
+    def provider_index_daily(provider_id:str,index_instrument_id:str):
+        route_key='indices.daily:index:HOSE'
+        capability_id=f'{provider_id}:market-data:{route_key}'
+        if provider_router.policy.datasets.get(route_key)!=capability_id:
+            raise ValueError('provider daily index dataset is not selected in routing policy')
+        return dataset_publisher.index_daily_snapshot(provider_id,index_instrument_id)
 
     @app.get('/internal/v1/backtest/data')
     def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]

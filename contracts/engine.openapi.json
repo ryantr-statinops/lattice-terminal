@@ -177,6 +177,40 @@
         "title": "SsiCatalogueIngest",
         "type": "object"
       },
+      "SsiDailyIndexIngest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Credential",
+            "type": "object"
+          },
+          "from_date": {
+            "format": "date",
+            "title": "From Date",
+            "type": "string"
+          },
+          "index_instrument_id": {
+            "title": "Index Instrument Id",
+            "type": "string"
+          },
+          "to_date": {
+            "format": "date",
+            "title": "To Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential",
+          "index_instrument_id",
+          "from_date",
+          "to_date"
+        ],
+        "title": "SsiDailyIndexIngest",
+        "type": "object"
+      },
       "SsiDailyOhlcIngest": {
         "additionalProperties": false,
         "properties": {
@@ -595,6 +629,42 @@
         "summary": "Ingest Ssi Hose Index Components"
       }
     },
+    "/internal/v1/market/index-series/ssi/hose/daily": {
+      "post": {
+        "operationId": "ingest_ssi_hose_daily_index_internal_v1_market_index_series_ssi_hose_daily_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiDailyIndexIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hose Daily Index"
+      }
+    },
     "/internal/v1/market/instruments": {
       "get": {
         "operationId": "instruments_internal_v1_market_instruments_get",
@@ -739,6 +809,52 @@
           }
         },
         "summary": "Provider Index Constituents"
+      }
+    },
+    "/internal/v1/market/provider-index-daily": {
+      "get": {
+        "operationId": "provider_index_daily_internal_v1_market_provider_index_daily_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "index_instrument_id",
+            "required": true,
+            "schema": {
+              "title": "Index Instrument Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provider Index Daily"
       }
     },
     "/internal/v1/market/snapshots": {

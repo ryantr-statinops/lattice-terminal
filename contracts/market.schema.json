@@ -228,6 +228,304 @@
     "title": "CorporateAction",
     "type": "object"
   },
+  "DailyIndexObservation": {
+    "additionalProperties": false,
+    "description": "A daily index value and provider-reported trading aggregates, not an OHLC candle.",
+    "properties": {
+      "advances": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Advances"
+      },
+      "ceilings": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ceilings"
+      },
+      "change": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Change"
+      },
+      "declines": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Declines"
+      },
+      "exchange": {
+        "enum": [
+          "HOSE",
+          "HNX"
+        ],
+        "title": "Exchange",
+        "type": "string"
+      },
+      "field_units": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Field Units",
+        "type": "object"
+      },
+      "floors": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Floors"
+      },
+      "index_code": {
+        "title": "Index Code",
+        "type": "string"
+      },
+      "index_instrument_id": {
+        "title": "Index Instrument Id",
+        "type": "string"
+      },
+      "index_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Index Name"
+      },
+      "index_value": {
+        "title": "Index Value",
+        "type": "string"
+      },
+      "no_changes": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "No Changes"
+      },
+      "provider_exchange": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Provider Exchange"
+      },
+      "provider_market": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Provider Market"
+      },
+      "provider_time": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Provider Time"
+      },
+      "ratio_change": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ratio Change"
+      },
+      "revision": {
+        "default": "unknown",
+        "title": "Revision",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      },
+      "total_deal_value": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Deal Value"
+      },
+      "total_deal_volume": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Deal Volume"
+      },
+      "total_match_value": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Match Value"
+      },
+      "total_match_volume": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Match Volume"
+      },
+      "total_trade": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Trade"
+      },
+      "total_value": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Value"
+      },
+      "total_volume": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Volume"
+      },
+      "trading_date": {
+        "format": "date",
+        "title": "Trading Date",
+        "type": "string"
+      },
+      "trading_session": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Trading Session"
+      },
+      "type_index": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Type Index"
+      }
+    },
+    "required": [
+      "index_instrument_id",
+      "index_code",
+      "exchange",
+      "trading_date",
+      "index_value",
+      "field_units",
+      "source_id"
+    ],
+    "title": "DailyIndexObservation",
+    "type": "object"
+  },
   "DataQuality": {
     "additionalProperties": false,
     "properties": {

@@ -58,6 +58,56 @@ class TestProviders(unittest.TestCase):
                 'TotalSymbolNo': 1, 'IndexComponent': [{'StockSymbol': 'ACB'}],
             }], index, datetime.now(timezone.utc))
 
+    def test_ssi_hose_daily_index_preserves_daily_metrics_and_unzoned_provider_time(self):
+        provider = SsiFastConnectProvider()
+        index = Instrument(
+            id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+            instrument_class='index', name='VN30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        row = {
+            'IndexId': 'VN30', 'IndexValue': '1320.50', 'TradingDate': '02/01/2025', 'Time': None,
+            'Change': '-1.25', 'RatioChange': '-0.09', 'TotalTrade': '123',
+            'TotalMatchVol': '84693600', 'TotalMatchVal': '1836008470000', 'TypeIndex': None,
+            'IndexName': 'VN30', 'Advances': '21', 'NoChanges': '4', 'Declines': '5',
+            'Ceilings': '2', 'Floors': '0', 'TotalDealVol': '2504000', 'TotalDealVal': '60256000000',
+            'TotalVol': '87197600', 'TotalVal': '1896264470000', 'TradingSession': 'C',
+        }
+        with patch.object(provider, 'get_json', return_value={'status': 'Success', 'totalRecord': 1, 'data': [row]}) as get_json:
+            observations = provider.fetch_hose_daily_index(
+                index, date(2025, 1, 2), date(2025, 1, 2), credential={'consumerID': 'id', 'consumerSecret': 'secret'},
+            )
+
+        get_json.assert_called_once_with('DailyIndex', {
+            'indexId': 'VN30', 'fromDate': '02/01/2025', 'toDate': '02/01/2025',
+            'pageIndex': 1, 'pageSize': 1000, 'ascending': 'true',
+        }, credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+        observation = observations[0]
+        self.assertEqual(observation.trading_date, date(2025, 1, 2))
+        self.assertEqual(observation.index_value, '1320.50')
+        self.assertEqual(observation.change, '-1.25')
+        self.assertIsNone(observation.provider_time)
+        self.assertEqual(observation.total_match_value, '1836008470000')
+        self.assertEqual(observation.field_units['total_match_value'], 'provider_native_value_currency_unverified')
+
+    def test_ssi_hose_daily_index_rejects_wrong_index_and_incomplete_time_range(self):
+        provider = SsiFastConnectProvider()
+        index = Instrument(
+            id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+            instrument_class='index', name='VN30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        with self.assertRaisesRegex(ValueError, 'before the current Vietnam date'):
+            provider.fetch_hose_daily_index(
+                index, datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date(),
+                datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date(), credential={},
+            )
+        with patch.object(provider, 'get_json', return_value={'status': 'Success', 'totalRecord': 1, 'data': [{
+            'IndexId': 'HNX30', 'IndexValue': '1', 'TradingDate': '02/01/2025',
+        }]}):
+            with self.assertRaisesRegex(ValueError, 'does not match'):
+                provider.fetch_hose_daily_index(
+                    index, date(2025, 1, 2), date(2025, 1, 2), credential={},
+                )
+
     def test_ssi_hose_index_catalogue_paginates_and_preserves_index_class(self):
         provider = SsiFastConnectProvider()
         rows = [

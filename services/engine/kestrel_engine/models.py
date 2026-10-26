@@ -99,6 +99,56 @@ class IndexConstituentSet(Record):
             raise ValueError('reported index constituent count must not be negative')
         return value
 
+class DailyIndexObservation(Record):
+    """A daily index value and provider-reported trading aggregates, not an OHLC candle."""
+    index_instrument_id: str
+    index_code: str
+    exchange: Literal['HOSE', 'HNX']
+    trading_date: date
+    provider_time: str | None = None
+    index_value: str
+    change: str | None = None
+    ratio_change: str | None = None
+    total_trade: str | None = None
+    total_match_volume: str | None = None
+    total_match_value: str | None = None
+    type_index: str | None = None
+    index_name: str | None = None
+    advances: str | None = None
+    no_changes: str | None = None
+    declines: str | None = None
+    ceilings: str | None = None
+    floors: str | None = None
+    total_deal_volume: str | None = None
+    total_deal_value: str | None = None
+    total_volume: str | None = None
+    total_value: str | None = None
+    trading_session: str | None = None
+    provider_market: str | None = None
+    provider_exchange: str | None = None
+    field_units: dict[str, str]
+    source_id: str
+    revision: str = 'unknown'
+
+    @field_validator(
+        'index_value', 'change', 'ratio_change', 'total_trade', 'total_match_volume',
+        'total_match_value', 'advances', 'no_changes', 'declines', 'ceilings', 'floors',
+        'total_deal_volume', 'total_deal_value', 'total_volume', 'total_value',
+    )
+    @classmethod
+    def finite_provider_numbers(cls, value):
+        if value is not None:
+            decimal_text(value)
+        return value
+
+    @field_validator('provider_time', 'type_index', 'index_name', 'trading_session', 'provider_market', 'provider_exchange')
+    @classmethod
+    def trim_optional_provider_text(cls, value):
+        if value is not None:
+            value = value.strip()
+            return value or None
+        return value
+
 class Candle(Record):
     instrument_id: str
     interval: Literal['1m','5m','15m','30m','1h','1d','1w','1mo']

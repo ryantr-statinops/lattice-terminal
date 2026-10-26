@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from kestrel_engine.app import create_app
 from kestrel_engine.datasets import AtomicDatasetPublisher
-from kestrel_engine.models import Candle, DatasetEnvelope, IndexConstituentSet, Instrument, ProviderIndexConstituent
+from kestrel_engine.models import Candle, DailyIndexObservation, DatasetEnvelope, IndexConstituentSet, Instrument, ProviderIndexConstituent
 from kestrel_engine.providers import ProviderCapabilityRegistry
 from kestrel_engine.sources import SourceBlocked, SourceGate
 
@@ -369,6 +369,97 @@ def test_ssi_hose_index_components_checks_store_rights_before_provider_access(tm
         response = client.post('/internal/v1/market/index-components/ssi/hose', headers={
             'Authorization': 'Bearer test-token',
         }, json={'credential': {'consumerID': 'id', 'consumerSecret': 'secret'}, 'index_instrument_id': 'SSI:INDEX:HOSE:VN30'})
+    assert response.status_code == 400
+    assert not called
+
+
+def test_ssi_hose_daily_index_publishes_and_reads_routed_observations(tmp_path):
+    catalogue_capability = 'ssi:market-data:instruments.index:index:HOSE'
+    capability_id = 'ssi:market-data:indices.daily:index:HOSE'
+    catalogue_fields = ['id', 'venue', 'board', 'native_symbol', 'instrument_class', 'name', 'currency', 'metadata', 'index_code', 'exchange', 'source_id', 'is_synthetic']
+    daily_fields = [
+        'index_instrument_id', 'index_code', 'exchange', 'trading_date', 'provider_time', 'index_value',
+        'change', 'ratio_change', 'total_trade', 'total_match_volume', 'total_match_value', 'type_index',
+        'index_name', 'advances', 'no_changes', 'declines', 'ceilings', 'floors', 'total_deal_volume',
+        'total_deal_value', 'total_volume', 'total_value', 'trading_session', 'provider_market',
+        'provider_exchange', 'field_units', 'source_id', 'revision',
+    ]
+    policy = []
+    for capability, endpoint, fields in (
+        (catalogue_capability, 'Market/IndexList', catalogue_fields),
+        (capability_id, 'Market/DailyIndex', daily_fields),
+    ):
+        policy.append({
+            'id': capability, 'documented': True, 'access_tested': True, 'rights_confirmed': True,
+            'approved': True, 'access_reference': 'access-test', 'rights_reference': 'rights-test',
+            'approval_reference': 'approval-test', 'scope': {
+                'endpoints': [endpoint], 'purposes': ['store', 'display'], 'fields': fields,
+                'request_limit': 10, 'timeout_seconds': 6, 'retention_allowed': True,
+                'export_allowed': False, 'terms_reference': 'terms-test',
+                'entitlement_reference': 'entitlement-test', 'expires_at': '2099-01-01T00:00:00Z',
+            },
+        })
+    (tmp_path / 'source-policy.json').write_text(json.dumps(policy), encoding='utf-8')
+    now = datetime.now(timezone.utc)
+    publisher = AtomicDatasetPublisher(tmp_path / 'market', SourceGate(tmp_path, ProviderCapabilityRegistry().source_ids()))
+    publisher.publish(catalogue_capability, 'Market/IndexList', [DatasetEnvelope(
+        provider_id='ssi', dataset='instruments.index', source_id='SSI-FC-DATA',
+        observed_at=now, available_at=now, revision='unknown', schema_version='1', parser_version='ssi-index-list-hose-1',
+        unit='instrument', source_timezone='Asia/Ho_Chi_Minh', temporal_semantics='not_time_series',
+        adjustment_state='not_applicable', quality='unknown', payload={
+            'id': 'SSI:INDEX:HOSE:VN30', 'venue': 'HOSE', 'board': 'unknown', 'native_symbol': 'VN30',
+            'instrument_class': 'index', 'name': 'VN30', 'currency': None,
+            'metadata': {'index_code': 'VN30', 'exchange': 'HOSE'}, 'source_id': 'SSI-FC-DATA', 'is_synthetic': False,
+        },
+    )])
+    app = create_app('test-token', str(tmp_path))
+    route_key = 'indices.daily:index:HOSE'
+    app.state.provider_router.update_policy({'datasets': {route_key: capability_id}})
+    app.state.provider_router.providers['ssi'].fetch_hose_daily_index = lambda index, start, end, *, credential: [DailyIndexObservation(
+        index_instrument_id=index.id, index_code=index.native_symbol, exchange='HOSE', trading_date='2025-01-02',
+        index_value='1320.50', change='-1.25', ratio_change='-0.09', total_trade='123',
+        field_units={
+            'index_value': 'provider_native_index_value_scale',
+            'change': 'provider_native_index_change_scale',
+            'ratio_change': 'provider_native_ratio_scale_unverified',
+        }, source_id='SSI-FC-DATA',
+    )]
+
+    with TestClient(app) as client:
+        headers = {'Authorization': 'Bearer test-token'}
+        published = client.post('/internal/v1/market/index-series/ssi/hose/daily', headers=headers, json={
+            'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'},
+            'index_instrument_id': 'SSI:INDEX:HOSE:VN30', 'from_date': '2025-01-02', 'to_date': '2025-01-02',
+        })
+        result = client.get(
+            '/internal/v1/market/provider-index-daily?provider_id=ssi&index_instrument_id=SSI%3AINDEX%3AHOSE%3AVN30',
+            headers=headers,
+        )
+        app.state.provider_router.update_policy({'datasets': {}})
+        unrouted = client.get(
+            '/internal/v1/market/provider-index-daily?provider_id=ssi&index_instrument_id=SSI%3AINDEX%3AHOSE%3AVN30',
+            headers=headers,
+        )
+
+    assert published.status_code == 200, published.json()
+    assert published.json()['row_count'] == 1
+    assert result.status_code == 200
+    assert result.json()['records'][0]['observation']['index_value'] == '1320.50'
+    assert result.json()['records'][0]['observation']['field_units']['index_value'] == 'provider_native_index_value_scale'
+    assert unrouted.status_code == 400
+
+
+def test_ssi_hose_daily_index_checks_store_rights_before_provider_access(tmp_path):
+    app = create_app('test-token', str(tmp_path))
+    called = []
+    app.state.provider_router.providers['ssi'].fetch_hose_daily_index = lambda *args, **kwargs: called.append(True)
+    with TestClient(app) as client:
+        response = client.post('/internal/v1/market/index-series/ssi/hose/daily', headers={
+            'Authorization': 'Bearer test-token',
+        }, json={
+            'credential': {'consumerID': 'id', 'consumerSecret': 'secret'},
+            'index_instrument_id': 'SSI:INDEX:HOSE:VN30', 'from_date': '2025-01-02', 'to_date': '2025-01-02',
+        })
     assert response.status_code == 400
     assert not called
 

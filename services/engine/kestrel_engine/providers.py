@@ -14,7 +14,7 @@ import urllib.request
 from pydantic import BaseModel, Field
 
 from zoneinfo import ZoneInfo
-from .models import Candle, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
+from .models import Candle, DailyIndexObservation, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
 
 def _is_retryable_read_error(error: Exception) -> bool:
     if isinstance(error, urllib.error.HTTPError):
@@ -139,6 +139,7 @@ class ProviderCapabilityRegistry:
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
+            ('indices.daily', 'index', 'HOSE', True, 'SSI DailyIndex documents HOSE daily index values and market aggregates; units, provider publication time and local-use rights remain unverified.'),
             ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
@@ -348,6 +349,111 @@ def normalize_ssi_hose_index_components(
         source_id='SSI-FC-DATA',
         observed_at=observed_at,
     )
+
+
+def normalize_ssi_hose_daily_index_rows(
+    rows: list[dict[str, Any]], index: Instrument, start: date, end: date, observed_at: datetime,
+) -> list[DailyIndexObservation]:
+    """Normalize SSI DailyIndex records while retaining provider-local time without a timezone guess."""
+    if index.instrument_class != 'index' or index.venue != 'HOSE':
+        raise ValueError('SSI DailyIndex adapter only supports HOSE indexes')
+    if start > end:
+        raise ValueError('SSI DailyIndex date range is invalid')
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        raise ValueError('SSI DailyIndex observation time must include a timezone')
+
+    def get(row: dict[str, Any], *names: str) -> Any:
+        fields = {''.join(char for char in key.casefold() if char.isalnum()): value for key, value in row.items()}
+        for name in names:
+            normalized = ''.join(char for char in name.casefold() if char.isalnum())
+            if normalized in fields:
+                return fields[normalized]
+        return None
+
+    def required_decimal(row: dict[str, Any], field: str, *names: str) -> str:
+        value = get(row, *names)
+        if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+            raise ValueError(f'SSI DailyIndex {field} must be an exact decimal value')
+        result = format(value, 'f') if isinstance(value, Decimal) else str(value).strip()
+        decimal_text(result)
+        return result
+
+    def optional_decimal(row: dict[str, Any], field: str, *names: str) -> str | None:
+        value = get(row, *names)
+        if value is None or value == '':
+            return None
+        return required_decimal(row, field, *names)
+
+    def optional_text(row: dict[str, Any], field: str, *names: str) -> str | None:
+        value = get(row, *names)
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(f'SSI DailyIndex {field} must be text')
+        return value.strip() or None
+
+    observations: dict[date, DailyIndexObservation] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError('SSI DailyIndex row must be an object')
+        code = optional_text(row, 'index code', 'IndexId', 'IndexCode', 'Indexcode')
+        if code is None or code.upper() != index.native_symbol.upper():
+            raise ValueError('SSI DailyIndex row does not match the requested HOSE index')
+        market = optional_text(row, 'market', 'Market')
+        exchange = optional_text(row, 'exchange', 'Exchange')
+        if (market and market.upper() != 'HOSE') or (exchange and exchange.upper() != 'HOSE'):
+            raise ValueError('SSI DailyIndex row does not match the requested HOSE venue')
+        raw_date = optional_text(row, 'trading date', 'TradingDate', 'Trading Date')
+        if raw_date is None:
+            raise ValueError('SSI DailyIndex TradingDate must use dd/mm/yyyy')
+        try:
+            trading_date = datetime.strptime(raw_date, '%d/%m/%Y').date()
+        except ValueError as error:
+            raise ValueError('SSI DailyIndex TradingDate must use dd/mm/yyyy') from error
+        if trading_date < start or trading_date > end:
+            raise ValueError('SSI DailyIndex returned a row outside the requested date range')
+
+        observation = DailyIndexObservation(
+            index_instrument_id=index.id, index_code=index.native_symbol, exchange='HOSE',
+            trading_date=trading_date, provider_time=optional_text(row, 'time', 'Time'),
+            index_value=required_decimal(row, 'IndexValue', 'IndexValue'),
+            change=optional_decimal(row, 'Change', 'Change'),
+            ratio_change=optional_decimal(row, 'RatioChange', 'RatioChange'),
+            total_trade=optional_decimal(row, 'TotalTrade', 'TotalTrade'),
+            total_match_volume=optional_decimal(row, 'TotalMatchVol', 'TotalMatchVol'),
+            total_match_value=optional_decimal(row, 'TotalMatchVal', 'TotalMatchVal'),
+            type_index=optional_text(row, 'TypeIndex', 'TypeIndex'),
+            index_name=optional_text(row, 'IndexName', 'IndexName'),
+            advances=optional_decimal(row, 'Advances', 'Advances'),
+            no_changes=optional_decimal(row, 'NoChanges', 'NoChanges'),
+            declines=optional_decimal(row, 'Declines', 'Declines'),
+            ceilings=optional_decimal(row, 'Ceilings', 'Ceilings', 'Ceiling'),
+            floors=optional_decimal(row, 'Floors', 'Floors', 'Floor'),
+            total_deal_volume=optional_decimal(row, 'TotalDealVol', 'TotalDealVol'),
+            total_deal_value=optional_decimal(row, 'TotalDealVal', 'TotalDealVal'),
+            total_volume=optional_decimal(row, 'TotalVol', 'TotalVol'),
+            total_value=optional_decimal(row, 'TotalVal', 'TotalVal'),
+            trading_session=optional_text(row, 'TradingSession', 'TradingSession'),
+            provider_market=market,
+            provider_exchange=exchange,
+            field_units={
+                'index_value': 'provider_native_index_value_scale',
+                'change': 'provider_native_index_change_scale',
+                'ratio_change': 'provider_native_ratio_scale_unverified',
+                'total_trade': 'trade_count', 'total_match_volume': 'provider_native_quantity',
+                'total_match_value': 'provider_native_value_currency_unverified',
+                'advances': 'instrument_count', 'no_changes': 'instrument_count', 'declines': 'instrument_count',
+                'ceilings': 'instrument_count', 'floors': 'instrument_count',
+                'total_deal_volume': 'provider_native_quantity', 'total_deal_value': 'provider_native_value_currency_unverified',
+                'total_volume': 'provider_native_quantity', 'total_value': 'provider_native_value_currency_unverified',
+            },
+            source_id='SSI-FC-DATA', revision='unknown',
+        )
+        previous = observations.get(trading_date)
+        if previous is not None and previous != observation:
+            raise ValueError('SSI DailyIndex contains conflicting rows for one trading date')
+        observations[trading_date] = observation
+    return [observations[key] for key in sorted(observations)]
 
 
 def normalize_ssi_hose_equity_daily_rows(
@@ -888,6 +994,53 @@ class SsiFastConnectProvider(BaseMarketProvider):
         if len(rows) != total_records:
             raise ValueError('SSI IndexComponents page set is incomplete')
         return normalize_ssi_hose_index_components(rows, index, datetime.now(timezone.utc))
+
+    def fetch_hose_daily_index(
+        self, index: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[DailyIndexObservation]:
+        if index.instrument_class != 'index' or index.venue != 'HOSE':
+            raise ValueError('SSI DailyIndex adapter only supports HOSE indexes')
+        if start > end:
+            raise ValueError('SSI DailyIndex date range is invalid')
+        if end >= datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date():
+            raise ValueError('SSI DailyIndex history must end before the current Vietnam date until publication timing is verified')
+
+        def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:
+            payload = self.get_json('DailyIndex', {
+                'indexId': index.native_symbol,
+                'fromDate': start.strftime('%d/%m/%Y'),
+                'toDate': end.strftime('%d/%m/%Y'),
+                'pageIndex': page_index,
+                'pageSize': 1000,
+                'ascending': 'true',
+            }, credential=credential)
+            status = str(payload.get('status', '')).strip().casefold()
+            if status not in {'success', '200'}:
+                raise ValueError('SSI DailyIndex returned an unsuccessful response')
+            total_raw = payload.get('totalRecord')
+            if isinstance(total_raw, bool) or not isinstance(total_raw, (int, str)):
+                raise ValueError('SSI DailyIndex response has an invalid totalRecord')
+            try:
+                total = int(total_raw)
+            except (TypeError, ValueError) as error:
+                raise ValueError('SSI DailyIndex response has an invalid totalRecord') from error
+            rows = payload.get('data')
+            if total < 0 or not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('SSI DailyIndex response has invalid data')
+            return total, rows
+
+        total_records, rows = checked_page(1)
+        if total_records > 10000:
+            raise ValueError('SSI DailyIndex range exceeds the documented 10-page limit')
+        page_count = max(1, (total_records + 999) // 1000)
+        for page_index in range(2, page_count + 1):
+            page_total, page_rows = checked_page(page_index)
+            if page_total != total_records:
+                raise ValueError('SSI DailyIndex totalRecord changed during pagination')
+            rows.extend(page_rows)
+        if len(rows) != total_records:
+            raise ValueError('SSI DailyIndex page set is incomplete')
+        return normalize_ssi_hose_daily_index_rows(rows, index, start, end, datetime.now(timezone.utc))
 
     def fetch_hose_equity_daily(
         self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],

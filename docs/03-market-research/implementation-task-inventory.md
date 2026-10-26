@@ -21,8 +21,9 @@
 | P-ssi-instrument-catalogue | Instruments theo venue | DOCS / WAIT_ACCOUNT |
 | P-ssi-equity-daily-bars | Equity EOD/OHLCV | DOCS / WAIT_ACCOUNT; rights/adjustment cần xác minh |
 | P-ssi-equity-intraday-bars | Equity interval riêng từng resolution | DOCS / WAIT_ACCOUNT; mỗi resolution semantic khác là task riêng |
-| P-ssi-indices | HOSE/HNX index catalogue and daily index series | DOCS / WAIT_ACCOUNT; HOSE/HNX IndexList adapters are offline-tested; DailyIndex and account access remain pending |
+| P-ssi-indices | HOSE/HNX index catalogue and daily index series | DOCS / WAIT_ACCOUNT; HOSE/HNX IndexList adapters are offline-tested; HNX DailyIndex and account access remain pending |
 | P-ssi-index-constituents-hose | HOSE observed constituent snapshots | DOCS / WAIT_ACCOUNT; full local snapshot path is offline-tested; provider identifier semantics, historical effective dates, account access and rights remain unverified |
+| P-ssi-daily-index-hose | HOSE daily index observations | DOCS / WAIT_ACCOUNT; full local series path is offline-tested; field units, currency, publication timing, account access and rights remain unverified |
 | P-ssi-corporate-actions | Rights/events | DOCS / WAIT_ACCOUNT |
 | P-ssi-trade-stream | Trade event stream | DOCS / WAIT_ACCOUNT; reconnect/sequence cần inventory |
 | P-ssi-quote-stream | Quote/market topics | DOCS / WAIT_ACCOUNT |

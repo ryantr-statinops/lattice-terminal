@@ -11,7 +11,7 @@ from threading import RLock
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .models import Candle, DataQuality, DatasetEnvelope, IndexConstituentSet, Instrument, MarketSnapshot
+from .models import Candle, DailyIndexObservation, DataQuality, DatasetEnvelope, IndexConstituentSet, Instrument, MarketSnapshot
 from .sources import SourceGate
 
 STORAGE_SCHEMA_VERSION = '1'
@@ -320,6 +320,41 @@ class AtomicDatasetPublisher:
                     'constituents': constituents.model_dump(mode='json'),
                 }
         return None
+
+    def index_daily_snapshot(self, provider_id: str, index_instrument_id: str) -> dict | None:
+        if provider_id != 'ssi' or not index_instrument_id.strip():
+            raise ValueError('provider daily index data requires a supported provider and index')
+        index = next((value for value in self.instrument_catalogue(
+            provider_id, 'ssi:market-data:instruments.index:index:HOSE',
+        ) if value.id == index_instrument_id), None)
+        if index is None or index.instrument_class != 'index' or index.venue != 'HOSE':
+            raise ValueError('index is not present in the authorized HOSE provider catalogue')
+        by_date: dict[str, dict] = {}
+        used_snapshots: list[str] = []
+        for summary in self.manifests(provider_id, 'indices.daily'):
+            manifest, envelopes = self.load(summary['snapshot_id'])
+            self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
+            for envelope in envelopes:
+                if not isinstance(envelope.payload, dict) or envelope.payload.get('index_instrument_id') != index_instrument_id:
+                    continue
+                observation = DailyIndexObservation.model_validate(envelope.payload)
+                trading_date = observation.trading_date.isoformat()
+                if trading_date in by_date:
+                    continue
+                by_date[trading_date] = {
+                    'snapshot_id': manifest['snapshot_id'],
+                    'observed_at': envelope.observed_at.isoformat(),
+                    'observation': observation.model_dump(mode='json'),
+                }
+                used_snapshots.append(manifest['snapshot_id'])
+        if not by_date:
+            return None
+        records = [by_date[key] for key in sorted(by_date)]
+        return {
+            'index': index.model_dump(mode='json'),
+            'snapshot_ids': list(dict.fromkeys(used_snapshots)),
+            'records': records,
+        }
 
     @staticmethod
     def _is_expired(manifest: dict, now: datetime) -> bool:
