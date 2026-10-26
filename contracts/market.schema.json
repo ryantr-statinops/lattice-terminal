@@ -98,6 +98,121 @@
     "title": "Candle",
     "type": "object"
   },
+  "CorporateAction": {
+    "additionalProperties": false,
+    "properties": {
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "action_type": {
+        "title": "Action Type",
+        "type": "string"
+      },
+      "announced_at": {
+        "format": "date-time",
+        "title": "Announced At",
+        "type": "string"
+      },
+      "cash_amount": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cash Amount"
+      },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Currency"
+      },
+      "ex_date": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ex Date"
+      },
+      "instrument_id": {
+        "title": "Instrument Id",
+        "type": "string"
+      },
+      "payment_date": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Payment Date"
+      },
+      "ratio": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ratio"
+      },
+      "record_date": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Record Date"
+      },
+      "revision": {
+        "default": "0",
+        "title": "Revision",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "instrument_id",
+      "action_id",
+      "action_type",
+      "announced_at",
+      "source_id"
+    ],
+    "title": "CorporateAction",
+    "type": "object"
+  },
   "DataQuality": {
     "additionalProperties": false,
     "properties": {
