@@ -83,5 +83,15 @@ class TestProviders(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'does not support candle interval: 5m'):
                 provider.fetch_candles('HPG', '5m', datetime.now(timezone.utc), datetime.now(timezone.utc))
 
+    def test_capability_registry_separates_documentation_implementation_and_rights(self):
+        registry = ProviderRouter().capabilities
+        vndirect_daily = next(
+            item for item in registry.list()
+            if item.provider_id == 'vndirect' and item.dataset == 'candles.1d'
+        )
+        self.assertFalse(vndirect_daily.documented)
+        self.assertTrue(vndirect_daily.implemented)
+        self.assertEqual(vndirect_daily.rights_state, 'unverified')
+
 if __name__ == '__main__':
     unittest.main()

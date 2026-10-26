@@ -21,6 +21,56 @@ class ProviderStatus(BaseModel):
     error: str | None = None
     configured: bool = True
 
+class ProviderCapability(BaseModel):
+    provider_id: str
+    dataset: str
+    asset_class: str
+    venues: list[str] = Field(default_factory=list)
+    documented: bool = False
+    implemented: bool = False
+    access_state: Literal['unknown', 'configured', 'available', 'blocked'] = 'unknown'
+    rights_state: Literal['unknown', 'unverified', 'approved', 'denied'] = 'unknown'
+    health_state: Literal['unknown', 'connected', 'offline', 'blocked'] = 'unknown'
+    evidence: str = ''
+
+class ProviderCapabilityRegistry:
+    """Dataset-level claims kept separate from transient provider health."""
+
+    def __init__(self):
+        self._items = [
+            ProviderCapability(
+                provider_id='vndirect', dataset='candles.1d', asset_class='equity',
+                venues=['HOSE', 'HNX', 'UPCOM'], documented=False, implemented=True,
+                access_state='unknown', rights_state='unverified',
+                evidence='Observed DChart UDF adapter; API contract and rights unverified.',
+            ),
+            ProviderCapability(
+                provider_id='vndirect', dataset='candles.1m', asset_class='equity',
+                venues=['HOSE', 'HNX', 'UPCOM'], documented=False, implemented=True,
+                access_state='unknown', rights_state='unverified',
+                evidence='Observed DChart UDF adapter; API contract and rights unverified.',
+            ),
+            ProviderCapability(
+                provider_id='tcbs', dataset='candles', asset_class='equity',
+                documented=True, implemented=False, access_state='unknown',
+                rights_state='unknown', evidence='Official OpenAPI documented; adapter is not implemented.',
+            ),
+            ProviderCapability(
+                provider_id='dnse', dataset='market-data', asset_class='multiple',
+                documented=True, implemented=False, access_state='unknown',
+                rights_state='unknown', evidence='Official API documented; dataset adapters are not implemented.',
+            ),
+            ProviderCapability(
+                provider_id='ssi', dataset='market-data', asset_class='multiple',
+                documented=True, implemented=False, access_state='blocked',
+                rights_state='unknown', health_state='blocked',
+                evidence='Capability remains gated until source access and rights are approved.',
+            ),
+        ]
+
+    def list(self) -> list[ProviderCapability]:
+        return list(self._items)
+
 class BaseMarketProvider(ABC):
     id: str
     name: str
@@ -311,6 +361,7 @@ class ProviderRouter:
             'fixture': SyntheticFixtureProvider(),
         }
         self.policy = RoutingPolicy()
+        self.capabilities = ProviderCapabilityRegistry()
 
     def list_statuses(self) -> list[ProviderStatus]:
         statuses: list[ProviderStatus] = []

@@ -66,6 +66,10 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def list_providers():
         return provider_router.list_statuses()
 
+    @app.get("/internal/v1/providers/capabilities")
+    def list_provider_capabilities():
+        return provider_router.capabilities.list()
+
     @app.post("/internal/v1/providers/{id}/ping")
     def ping_provider(id: str):
         return provider_router.ping(id)

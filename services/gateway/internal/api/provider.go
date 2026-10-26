@@ -42,6 +42,10 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 		callEngine(w, r, "GET", "/internal/v1/providers", nil)
 	})
 
+	m.HandleFunc("GET /api/v1/providers/capabilities", func(w http.ResponseWriter, r *http.Request) {
+		callEngine(w, r, "GET", "/internal/v1/providers/capabilities", nil)
+	})
+
 	m.HandleFunc("POST /api/v1/providers/{id}/ping", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		callEngine(w, r, "POST", "/internal/v1/providers/"+id+"/ping", nil)
