@@ -35,17 +35,25 @@ func Set(value Credential) error {
 	}
 	data, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return redactCredentialError(err, value.ConsumerID, value.ConsumerSecret)
 	}
-	return keyring.Set(keyringService, keyringAccount, string(data))
+	return redactCredentialError(keyring.Set(keyringService, keyringAccount, string(data)), value.ConsumerID, value.ConsumerSecret, string(data))
 }
 func Get() (Credential, error) {
 	var result Credential
 	data, err := keyring.Get(keyringService, keyringAccount)
 	if err != nil {
-		return result, err
+		return result, errors.New("could not read SSI credentials from OS keyring")
 	}
 	err = json.Unmarshal([]byte(data), &result)
-	return result, err
+	if err != nil {
+		return Credential{}, errors.New("SSI credentials in OS keyring are invalid")
+	}
+	return result, nil
 }
-func Delete() error { return keyring.Delete(keyringService, keyringAccount) }
+func Delete() error {
+	if err := keyring.Delete(keyringService, keyringAccount); err != nil {
+		return errors.New("could not delete SSI credentials from OS keyring")
+	}
+	return nil
+}

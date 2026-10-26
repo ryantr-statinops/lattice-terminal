@@ -55,9 +55,9 @@ func setVaultKeyringValue(value string) error {
 	}
 	bytes := []byte(value)
 	entry := native{Type: 1, Target: name, Size: uint32(len(bytes)), Blob: &bytes[0], Persist: 2, User: user}
-	ok, _, err := api.NewProc("CredWriteW").Call(uintptr(unsafe.Pointer(&entry)), 0)
+	ok, _, _ := api.NewProc("CredWriteW").Call(uintptr(unsafe.Pointer(&entry)), 0)
 	if ok == 0 {
-		return err
+		return errors.New("could not store vault master key in OS keyring")
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func Set(v Credential) error {
 	c := native{Type: 1, Target: name, Size: uint32(len(b)), Blob: &b[0], Persist: 2, User: user}
 	ok, _, err := api.NewProc("CredWriteW").Call(uintptr(unsafe.Pointer(&c)), 0)
 	if ok == 0 {
-		return err
+		return redactCredentialError(err, v.ConsumerID, v.ConsumerSecret, string(b))
 	}
 	return nil
 }
@@ -85,20 +85,22 @@ func Get() (Credential, error) {
 	var p *native
 	ok, _, err := api.NewProc("CredReadW").Call(uintptr(unsafe.Pointer(name)), 1, 0, uintptr(unsafe.Pointer(&p)))
 	if ok == 0 {
-		return result, err
+		return result, errors.New("could not read SSI credentials from OS keyring")
 	}
 	defer api.NewProc("CredFree").Call(uintptr(unsafe.Pointer(p)))
 	if p.Size > 2500 {
 		return result, errors.New("invalid credential blob")
 	}
-	err = json.Unmarshal(unsafe.Slice(p.Blob, int(p.Size)), &result)
-	return result, err
+	if err = json.Unmarshal(unsafe.Slice(p.Blob, int(p.Size)), &result); err != nil {
+		return Credential{}, errors.New("SSI credentials in OS keyring are invalid")
+	}
+	return result, nil
 }
 func Delete() error {
 	name, _ := syscall.UTF16PtrFromString(target)
-	ok, _, err := api.NewProc("CredDeleteW").Call(uintptr(unsafe.Pointer(name)), 1, 0)
+	ok, _, _ := api.NewProc("CredDeleteW").Call(uintptr(unsafe.Pointer(name)), 1, 0)
 	if ok == 0 {
-		return err
+		return errors.New("could not delete SSI credentials from OS keyring")
 	}
 	return nil
 }

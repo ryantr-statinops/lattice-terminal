@@ -31,7 +31,7 @@ func PrepareComposeFile(path string) error {
 	if err != nil {
 		return errors.New("SSI credentials are not available in the OS keyring")
 	}
-	return writeComposeFile(path, value)
+	return redactCredentialError(writeComposeFile(path, value), value.ConsumerID, value.ConsumerSecret)
 }
 
 func writeComposeFile(path string, value Credential) error {
