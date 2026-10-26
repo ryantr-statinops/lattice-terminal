@@ -26,6 +26,10 @@ type Runner struct {
 }
 
 func (r *Runner) call(ctx context.Context, method, path string, input, output any) error {
+	return r.callWithTimeout(ctx, method, path, input, output, 10*time.Second)
+}
+
+func (r *Runner) callWithTimeout(ctx context.Context, method, path string, input, output any, timeout time.Duration) error {
 	var body io.Reader
 	if input != nil {
 		b, err := json.Marshal(input)
@@ -40,7 +44,7 @@ func (r *Runner) call(ctx context.Context, method, path string, input, output an
 	}
 	req.Header.Set("Authorization", "Bearer "+r.Engine.Token)
 	req.Header.Set("Content-Type", "application/json")
-	client := http.Client{Timeout: 10 * time.Second}
+	client := http.Client{Timeout: timeout}
 	response, err := client.Do(req)
 	if err != nil {
 		return errors.New("engine unavailable")

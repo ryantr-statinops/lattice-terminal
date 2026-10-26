@@ -186,15 +186,13 @@ class TestProviders(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, 'does not match'):
             router.update_policy({'datasets': {'candles.1d:equity:HNX': capability_id}})
-        with self.assertRaisesRegex(ValueError, 'no implemented adapter'):
-            router.update_policy({'datasets': {
-                'instruments.details:equity:unknown': 'ssi:market-data:instruments.details:equity:unknown',
-            }})
+        ssi_catalogue = {'instruments.details:equity:HOSE': 'ssi:market-data:instruments.details:equity:HOSE'}
+        self.assertEqual(router.update_policy({'datasets': ssi_catalogue}).datasets, ssi_catalogue)
         with self.assertRaisesRegex(ValueError, 'unknown dataset capability'):
             router.update_policy({'datasets': {'candles.1d:equity:HOSE': 'ssi:missing'}})
         with self.assertRaisesRegex(ValueError, 'dataset:asset_class:venue'):
             router.update_policy({'datasets': {'candles.1d': capability_id}})
-        self.assertEqual(router.policy.datasets, route)
+        self.assertEqual(router.policy.datasets, ssi_catalogue)
 
     def test_fixture_provider_lifecycle(self):
         p = SyntheticFixtureProvider()

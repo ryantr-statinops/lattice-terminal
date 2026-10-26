@@ -1,9 +1,10 @@
-import {useQuery} from '@tanstack/react-query';
-import {request,type IngestionJob} from './api';
+import {useState} from 'react';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {request,send,type IngestionJob} from './api';
 import {DataTable,StatusLabel} from './ui/data';
 import {Panel,PanelHeader} from './ui/layout';
 import {Button} from './ui/buttons';
-import {ErrorState} from './ui/feedback';
+import {ErrorState,InlineNotice} from './ui/feedback';
 
 function tone(status:IngestionJob['status']):'positive'|'warning'|'negative'|'info'{
  if(status==='completed')return 'positive';
@@ -12,12 +13,26 @@ function tone(status:IngestionJob['status']):'positive'|'warning'|'negative'|'in
  return 'info';
 }
 
-export function IngestionJobs(){
+export function IngestionJobs({canSyncSsiHoseEquity=false}:{canSyncSsiHoseEquity?:boolean}){
+ const client=useQueryClient();
+ const [syncing,setSyncing]=useState(false);
+ const [syncError,setSyncError]=useState<unknown>(null);
+ const [syncMessage,setSyncMessage]=useState('');
  const jobs=useQuery({queryKey:['ingestion-jobs'],queryFn:()=>request<IngestionJob[]>('/ingestion/jobs')});
+ const syncSsiCatalogue=async()=>{
+  setSyncing(true);setSyncError(null);setSyncMessage('');
+  try{
+   const result=await send<{job:{status:string};snapshot_id:string}>('/ingestion/catalogues/ssi/hose-equity',{});
+   setSyncMessage(`SSI HOSE catalogue saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
+   await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']})]);
+  }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
+  finally{setSyncing(false)}
+ };
  return <Panel>
-  <PanelHeader title="INGESTION JOBS" actions={<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button>}/>
+  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
   <div className="panel-content">
-   <ErrorState error={jobs.error} onRetry={()=>void jobs.refetch()}/>
+   <ErrorState error={jobs.error||syncError} onRetry={()=>{void jobs.refetch();setSyncError(null)}}/>
+   {syncMessage&&<InlineNotice tone="positive">{syncMessage}</InlineNotice>}
    <DataTable caption="Provider ingestion jobs" rows={jobs.data??[]} loading={jobs.isPending} empty="No ingestion jobs have been recorded." rowKey={job=>job.id} columns={[
     {key:'dataset',label:'Dataset',render:job=><><strong>{job.provider_id}</strong> · {job.dataset}<div className="muted">{job.asset_class} · {job.venue||'venue not specified'}</div></>},
     {key:'status',label:'Status',render:job=><StatusLabel tone={tone(job.status)}>{job.status.toUpperCase()}</StatusLabel>},

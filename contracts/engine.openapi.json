@@ -160,6 +160,23 @@
         "title": "RunRequest",
         "type": "object"
       },
+      "SsiCatalogueIngest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "SsiCatalogueIngest",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -275,6 +292,42 @@
           }
         },
         "summary": "Candles"
+      }
+    },
+    "/internal/v1/market/catalogues/ssi/hose-equity": {
+      "post": {
+        "operationId": "ingest_ssi_hose_equity_catalogue_internal_v1_market_catalogues_ssi_hose_equity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiCatalogueIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hose Equity Catalogue"
       }
     },
     "/internal/v1/market/datasets": {

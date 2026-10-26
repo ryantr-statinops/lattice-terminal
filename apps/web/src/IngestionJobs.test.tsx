@@ -3,9 +3,9 @@ import {afterEach,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {IngestionJobs} from './IngestionJobs';
-import {request} from './api';
+import {request,send} from './api';
 
-vi.mock('./api',()=>({request:vi.fn()}));
+vi.mock('./api',()=>({request:vi.fn(),send:vi.fn()}));
 afterEach(()=>{cleanup();vi.clearAllMocks()});
 
 it('shows durable ingestion progress, restart checkpoint and safe error code',async()=>{
@@ -27,4 +27,13 @@ it('shows an empty state when no provider ingestion has run',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs/></QueryClientProvider>);
  expect(await screen.findByText('No ingestion jobs have been recorded.')).toBeDefined();
+});
+
+it('starts the supported SSI catalogue sync and refreshes its job list',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'abcdefghijklmnop'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHoseEquity/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HOSE stocks'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hose-equity',{}));
+ expect(await screen.findByText('SSI HOSE catalogue saved as snapshot abcdefghijkl.')).toBeDefined();
 });

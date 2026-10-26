@@ -132,15 +132,15 @@ class ProviderCapabilityRegistry:
                 documented=True, implemented=False,
                 evidence='DNSE public market-data catalogue documents historical OHLC by market family; exact venue, schema and rights require confirmation.',
             )
-        for dataset, asset_class, evidence in (
-            ('instruments.details', 'equity', 'SSI SecuritiesDetails documents stock security type and exchange fields.'),
-            ('instruments.details', 'covered_warrant', 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
-            ('instruments.details', 'derivative', 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
-            ('instruments.details', 'etf', 'SSI SecuritiesDetails documents EF security type; exact venue coverage requires account inventory.'),
-            ('instruments.details', 'bond', 'SSI SecuritiesDetails documents BO security type; board and rights require account inventory.'),
-            ('instruments.details', 'fund', 'SSI SecuritiesDetails documents OF and MF security types; exact venue and rights require account inventory.'),
+        for dataset, asset_class, venue, implemented, evidence in (
+            ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
+            ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
+            ('instruments.details', 'etf', 'unknown', False, 'SSI SecuritiesDetails documents EF security type; exact venue coverage requires account inventory.'),
+            ('instruments.details', 'bond', 'unknown', False, 'SSI SecuritiesDetails documents BO security type; board and rights require account inventory.'),
+            ('instruments.details', 'fund', 'unknown', False, 'SSI SecuritiesDetails documents OF and MF security types; exact venue and rights require account inventory.'),
         ):
-            add('ssi', 'market-data', dataset, asset_class, 'unknown', documented=True, implemented=False, rights_state='unverified', evidence=evidence)
+            add('ssi', 'market-data', dataset, asset_class, venue, documented=True, implemented=implemented, rights_state='unverified', evidence=evidence)
 
     def list(self) -> list[ProviderCapability]:
         return list(self._items)

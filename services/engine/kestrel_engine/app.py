@@ -1,5 +1,6 @@
 import secrets
 from pathlib import Path
+from datetime import datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from .market import MarketRepository
@@ -9,7 +10,7 @@ from .sources import SourceGate
 from .providers import ProviderRouter
 from .programs import inspect_source
 from .runner import RunManager
-from .models import Record
+from .models import DatasetEnvelope, Record
 from .tapes import TapeRepository
 from .execution import Order,validate_order,quote_fill
 from decimal import Decimal
@@ -43,6 +44,9 @@ class ProviderPing(Record):
     service:str='market-data'
     credential:dict[str,str]|None=None
 
+class SsiCatalogueIngest(Record):
+    credential:dict[str,str]
+
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.internal_token = token
@@ -54,6 +58,7 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     dataset_publisher=AtomicDatasetPublisher(root/'market',gate)
     dataset_publisher.prune_expired()
     app.state.dataset_publisher=dataset_publisher
+    app.state.provider_router=provider_router
 
     @app.on_event('shutdown')
     def stop_workers():runs.close()
@@ -107,6 +112,23 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     @app.get('/internal/v1/market/datasets')
     def dataset_snapshots(provider_id:str='',dataset:str=''):
         return dataset_publisher.manifests(provider_id,dataset)
+
+    @app.post('/internal/v1/market/catalogues/ssi/hose-equity')
+    def ingest_ssi_hose_equity_catalogue(value:SsiCatalogueIngest):
+        capability_id='ssi:market-data:instruments.details:equity:HOSE'
+        endpoint='Market/SecuritiesDetails'
+        gate.authorize(capability_id,'store',endpoint)
+        provider=provider_router.providers['ssi']
+        instruments=provider.fetch_hose_equity_catalogue(credential=value.credential)
+        if not instruments:raise ValueError('SSI returned no HOSE equity instruments')
+        observed_at=datetime.now(timezone.utc)
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='instruments.details',source_id=instrument.source_id,
+            observed_at=observed_at,available_at=observed_at,revision='0',schema_version='1',
+            parser_version='ssi-hose-equity-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
+            temporal_semantics='not_time_series',quality='unknown',payload=instrument.model_dump(mode='json'),
+        ) for instrument in instruments]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
     @app.get('/internal/v1/backtest/data')
     def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]

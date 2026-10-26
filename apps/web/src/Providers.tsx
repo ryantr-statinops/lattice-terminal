@@ -233,7 +233,7 @@ export function Providers() {
         </div>
       )}
 
-      <IngestionJobs />
+      <IngestionJobs canSyncSsiHoseEquity={providers.data?.some(provider => provider.id === 'ssi' && provider.configured) === true && (capabilities.data ?? []).some(capability => capability.capability_id === 'ssi:market-data:instruments.details:equity:HOSE' && capability.implemented)} />
 
       {routing.data && (
         <Panel>
