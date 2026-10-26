@@ -48,5 +48,13 @@ class TestProviders(unittest.TestCase):
         with self.assertRaises(ValueError):
             p.fetch_candles('HPG', '1d', datetime.now(timezone.utc), datetime.now(timezone.utc))
 
+    def test_dnse_credentials_do_not_imply_connected(self):
+        p = DnseBrokerProvider(api_key='configured-key', api_secret='configured-secret')
+        status = p.ping()
+        self.assertEqual(status.state, 'blocked')
+        self.assertTrue(status.configured)
+        self.assertIsNone(status.latency_ms)
+        self.assertIn('connectivity is unverified', status.error)
+
 if __name__ == '__main__':
     unittest.main()

@@ -216,12 +216,16 @@ class DnseBrokerProvider(BaseMarketProvider):
             id=self.id,
             name=self.name,
             category=self.category,
-            state='connected' if is_configured else 'blocked',
-            latency_ms=45.0 if is_configured else None,
+            state='blocked',
+            latency_ms=None,
             capabilities=self.capabilities,
             description=self.description,
             configured=is_configured,
-            error=None if is_configured else 'API credentials not configured in settings',
+            error=(
+                'DNSE connection check is not implemented; credentials are configured but connectivity is unverified'
+                if is_configured
+                else 'API credentials not configured in settings'
+            ),
         )
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
