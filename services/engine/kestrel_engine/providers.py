@@ -71,6 +71,9 @@ class ProviderCapabilityRegistry:
     def list(self) -> list[ProviderCapability]:
         return list(self._items)
 
+    def source_ids(self) -> list:
+        return [f'{item.provider_id}:{item.dataset}' for item in self._items]
+
 class BaseMarketProvider(ABC):
     id: str
     name: str

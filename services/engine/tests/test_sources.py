@@ -17,3 +17,11 @@ def test_expired_and_malformed_policy_fail_closed(tmp_path):
     with pytest.raises(SourceBlocked):gate.authorize('SSI-FC-DATA-REST','display','DailyOhlc')
     gate.path.write_text('not-json')
     assert all(v['operating_state']=='fixture-only' for v in gate.status())
+
+def test_source_gate_registers_capabilities_from_multiple_providers(tmp_path):
+    gate=SourceGate(tmp_path,['dnse:candles.equity.1d','tcbs:instruments.equity'])
+    records=gate.records()
+    assert 'dnse:candles.equity.1d' in records
+    assert 'tcbs:instruments.equity' in records
+    assert 'SSI-FC-DATA-REST' in records
+    assert {item['id'] for item in gate.status()} >= {'dnse:candles.equity.1d','tcbs:instruments.equity'}

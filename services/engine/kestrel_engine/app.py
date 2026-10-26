@@ -43,9 +43,9 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     app.state.internal_token = token
     root = Path(data_root) if data_root else Path('.cache/engine-test-data')
     market = MarketRepository(root,Path(__file__).resolve().parents[3]/'data/fixtures')
-    gate=SourceGate(root)
     runs=RunManager(root)
     provider_router = ProviderRouter(root / 'market')
+    gate=SourceGate(root,provider_router.capabilities.source_ids())
 
     @app.on_event('shutdown')
     def stop_workers():runs.close()

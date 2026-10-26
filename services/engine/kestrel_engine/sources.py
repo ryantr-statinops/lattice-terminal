@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import AwareDatetime,Field
 from .models import Record
 
-CAPABILITIES=['SSI-FC-DATA-REST','SSI-FC-DATA-STREAM']
+LEGACY_CAPABILITIES=['SSI-FC-DATA-REST','SSI-FC-DATA-STREAM']
 class SourceBlocked(ValueError):pass
 class Scope(Record):
     endpoints:list[str]=Field(min_length=1)
@@ -33,14 +33,16 @@ class Evidence(Record):
     probe_scope:Scope|None=None
 
 class SourceGate:
-    def __init__(self,root:Path):self.path=root/'source-policy.json'
+    def __init__(self,root:Path,capabilities:list[str]|None=None):
+        self.path=root/'source-policy.json'
+        self.capabilities=list(dict.fromkeys([*(capabilities or []),*LEGACY_CAPABILITIES]))
     def records(self):
-        if not self.path.exists():return {v:Evidence(id=v) for v in CAPABILITIES}
+        if not self.path.exists():return {v:Evidence(id=v) for v in self.capabilities}
         import json
         values=json.loads(self.path.read_text(encoding='utf-8'))
         if not isinstance(values,list):raise SourceBlocked('invalid source policy; access disabled')
         records={v.id:v for v in map(Evidence.model_validate,values)}
-        for key in CAPABILITIES:records.setdefault(key,Evidence(id=key))
+        for key in self.capabilities:records.setdefault(key,Evidence(id=key))
         return records
     def authorize(self,capability:str,purpose:str,endpoint:str,probe:bool=False)->Scope:
         record=self.records().get(capability)
@@ -58,7 +60,7 @@ class SourceGate:
         return scope
     def status(self):
         try:records=self.records()
-        except Exception:return [{'id':v,'documented':True,'access_tested':False,'rights_confirmed':False,'approved':False,'operating_state':'fixture-only','reason':'invalid source policy; access disabled'} for v in CAPABILITIES]
+        except Exception:return [{'id':v,'documented':False,'access_tested':False,'rights_confirmed':False,'approved':False,'operating_state':'fixture-only','reason':'invalid source policy; access disabled'} for v in self.capabilities]
         result=[]
         for record in records.values():
             state='fixture-only';reason='Account entitlement, rights and access evidence not verified'
