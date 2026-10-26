@@ -199,9 +199,10 @@ func run(root, data string, dev bool) error {
 		return err
 	}
 	defer db.Close()
+	vault, _ := secret.OpenVault(data)
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
 	defer func() { cancel(); bridge.Wait() }()
-	application := &api.API{Store: db, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
+	application := &api.API{Store: db, Credentials: vault, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
 	application.Engine = bridge
 	bridge.OnEvent = application.PaperEvent
 	bridge.OnFinish = application.FinishPaper

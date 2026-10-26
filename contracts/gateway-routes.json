@@ -50,6 +50,7 @@
     "POST /api/v1/workspaces/{kind}/mount",
     "POST /api/v1/workspaces/{kind}/rename",
     "PUT /api/v1/providers/routing",
+    "PUT /api/v1/providers/{id}/credentials",
     "PUT /api/v1/workspaces/{kind}/file"
   ],
   "engine_proxy": "Whitelisted market/quant/source/data GETs and program inspection POST only; see cmd/kestrel/main.go."

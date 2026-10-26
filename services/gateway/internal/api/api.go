@@ -15,15 +15,20 @@ import (
 )
 
 type API struct {
-	Store     *store.Store
-	Workspace workspace.Workspace
-	Valid     func(*http.Request) bool
-	StartRun  func(store.Run)
-	StopRun   func(string)
-	Inspect   func(string, string, json.RawMessage) error
-	Engine    *Runner
-	Terminal  *terminal.Manager
-	paperMu   sync.Mutex
+	Store       *store.Store
+	Credentials CredentialWriter
+	Workspace   workspace.Workspace
+	Valid       func(*http.Request) bool
+	StartRun    func(store.Run)
+	StopRun     func(string)
+	Inspect     func(string, string, json.RawMessage) error
+	Engine      *Runner
+	Terminal    *terminal.Manager
+	paperMu     sync.Mutex
+}
+
+type CredentialWriter interface {
+	Set(provider, service string, credential []byte) error
 }
 
 func JSON(w http.ResponseWriter, status int, value any) {

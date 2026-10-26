@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -49,6 +50,31 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 	m.HandleFunc("POST /api/v1/providers/{id}/ping", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		callEngine(w, r, "POST", "/internal/v1/providers/"+id+"/ping", nil)
+	})
+
+	m.HandleFunc("PUT /api/v1/providers/{id}/credentials", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if a.Credentials == nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "credential vault is not initialized"})
+			return
+		}
+		var input struct {
+			Service    string          `json:"service"`
+			Credential json.RawMessage `json:"credential"`
+		}
+		if !Read(w, r, &input) {
+			return
+		}
+		var document map[string]json.RawMessage
+		if input.Service == "" || len(input.Credential) == 0 || len(input.Credential) > 1024*1024 || json.Unmarshal(input.Credential, &document) != nil || len(document) == 0 {
+			JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid provider credential"})
+			return
+		}
+		if err := a.Credentials.Set(r.PathValue("id"), input.Service, input.Credential); err != nil {
+			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not save provider credentials"})
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	})
 
 	m.HandleFunc("GET /api/v1/providers/routing", func(w http.ResponseWriter, r *http.Request) {
