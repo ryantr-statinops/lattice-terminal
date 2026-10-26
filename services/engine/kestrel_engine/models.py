@@ -304,7 +304,7 @@ class SourceCapability(Record):
     reason: str
 
 class MarketSnapshot(Record):
-    schema_version: Literal['1'] = '1'
+    schema_version: Literal['1','2'] = '2'
     snapshot_id: str
     instrument: Instrument
     quality: DataQuality

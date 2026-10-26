@@ -12,10 +12,17 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from .models import Candle,DataQuality,Instrument,MarketSnapshot
 
-SCHEMA=pa.schema([
+SCHEMA_V1=pa.schema([
     ('instrument_id',pa.string()),('interval',pa.string()),('open_time',pa.timestamp('us',tz='UTC')),
     ('close_time',pa.timestamp('us',tz='UTC')),('available_at',pa.timestamp('us',tz='UTC')),
     *[(field,pa.decimal128(38,8)) for field in ['open','high','low','close','volume']],
+    ('is_closed',pa.bool_()),('revision',pa.string()),('session',pa.string()),('source_id',pa.string())
+])
+SCHEMA_V2=pa.schema([
+    ('instrument_id',pa.string()),('interval',pa.string()),('open_time',pa.timestamp('us',tz='UTC')),
+    ('close_time',pa.timestamp('us',tz='UTC')),('available_at',pa.timestamp('us',tz='UTC')),
+    *[(field,pa.decimal128(38,8)) for field in ['open','high','low','close','volume']],
+    ('currency',pa.string()),('price_unit',pa.string()),('volume_unit',pa.string()),
     ('is_closed',pa.bool_()),('revision',pa.string()),('session',pa.string()),('source_id',pa.string())
 ])
 
@@ -43,7 +50,7 @@ class MarketRepository:
         # Multiple revisions are retained as distinct snapshots, not silently merged.
         if len({(v.interval,v.open_time) for v in rows})!=len(rows): raise ValueError('select an explicit revision before publishing')
         if any(not v.is_closed for v in rows): raise ValueError('provisional bars cannot enter historical snapshots')
-        content={'schema_version':'1','parser_version':'fixture-normalizer-1','instrument':instrument.model_dump(mode='json'),'candles':[v.model_dump(mode='json') for v in rows]}
+        content={'schema_version':'2','parser_version':'fixture-normalizer-2','instrument':instrument.model_dump(mode='json'),'candles':[v.model_dump(mode='json') for v in rows]}
         snapshot_id=hashlib.sha256(json.dumps(content,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         target=self.root/'snapshots'/snapshot_id
         with self.lock:
@@ -58,9 +65,9 @@ class MarketRepository:
                 for field in ['open','high','low','close','volume']:
                     item[field]=Decimal(item[field]) if item[field] is not None else None
                 data.append(item)
-            pq.write_table(pa.Table.from_pylist(data,schema=SCHEMA),temp/'candles.parquet',compression='zstd')
+            pq.write_table(pa.Table.from_pylist(data,schema=SCHEMA_V2),temp/'candles.parquet',compression='zstd')
             digest=hashlib.sha256((temp/'candles.parquet').read_bytes()).hexdigest()
-            manifest={'schema_version':'1','snapshot_id':snapshot_id,'instrument':instrument.model_dump(mode='json'),'quality':DataQuality(state='fixture').model_dump(),'source_id':'SYNTHETIC-FIXTURE','is_synthetic':True,'parser_version':'fixture-normalizer-1','raw_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'parquet_sha256':digest,'row_count':len(rows),'retention_policy':'synthetic-only','coverage':{'start':rows[0].open_time.isoformat() if rows else None,'end':rows[-1].close_time.isoformat() if rows else None}}
+            manifest={'schema_version':'2','snapshot_id':snapshot_id,'instrument':instrument.model_dump(mode='json'),'quality':DataQuality(state='fixture').model_dump(),'source_id':'SYNTHETIC-FIXTURE','is_synthetic':True,'parser_version':'fixture-normalizer-2','raw_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'parquet_sha256':digest,'row_count':len(rows),'retention_policy':'synthetic-only','coverage':{'start':rows[0].open_time.isoformat() if rows else None,'end':rows[-1].close_time.isoformat() if rows else None}}
             with (temp/'manifest.json').open('w',encoding='utf-8',newline='\n') as out:
                 json.dump(manifest,out,sort_keys=True,indent=2);out.flush();os.fsync(out.fileno())
             with (temp/'candles.parquet').open('r+b') as out: os.fsync(out.fileno())
@@ -80,6 +87,8 @@ class MarketRepository:
         path=self.root/'snapshots'/key
         manifest=json.loads((path/'manifest.json').read_text())
         if manifest['snapshot_id']!=key: raise ValueError('manifest identity mismatch')
+        schema_version=str(manifest.get('schema_version','1'))
+        if schema_version not in {'1','2'}: raise ValueError('unsupported snapshot schema version')
         parquet=path/'candles.parquet'
         if hashlib.sha256(parquet.read_bytes()).hexdigest()!=manifest['parquet_sha256']: raise ValueError('snapshot checksum mismatch')
         with duckdb.connect(':memory:') as connection:
@@ -90,7 +99,11 @@ class MarketRepository:
                 row[field]=str(row[field]) if row[field] is not None else None
             rows.append(Candle.model_validate(row))
         if len(rows)!=manifest['row_count']: raise ValueError('snapshot row count mismatch')
-        return MarketSnapshot(snapshot_id=key,instrument=manifest['instrument'],quality=manifest['quality'],candles=rows)
+        instrument=manifest['instrument']
+        if schema_version=='1' and 'instrument_class' not in instrument:
+            # Version 1 constrained instruments to equities.
+            instrument={**instrument,'instrument_class':'equity'}
+        return MarketSnapshot(schema_version=schema_version,snapshot_id=key,instrument=instrument,quality=manifest['quality'],candles=rows)
 
     def latest_fixture(self,instrument_id:str):
         for manifest in self.manifests():
