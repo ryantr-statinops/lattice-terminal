@@ -6,6 +6,7 @@ import {Button} from './ui/buttons';
 import {Field,Select} from './ui/fields';
 import {StatusLabel} from './ui/data';
 import {EmptyState,ErrorState,LoadingState} from './ui/feedback';
+import {ProviderCredentialEditor} from './ProviderCredentialEditor';
 
 export type ProviderStatus = {
   id: string;
@@ -29,6 +30,8 @@ export type RoutingPolicy = {
 export function Providers() {
   const client = useQueryClient();
   const [pinging, setPinging] = useState<string | null>(null);
+  const [credentialEditor, setCredentialEditor] = useState<string | null>(null);
+  const [savedCredentialProvider, setSavedCredentialProvider] = useState<string | null>(null);
   const [localPings, setLocalPings] = useState<Record<string, {latency_ms: number | null; state: string; error?: string}>>({});
 
   const providers = useQuery({
@@ -134,14 +137,21 @@ export function Providers() {
                   )}
 
                   <div style={{marginTop: 'auto', paddingTop: 8, display: 'flex', justifyContent: 'flex-end'}}>
-                    <Button
-                      pending={pinging === p.id}
-                      onClick={() => handlePing(p.id)}
-                      title={`Send health probe to ${p.name}`}
-                    >
-                      Ping Test
-                    </Button>
+                    <div style={{display: 'flex', gap: 8}}>
+                      <Button onClick={() => {setCredentialEditor(credentialEditor===p.id?null:p.id);setSavedCredentialProvider(null)}}>
+                        Configure credentials
+                      </Button>
+                      <Button
+                        pending={pinging === p.id}
+                        onClick={() => handlePing(p.id)}
+                        title={`Send health probe to ${p.name}`}
+                      >
+                        Ping Test
+                      </Button>
+                    </div>
                   </div>
+                  {credentialEditor===p.id&&<ProviderCredentialEditor providerId={p.id} onCancel={()=>setCredentialEditor(null)} onSaved={()=>{setCredentialEditor(null);setSavedCredentialProvider(p.id)}}/>}
+                  {savedCredentialProvider===p.id&&<p role="status" className="muted">Credentials saved to the encrypted vault; provider access is unverified.</p>}
                 </div>
               </Panel>
             );
