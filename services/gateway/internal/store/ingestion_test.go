@@ -75,6 +75,13 @@ func TestIngestionCheckpointResumesWithAtomicMonotonicProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
+	recovered, err := s.IngestionJob(job.ID)
+	if err != nil || recovered.Status != "interrupted" || recovered.ErrorCode != "process_restarted" || recovered.Checkpoint == nil || recovered.Checkpoint.Version != 1 || recovered.ProcessedRecords != 2 {
+		t.Fatalf("restart recovery did not preserve the resumable checkpoint: %#v, %v", recovered, err)
+	}
+	if err = s.UpdateIngestionJob(job.ID, "running", recovered.ProcessedRecords, recovered.TotalRecords, ""); err != nil {
+		t.Fatalf("could not resume from the saved checkpoint: %v", err)
+	}
 	if err = s.SaveIngestionCheckpoint(job.ID, IngestionCheckpoint{Version: 3, Kind: "page", Value: "4"}, 4, 4); err == nil {
 		t.Fatal("checkpoint version gap was accepted")
 	}

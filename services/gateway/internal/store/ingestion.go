@@ -90,7 +90,8 @@ func (s *Store) ingestionJobSchema() error {
 			}
 		}
 	}
-	return nil
+	_, err = s.DB.Exec(`UPDATE ingestion_jobs SET status='interrupted',error_code='process_restarted',updated_at=? WHERE status='running'`, Now())
+	return err
 }
 
 func validIngestionJob(job IngestionJob) error {
@@ -195,14 +196,14 @@ func (s *Store) UpdateIngestionJob(id, status string, processed, total int64, er
 	if err != nil {
 		return err
 	}
-	valid := current == status && current == "running" || current == "queued" && (status == "running" || status == "failed" || status == "cancelled" || status == "interrupted") || current == "running" && (status == "completed" || status == "failed" || status == "cancelled" || status == "interrupted")
+	valid := current == status && current == "running" || current == "queued" && (status == "running" || status == "failed" || status == "cancelled" || status == "interrupted") || current == "running" && (status == "completed" || status == "failed" || status == "cancelled" || status == "interrupted") || current == "interrupted" && status == "running"
 	if !valid {
 		return errors.New("invalid ingestion job state transition")
 	}
-	if current == "running" && processed < previousProcessed {
+	if (current == "running" || current == "interrupted") && processed < previousProcessed {
 		return errors.New("ingestion progress cannot move backwards")
 	}
-	if current == "running" && previousTotal > 0 && total != previousTotal {
+	if (current == "running" || current == "interrupted") && previousTotal > 0 && total != previousTotal {
 		return errors.New("ingestion total cannot change after it is known")
 	}
 	if status == "running" && errorCode != "" {
