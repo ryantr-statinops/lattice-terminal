@@ -146,6 +146,86 @@
     "title": "DataQuality",
     "type": "object"
   },
+  "DatasetEnvelope": {
+    "additionalProperties": false,
+    "properties": {
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "dataset": {
+        "title": "Dataset",
+        "type": "string"
+      },
+      "observed_at": {
+        "format": "date-time",
+        "title": "Observed At",
+        "type": "string"
+      },
+      "parser_version": {
+        "title": "Parser Version",
+        "type": "string"
+      },
+      "payload": {
+        "title": "Payload"
+      },
+      "provider_id": {
+        "title": "Provider Id",
+        "type": "string"
+      },
+      "published_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Published At"
+      },
+      "quality": {
+        "default": "unknown",
+        "enum": [
+          "complete",
+          "partial",
+          "stale",
+          "quarantined",
+          "unknown"
+        ],
+        "title": "Quality",
+        "type": "string"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "schema_version": {
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "provider_id",
+      "dataset",
+      "source_id",
+      "observed_at",
+      "available_at",
+      "revision",
+      "schema_version",
+      "parser_version",
+      "payload"
+    ],
+    "title": "DatasetEnvelope",
+    "type": "object"
+  },
   "Instrument": {
     "additionalProperties": false,
     "properties": {
