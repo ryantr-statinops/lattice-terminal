@@ -65,9 +65,9 @@ it('renders provider cards and handles ping test probe', async () => {
     </QueryClientProvider>
   );
 
-  expect(await screen.findByText('VNDIRECT (Dchart UDF)')).toBeDefined();
-  expect(screen.getByText('SSI FastConnect Data')).toBeDefined();
-  expect(screen.getByText('38.5ms')).toBeDefined();
+  expect(await screen.findByText('38.5ms')).toBeDefined();
+  expect(Array.from(document.querySelectorAll('.panel strong')).map(node => node.textContent)).toContain('VNDIRECT (Dchart UDF)');
+  expect(Array.from(document.querySelectorAll('.panel strong')).map(node => node.textContent)).toContain('SSI FastConnect Data');
 
   // Test Ping button
   const pingButtons = screen.getAllByRole('button', {name: 'Ping Test'});
@@ -76,4 +76,28 @@ it('renders provider cards and handles ping test probe', async () => {
   await waitFor(() => {
     expect(send).toHaveBeenCalledWith('/providers/vndirect/ping', {});
   });
+});
+
+it('limits routing choices to providers declaring matching capabilities', async () => {
+  vi.mocked(request).mockImplementation(async path => {
+    if (path === '/providers') return mockProviders;
+    if (path === '/providers/routing') return mockRouting;
+    return null;
+  });
+
+  render(
+    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
+      <Providers />
+    </QueryClientProvider>
+  );
+
+  const historical = await screen.findByLabelText('Historical EOD & Backtest Feed') as HTMLSelectElement;
+  const realtime = screen.getByLabelText('Realtime Market Quotes Feed') as HTMLSelectElement;
+  const financials = screen.getByLabelText('Financial Statements & Ratios Feed') as HTMLSelectElement;
+
+  expect(Array.from(historical.options).map(option => option.value)).toEqual(['vndirect', 'ssi']);
+  expect(Array.from(realtime.options).map(option => option.value)).toEqual(['fixture', 'ssi']);
+  expect(realtime.options[0].disabled).toBe(true);
+  expect(Array.from(financials.options).map(option => option.value)).toEqual(['tcbs']);
+  expect(financials.options[0].disabled).toBe(true);
 });

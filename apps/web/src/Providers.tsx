@@ -27,11 +27,23 @@ export type RoutingPolicy = {
   fallback_enabled: boolean;
 };
 
+const routeCapabilityGroups = {
+  historical_provider: ['historical_candles', 'intraday_candles', 'eod_daily'],
+  realtime_provider: ['realtime_ticks', 'realtime_streaming', 'quotes', 'orderbook', 'offline_replay'],
+  financials_provider: ['financials', 'valuation_ratios'],
+} as const;
+type ProviderRouteKey = keyof typeof routeCapabilityGroups;
+
+function supportsRoute(provider: ProviderStatus, route: ProviderRouteKey) {
+  return routeCapabilityGroups[route].some(capability => provider.capabilities.includes(capability));
+}
+
 export function Providers() {
   const client = useQueryClient();
   const [pinging, setPinging] = useState<string | null>(null);
   const [credentialEditor, setCredentialEditor] = useState<string | null>(null);
   const [savedCredentialProvider, setSavedCredentialProvider] = useState<string | null>(null);
+  const [routingError, setRoutingError] = useState<unknown>(null);
   const [localPings, setLocalPings] = useState<Record<string, {latency_ms: number | null; state: string; error?: string}>>({});
 
   const providers = useQuery({
@@ -64,8 +76,13 @@ export function Providers() {
   };
 
   const updateRouting = async (patch: Partial<RoutingPolicy>) => {
-    await send<RoutingPolicy>('/providers/routing', patch, 'PUT');
-    await client.invalidateQueries({queryKey: ['providers-routing']});
+    setRoutingError(null);
+    try {
+      await send<RoutingPolicy>('/providers/routing', patch, 'PUT');
+      await client.invalidateQueries({queryKey: ['providers-routing']});
+    } catch (error) {
+      setRoutingError(error);
+    }
   };
 
   const getTone = (state: string): 'positive' | 'warning' | 'negative' | 'info' => {
@@ -94,7 +111,7 @@ export function Providers() {
       </Toolbar>
 
       {providers.isPending && <LoadingState>Loading provider configuration…</LoadingState>}
-      <ErrorState error={providers.error || routing.error} onRetry={() => { void providers.refetch(); void routing.refetch(); }} />
+      <ErrorState error={providers.error || routing.error || routingError} onRetry={() => { void providers.refetch(); void routing.refetch(); }} />
 
       {providers.data && (
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12, margin: '12px 0'}}>
@@ -163,37 +180,57 @@ export function Providers() {
         <Panel>
           <PanelHeader title="DATA ROUTING & DISPATCH POLICY" />
           <div className="panel-content">
+            <p className="muted">Provider choices are limited to declared coverage for each dataset group. A declared capability does not prove access or data rights.</p>
 
             <div className="form-grid" style={{marginTop: 12}}>
               <Field label="Historical EOD & Backtest Feed">
                 <Select
                   value={routing.data.historical_provider}
-                  onChange={e => updateRouting({historical_provider: e.target.value})}
+                  disabled={providers.isPending || !providers.data}
+                  onChange={e => void updateRouting({historical_provider: e.target.value})}
                 >
-                  <option value="vndirect">VNDIRECT (Dchart TradingView UDF - Free)</option>
-                  <option value="tcbs">TCBS (Vnstock Stock-Insight - Free)</option>
-                  <option value="fixture">Synthetic Fixture (Offline local baseline)</option>
+                  {!providers.data?.some(provider => provider.id === routing.data.historical_provider && supportsRoute(provider, 'historical_provider')) && (
+                    <option value={routing.data.historical_provider} disabled>
+                      {routing.data.historical_provider} — no declared coverage
+                    </option>
+                  )}
+                  {providers.data
+                    ?.filter(provider => supportsRoute(provider, 'historical_provider'))
+                    .map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
                 </Select>
               </Field>
 
               <Field label="Realtime Market Quotes Feed">
                 <Select
                   value={routing.data.realtime_provider}
-                  onChange={e => updateRouting({realtime_provider: e.target.value})}
+                  disabled={providers.isPending || !providers.data}
+                  onChange={e => void updateRouting({realtime_provider: e.target.value})}
                 >
-                  <option value="fixture">Synthetic Fixture (Offline safe replay)</option>
-                  <option value="dnse">DNSE OpenAPI (LightSpeed WebSocket - Requires Key)</option>
-                  <option value="ssi">SSI FastConnect (Production blocked)</option>
+                  {!providers.data?.some(provider => provider.id === routing.data.realtime_provider && supportsRoute(provider, 'realtime_provider')) && (
+                    <option value={routing.data.realtime_provider} disabled>
+                      {routing.data.realtime_provider} — no declared coverage
+                    </option>
+                  )}
+                  {providers.data
+                    ?.filter(provider => supportsRoute(provider, 'realtime_provider'))
+                    .map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
                 </Select>
               </Field>
 
               <Field label="Financial Statements & Ratios Feed">
                 <Select
                   value={routing.data.financials_provider}
-                  onChange={e => updateRouting({financials_provider: e.target.value})}
+                  disabled={providers.isPending || !providers.data}
+                  onChange={e => void updateRouting({financials_provider: e.target.value})}
                 >
-                  <option value="tcbs">TCBS (Vnstock Corporate Ratios - Free)</option>
-                  <option value="fixture">Synthetic Financial Fixtures</option>
+                  {!providers.data?.some(provider => provider.id === routing.data.financials_provider && supportsRoute(provider, 'financials_provider')) && (
+                    <option value={routing.data.financials_provider} disabled>
+                      {routing.data.financials_provider} — no declared coverage
+                    </option>
+                  )}
+                  {providers.data
+                    ?.filter(provider => supportsRoute(provider, 'financials_provider'))
+                    .map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
                 </Select>
               </Field>
             </div>
@@ -203,7 +240,7 @@ export function Providers() {
                 <input
                   type="checkbox"
                   checked={routing.data.fallback_enabled}
-                  onChange={e => updateRouting({fallback_enabled: e.target.checked})}
+                  onChange={e => void updateRouting({fallback_enabled: e.target.checked})}
                 />
                 <span>
                   <strong>Auto fallback:</strong> Revert to secondary feeds or local cache on error.
