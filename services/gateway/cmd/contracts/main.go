@@ -55,7 +55,7 @@ func schema(t reflect.Type) any {
 }
 func main() {
 	defs := map[string]any{}
-	for _, v := range []any{store.Run{}, store.Event{}, store.Artifact{}, store.Fund{}, store.Allocation{}, store.PositionValue{}, store.FundValue{}, store.RecordedTrade{}, store.ImportPreview{}, store.PaperOrder{}, store.PaperFill{}} {
+	for _, v := range []any{store.Run{}, store.Event{}, store.Artifact{}, store.Fund{}, store.Allocation{}, store.PositionValue{}, store.FundValue{}, store.RecordedTrade{}, store.ImportPreview{}, store.PaperOrder{}, store.PaperFill{}, store.RoutingPolicy{}} {
 		t := reflect.TypeOf(v)
 		defs[t.Name()] = schema(t)
 	}

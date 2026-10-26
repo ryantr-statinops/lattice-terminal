@@ -244,6 +244,13 @@ func run(root, data string, dev bool) error {
 	defer db.Close()
 	vault, _ := secret.OpenVault(data)
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
+	routingPolicy, err := db.RoutingPolicy()
+	if err != nil {
+		return err
+	}
+	if err = bridge.ApplyRoutingPolicy(routingPolicy); err != nil {
+		return fmt.Errorf("could not restore provider routing: %w", err)
+	}
 	defer func() { cancel(); bridge.Wait() }()
 	application := &api.API{Store: db, Credentials: vault, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
 	application.Engine = bridge

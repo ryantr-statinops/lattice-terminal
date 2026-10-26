@@ -62,6 +62,18 @@ func (r *Runner) call(ctx context.Context, method, path string, input, output an
 	}
 	return nil
 }
+
+func (r *Runner) ApplyRoutingPolicy(policy store.RoutingPolicy) error {
+	if r.Engine == nil {
+		return errors.New("engine unavailable")
+	}
+	ctx := r.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return r.call(ctx, "PUT", "/providers/routing", policy, nil)
+}
+
 func (r *Runner) Inspect(kind, source string, params json.RawMessage) error {
 	var p map[string]any
 	_ = json.Unmarshal(params, &p)

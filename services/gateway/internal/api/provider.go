@@ -104,15 +104,78 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 	})
 
 	m.HandleFunc("GET /api/v1/providers/routing", func(w http.ResponseWriter, r *http.Request) {
-		callEngine(w, r, "GET", "/internal/v1/providers/routing", nil)
+		if a.Store == nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "routing store is unavailable"})
+			return
+		}
+		policy, err := a.Store.RoutingPolicy()
+		if err != nil {
+			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not read routing policy"})
+			return
+		}
+		JSON(w, http.StatusOK, policy)
 	})
 
 	m.HandleFunc("PUT /api/v1/providers/routing", func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			Fail(w, err)
+		if a.Store == nil || a.Engine == nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "routing service is unavailable"})
 			return
 		}
-		callEngine(w, r, "PUT", "/internal/v1/providers/routing", body)
+		a.routingMu.Lock()
+		defer a.routingMu.Unlock()
+		var patch struct {
+			HistoricalProvider *string `json:"historical_provider"`
+			RealtimeProvider   *string `json:"realtime_provider"`
+			FinancialsProvider *string `json:"financials_provider"`
+			FallbackEnabled    *bool   `json:"fallback_enabled"`
+		}
+		if !Read(w, r, &patch) {
+			return
+		}
+		policy, err := a.Store.RoutingPolicy()
+		if err != nil {
+			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not read routing policy"})
+			return
+		}
+		previous := policy
+		changed := false
+		if patch.HistoricalProvider != nil {
+			if *patch.HistoricalProvider == "" {
+				JSON(w, http.StatusBadRequest, map[string]string{"error": "routing provider is required"})
+				return
+			}
+			policy.HistoricalProvider, changed = *patch.HistoricalProvider, true
+		}
+		if patch.RealtimeProvider != nil {
+			if *patch.RealtimeProvider == "" {
+				JSON(w, http.StatusBadRequest, map[string]string{"error": "routing provider is required"})
+				return
+			}
+			policy.RealtimeProvider, changed = *patch.RealtimeProvider, true
+		}
+		if patch.FinancialsProvider != nil {
+			if *patch.FinancialsProvider == "" {
+				JSON(w, http.StatusBadRequest, map[string]string{"error": "routing provider is required"})
+				return
+			}
+			policy.FinancialsProvider, changed = *patch.FinancialsProvider, true
+		}
+		if patch.FallbackEnabled != nil {
+			policy.FallbackEnabled, changed = *patch.FallbackEnabled, true
+		}
+		if !changed {
+			JSON(w, http.StatusBadRequest, map[string]string{"error": "routing patch is empty"})
+			return
+		}
+		if err = a.Engine.ApplyRoutingPolicy(policy); err != nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "could not apply routing policy to engine"})
+			return
+		}
+		if err = a.Store.SetRoutingPolicy(policy); err != nil {
+			_ = a.Engine.ApplyRoutingPolicy(previous)
+			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not persist routing policy"})
+			return
+		}
+		JSON(w, http.StatusOK, policy)
 	})
 }

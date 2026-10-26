@@ -526,6 +526,30 @@
       ],
       "type": "object"
     },
+    "RoutingPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "fallback_enabled": {
+          "type": "boolean"
+        },
+        "financials_provider": {
+          "type": "string"
+        },
+        "historical_provider": {
+          "type": "string"
+        },
+        "realtime_provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "historical_provider",
+        "realtime_provider",
+        "financials_provider",
+        "fallback_enabled"
+      ],
+      "type": "object"
+    },
     "Run": {
       "additionalProperties": false,
       "properties": {

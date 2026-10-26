@@ -25,6 +25,7 @@ type API struct {
 	Engine      *Runner
 	Terminal    *terminal.Manager
 	paperMu     sync.Mutex
+	routingMu   sync.Mutex
 }
 
 type CredentialWriter interface {
