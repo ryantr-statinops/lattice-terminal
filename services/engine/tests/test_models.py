@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,decimal_text
+from kestrel_engine.models import Candle,Instrument,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -38,3 +38,16 @@ def test_provider_instrument_alias_rejects_blank_identity():
             provider_instrument_id='listing-123',
             native_symbol=' ',
         )
+
+
+@pytest.mark.parametrize('instrument_class', ['equity', 'covered_warrant', 'derivative', 'bond', 'fund', 'etf', 'macro_series'])
+def test_instrument_accepts_additional_asset_classes(instrument_class):
+    instrument = Instrument(
+        id='provider:instrument-1',
+        venue='HOSE',
+        board='MAIN',
+        native_symbol='TEST',
+        instrument_class=instrument_class,
+        name='Test instrument',
+    )
+    assert instrument.instrument_class == instrument_class

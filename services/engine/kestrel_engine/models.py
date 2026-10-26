@@ -33,7 +33,10 @@ class Instrument(Record):
     venue: Literal['HOSE','HNX','UPCOM']
     board: str
     native_symbol: str
-    instrument_class: Literal['equity'] = 'equity'
+    instrument_class: Literal[
+        'equity', 'index', 'covered_warrant', 'derivative', 'bond', 'fund', 'etf',
+        'fx', 'crypto', 'commodity', 'macro_series', 'real_estate', 'unknown',
+    ] = 'equity'
     name: str
     source_id: str = 'SYNTHETIC-FIXTURE'
     is_synthetic: bool = True
