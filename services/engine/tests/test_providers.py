@@ -1,9 +1,11 @@
 import unittest
+import urllib.error
 from unittest.mock import patch
 from datetime import datetime, timezone
 from kestrel_engine.providers import (
     ProviderRouter,
     ProviderRequestLimiter,
+    retry_read,
     VndirectCommunityProvider,
     SyntheticFixtureProvider,
     SsiFastConnectProvider,
@@ -12,6 +14,29 @@ from kestrel_engine.providers import (
 )
 
 class TestProviders(unittest.TestCase):
+    def test_read_retry_uses_exponential_backoff_for_transient_errors(self):
+        operation = unittest.mock.Mock(side_effect=[
+            urllib.error.URLError('temporary network failure'),
+            TimeoutError('temporary timeout'),
+            'read result',
+        ])
+        before_attempt = unittest.mock.Mock()
+        with patch('kestrel_engine.providers.time.sleep') as sleep:
+            result = retry_read(operation, before_attempt=before_attempt)
+        self.assertEqual(result, 'read result')
+        self.assertEqual(operation.call_count, 3)
+        self.assertEqual(before_attempt.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [0.25, 0.5])
+
+    def test_read_retry_does_not_retry_non_transient_http_errors(self):
+        unauthorized = urllib.error.HTTPError('https://provider.test/data', 401, 'unauthorized', None, None)
+        operation = unittest.mock.Mock(side_effect=unauthorized)
+        with patch('kestrel_engine.providers.time.sleep') as sleep:
+            with self.assertRaises(urllib.error.HTTPError):
+                retry_read(operation)
+        operation.assert_called_once()
+        sleep.assert_not_called()
+
     def test_provider_request_limiter_paces_requests_per_provider(self):
         limiter = ProviderRequestLimiter(0.5)
         clock_values = iter([100.0, 100.1, 100.5])
@@ -25,6 +50,7 @@ class TestProviders(unittest.TestCase):
     def test_provider_router_keeps_separate_request_limiters(self):
         router = ProviderRouter()
         self.assertIsNot(router.request_limiters['vndirect'], router.request_limiters['tcbs'])
+        self.assertIs(router.providers['vndirect']._request_limiter, router.request_limiters['vndirect'])
         self.assertEqual(router.request_limiters['fixture'].minimum_interval_seconds, 0)
         self.assertEqual(router.request_limiters['vndirect'].minimum_interval_seconds, 1.0)
 

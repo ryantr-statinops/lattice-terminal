@@ -5,11 +5,39 @@ import json
 from pathlib import Path
 import threading
 import time
-from typing import Any, Literal
+from typing import Any, Callable, Literal
+import urllib.error
 import urllib.request
 from pydantic import BaseModel, Field
 
 from .models import Candle, Instrument
+
+def _is_retryable_read_error(error: Exception) -> bool:
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in (408, 425, 429) or 500 <= error.code <= 599
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def retry_read(
+    operation: Callable[[], Any],
+    *,
+    retries: int = 2,
+    base_backoff_seconds: float = 0.25,
+    before_attempt: Callable[[], None] | None = None,
+) -> Any:
+    """Retry transient failures from idempotent provider reads with exponential backoff."""
+    if retries < 0 or base_backoff_seconds < 0:
+        raise ValueError('retry count and backoff must be non-negative')
+    for attempt in range(retries + 1):
+        if before_attempt is not None:
+            before_attempt()
+        try:
+            return operation()
+        except Exception as error:
+            if attempt >= retries or not _is_retryable_read_error(error):
+                raise
+            time.sleep(base_backoff_seconds * (2 ** attempt))
+
 
 class ProviderRequestLimiter:
     """Serialize outbound operations and pace requests for one provider."""
@@ -103,6 +131,14 @@ class BaseMarketProvider(ABC):
     capabilities: list[str]
     description: str = ''
 
+    def set_request_limiter(self, limiter: ProviderRequestLimiter) -> None:
+        self._request_limiter = limiter
+
+    def _read(self, operation: Callable[[], Any]) -> Any:
+        limiter = getattr(self, '_request_limiter', None)
+        before_attempt = limiter.acquire if limiter is not None else None
+        return retry_read(operation, before_attempt=before_attempt)
+
     @abstractmethod
     def ping(self) -> ProviderStatus:
         """Check reachability and measure roundtrip latency in ms."""
@@ -134,7 +170,7 @@ class VndirectCommunityProvider(BaseMarketProvider):
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kestrel/1.0'})
         t0 = time.perf_counter()
         try:
-            with urllib.request.urlopen(req, timeout=4.0) as resp:
+            with self._read(lambda: urllib.request.urlopen(req, timeout=4.0)) as resp:
                 _ = resp.read(256)
                 latency = round((time.perf_counter() - t0) * 1000, 1)
                 return ProviderStatus(
@@ -167,7 +203,7 @@ class VndirectCommunityProvider(BaseMarketProvider):
         to_ts = int(end.timestamp())
         url = f'{self.base_url}/dchart/history?resolution={resolution}&symbol={symbol}&from={from_ts}&to={to_ts}'
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kestrel/1.0'})
-        with urllib.request.urlopen(req, timeout=10.0) as resp:
+        with self._read(lambda: urllib.request.urlopen(req, timeout=10.0)) as resp:
             data = json.loads(resp.read().decode('utf-8'))
 
         if data.get('s') != 'ok' or not data.get('t'):
@@ -244,7 +280,7 @@ class TcbsCommunityProvider(BaseMarketProvider):
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kestrel/1.0'})
         t0 = time.perf_counter()
         try:
-            with urllib.request.urlopen(req, timeout=4.0) as resp:
+            with self._read(lambda: urllib.request.urlopen(req, timeout=4.0)) as resp:
                 _ = resp.read(256)
                 latency = round((time.perf_counter() - t0) * 1000, 1)
                 return ProviderStatus(
@@ -404,15 +440,8 @@ class ProviderRouter:
             provider_id: ProviderRequestLimiter(0 if provider_id == 'fixture' else 1.0)
             for provider_id in self.providers
         }
-        self._request_limiters_lock = threading.Lock()
-
-    def _limit_request(self, provider_id: str) -> None:
-        with self._request_limiters_lock:
-            limiter = self.request_limiters.get(provider_id)
-            if limiter is None:
-                limiter = ProviderRequestLimiter(1.0)
-                self.request_limiters[provider_id] = limiter
-        limiter.acquire()
+        for provider_id, provider in self.providers.items():
+            provider.set_request_limiter(self.request_limiters[provider_id])
 
     def list_statuses(self) -> list[ProviderStatus]:
         statuses: list[ProviderStatus] = []
@@ -443,7 +472,6 @@ class ProviderRouter:
     def ping(self, provider_id: str) -> ProviderStatus:
         if provider_id not in self.providers:
             raise ValueError(f"Unknown provider: {provider_id}")
-        self._limit_request(provider_id)
         return self.providers[provider_id].ping()
 
     def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
@@ -463,7 +491,6 @@ class ProviderRouter:
         primary = self.providers.get(primary_id)
         if primary:
             try:
-                self._limit_request(primary_id)
                 res = primary.fetch_candles(symbol, interval, start, end)
                 if res:
                     return res
@@ -475,7 +502,6 @@ class ProviderRouter:
                 if pid == primary_id or pid in ('ssi', 'dnse'):
                     continue
                 try:
-                    self._limit_request(pid)
                     res = prov.fetch_candles(symbol, interval, start, end)
                     if res:
                         return res
