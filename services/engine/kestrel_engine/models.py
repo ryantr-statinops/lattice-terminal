@@ -92,6 +92,33 @@ class Candle(Record):
         if Decimal(self.low)>min(Decimal(self.open),Decimal(self.close)) or Decimal(self.high)<max(Decimal(self.open),Decimal(self.close)) or Decimal(self.low)>Decimal(self.high): raise ValueError('invalid OHLC envelope')
         return self
 
+class Trade(Record):
+    instrument_id: str
+    trade_id: str
+    event_time: AwareDatetime
+    available_at: AwareDatetime
+    price: str
+    quantity: str
+    side: Literal['buy','sell','unknown'] = 'unknown'
+    source_id: str
+    revision: str = '0'
+
+    @field_validator('price')
+    @classmethod
+    def valid_price(cls, value):
+        decimal_text(value)
+        if Decimal(value) <= 0:
+            raise ValueError('trade price must be positive')
+        return value
+
+    @field_validator('quantity')
+    @classmethod
+    def valid_quantity(cls, value):
+        decimal_text(value)
+        if Decimal(value) <= 0:
+            raise ValueError('trade quantity must be positive')
+        return value
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []

@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,Instrument,decimal_text
+from kestrel_engine.models import Candle,Instrument,Trade,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -71,3 +71,19 @@ def test_candle_contract_accepts_additional_intervals():
     root=Path(__file__).resolve().parents[3]
     raw=json.loads((root/'data/fixtures/SYN01.json').read_text())['candles'][0]
     assert Candle.model_validate(raw | {'interval':'15m'}).interval == '15m'
+
+
+def test_trade_record_preserves_event_and_availability_times():
+    event = datetime.fromisoformat('2026-10-26T03:00:00+00:00')
+    trade = Trade(
+        instrument_id='vn-equity:HOSE:HPG', trade_id='trade-1',
+        event_time=event, available_at=event.replace(minute=1),
+        price='25.10', quantity='100', side='buy', source_id='fixture',
+    )
+    assert trade.available_at > trade.event_time
+    with pytest.raises(ValueError, match='trade quantity must be positive'):
+        Trade(
+            instrument_id='vn-equity:HOSE:HPG', trade_id='trade-2',
+            event_time=event, available_at=event, price='25.10',
+            quantity='0', source_id='fixture',
+        )
