@@ -38,6 +38,7 @@ class Instrument(Record):
         'fx', 'crypto', 'commodity', 'macro_series', 'real_estate', 'unknown',
     ] = 'equity'
     name: str
+    currency: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     source_id: str = 'SYNTHETIC-FIXTURE'
     is_synthetic: bool = True
@@ -68,6 +69,9 @@ class Candle(Record):
     low: str
     close: str
     volume: str | None
+    currency: str = 'unknown'
+    price_unit: str = 'unknown'
+    volume_unit: str = 'unknown'
     is_closed: bool
     revision: str
     session: str
@@ -99,6 +103,9 @@ class Trade(Record):
     available_at: AwareDatetime
     price: str
     quantity: str
+    currency: str = 'unknown'
+    price_unit: str = 'unknown'
+    quantity_unit: str = 'unknown'
     side: Literal['buy','sell','unknown'] = 'unknown'
     source_id: str
     revision: str = '0'
@@ -127,6 +134,9 @@ class Quote(Record):
     bid_size: str | None = None
     ask_price: str | None = None
     ask_size: str | None = None
+    currency: str = 'unknown'
+    price_unit: str = 'unknown'
+    size_unit: str = 'unknown'
     source_id: str
     revision: str = '0'
 
@@ -157,6 +167,9 @@ class Quote(Record):
 class DepthLevel(Record):
     price: str
     quantity: str
+    currency: str = 'unknown'
+    price_unit: str = 'unknown'
+    quantity_unit: str = 'unknown'
     order_count: int | None = None
 
     @field_validator('price')
@@ -202,6 +215,8 @@ class DatasetEnvelope(Record):
     revision: str
     schema_version: str
     parser_version: str
+    unit: str = 'unknown'
+    currency: str | None = None
     quality: Literal['complete','partial','stale','quarantined','unknown'] = 'unknown'
     payload: Any
 

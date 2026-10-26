@@ -16,6 +16,11 @@
         "title": "Close Time",
         "type": "string"
       },
+      "currency": {
+        "default": "unknown",
+        "title": "Currency",
+        "type": "string"
+      },
       "high": {
         "title": "High",
         "type": "string"
@@ -55,6 +60,11 @@
         "title": "Open Time",
         "type": "string"
       },
+      "price_unit": {
+        "default": "unknown",
+        "title": "Price Unit",
+        "type": "string"
+      },
       "revision": {
         "title": "Revision",
         "type": "string"
@@ -78,6 +88,11 @@
           }
         ],
         "title": "Volume"
+      },
+      "volume_unit": {
+        "default": "unknown",
+        "title": "Volume Unit",
+        "type": "string"
       }
     },
     "required": [
@@ -269,6 +284,18 @@
         "title": "Available At",
         "type": "string"
       },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Currency"
+      },
       "dataset": {
         "title": "Dataset",
         "type": "string"
@@ -324,6 +351,11 @@
       },
       "source_id": {
         "title": "Source Id",
+        "type": "string"
+      },
+      "unit": {
+        "default": "unknown",
+        "title": "Unit",
         "type": "string"
       }
     },
@@ -431,6 +463,18 @@
         "title": "Board",
         "type": "string"
       },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Currency"
+      },
       "id": {
         "title": "Id",
         "type": "string"
@@ -519,6 +563,11 @@
             "title": "Close Time",
             "type": "string"
           },
+          "currency": {
+            "default": "unknown",
+            "title": "Currency",
+            "type": "string"
+          },
           "high": {
             "title": "High",
             "type": "string"
@@ -558,6 +607,11 @@
             "title": "Open Time",
             "type": "string"
           },
+          "price_unit": {
+            "default": "unknown",
+            "title": "Price Unit",
+            "type": "string"
+          },
           "revision": {
             "title": "Revision",
             "type": "string"
@@ -581,6 +635,11 @@
               }
             ],
             "title": "Volume"
+          },
+          "volume_unit": {
+            "default": "unknown",
+            "title": "Volume Unit",
+            "type": "string"
           }
         },
         "required": [
@@ -655,6 +714,18 @@
           "board": {
             "title": "Board",
             "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Currency"
           },
           "id": {
             "title": "Id",
@@ -766,6 +837,11 @@
       "DepthLevel": {
         "additionalProperties": false,
         "properties": {
+          "currency": {
+            "default": "unknown",
+            "title": "Currency",
+            "type": "string"
+          },
           "order_count": {
             "anyOf": [
               {
@@ -782,8 +858,18 @@
             "title": "Price",
             "type": "string"
           },
+          "price_unit": {
+            "default": "unknown",
+            "title": "Price Unit",
+            "type": "string"
+          },
           "quantity": {
             "title": "Quantity",
+            "type": "string"
+          },
+          "quantity_unit": {
+            "default": "unknown",
+            "title": "Quantity Unit",
             "type": "string"
           }
         },
@@ -900,6 +986,11 @@
         "default": null,
         "title": "Bid Size"
       },
+      "currency": {
+        "default": "unknown",
+        "title": "Currency",
+        "type": "string"
+      },
       "event_time": {
         "format": "date-time",
         "title": "Event Time",
@@ -909,9 +1000,19 @@
         "title": "Instrument Id",
         "type": "string"
       },
+      "price_unit": {
+        "default": "unknown",
+        "title": "Price Unit",
+        "type": "string"
+      },
       "revision": {
         "default": "0",
         "title": "Revision",
+        "type": "string"
+      },
+      "size_unit": {
+        "default": "unknown",
+        "title": "Size Unit",
         "type": "string"
       },
       "source_id": {
@@ -985,6 +1086,11 @@
         "title": "Available At",
         "type": "string"
       },
+      "currency": {
+        "default": "unknown",
+        "title": "Currency",
+        "type": "string"
+      },
       "event_time": {
         "format": "date-time",
         "title": "Event Time",
@@ -998,8 +1104,18 @@
         "title": "Price",
         "type": "string"
       },
+      "price_unit": {
+        "default": "unknown",
+        "title": "Price Unit",
+        "type": "string"
+      },
       "quantity": {
         "title": "Quantity",
+        "type": "string"
+      },
+      "quantity_unit": {
+        "default": "unknown",
+        "title": "Quantity Unit",
         "type": "string"
       },
       "revision": {

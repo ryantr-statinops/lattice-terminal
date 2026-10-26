@@ -85,6 +85,12 @@ def test_candle_contract_accepts_additional_intervals():
     root=Path(__file__).resolve().parents[3]
     raw=json.loads((root/'data/fixtures/SYN01.json').read_text())['candles'][0]
     assert Candle.model_validate(raw | {'interval':'15m'}).interval == '15m'
+    assert Candle.model_validate(raw).currency == 'unknown'
+    declared = Candle.model_validate(raw | {
+        'currency':'VND', 'price_unit':'VND/share', 'volume_unit':'share',
+    })
+    assert declared.currency == 'VND'
+    assert declared.price_unit == 'VND/share'
 
 
 def test_trade_record_preserves_event_and_availability_times():
@@ -183,3 +189,11 @@ def test_value_series_point_represents_non_candle_data():
     )
     assert point.published_at < point.available_at
     assert point.value == '4.5'
+
+
+def test_instrument_keeps_native_currency_when_known():
+    instrument = Instrument(
+        id='provider:HOSE:HPG', venue='HOSE', board='MAIN',
+        native_symbol='HPG', name='Hoa Phat', currency='VND',
+    )
+    assert instrument.currency == 'VND'
