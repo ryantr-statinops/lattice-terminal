@@ -1,11 +1,12 @@
 # Market research and source eligibility
 
-**Trạng thái:** Vietnam/SSI FastConnect Data is the selected market-data direction; SSI REST and stream gates remain blocked. Provider documentation does not establish account access or usage rights.
+**Trạng thái:** Product direction is multi-provider Vietnamese markets, including paid providers and every asset/data class each selected provider supports. No provider account entitlement, local-use rights or production connection is implied by its public documentation.
 
 ## Read order
 
-1. [Vietnam and SSI FastConnect Data capabilities](vn-equities.md).
-2. [Source register and approval gates](source-register.md).
-3. [Market comparison](market-comparison.md) — background research only, not a V1 commitment.
+1. [Repository implementation gap map](implementation-gap.md).
+2. [Vietnam and SSI FastConnect Data capabilities](vn-equities.md).
+3. [Source register and approval gates](source-register.md).
+4. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
 
-Official documentation proves documented capability, not entitlement or rights. Production remains blocked; default is fixture-only. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
+Official documentation proves documented capability, not entitlement or rights. Provider status must distinguish documentation, configuration, access, rights and operating approval. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
