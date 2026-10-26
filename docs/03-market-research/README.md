@@ -8,7 +8,8 @@
 2. [Vietnam and SSI FastConnect Data capabilities](vn-equities.md).
 3. [DNSE OpenAPI capabilities](dnse.md).
 4. [TCBS OpenAPI capabilities](tcbs-openapi.md).
-5. [Source register and approval gates](source-register.md).
-6. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
+5. [VPBankS NeoAPI capabilities](vpbanks-neoapi.md).
+6. [Source register and approval gates](source-register.md).
+7. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
 
 Official documentation proves documented capability, not entitlement or rights. Provider status must distinguish documentation, configuration, access, rights and operating approval. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
