@@ -108,6 +108,42 @@ class TestProviders(unittest.TestCase):
                     index, date(2025, 1, 2), date(2025, 1, 2), credential={},
                 )
 
+    def test_ssi_hnx_daily_index_normalizes_hnx30_as_a_separate_venue(self):
+        provider = SsiFastConnectProvider()
+        index = Instrument(
+            id='SSI:INDEX:HNX:HNX30', venue='HNX', board='unknown', native_symbol='HNX30',
+            instrument_class='index', name='HNX30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        row = {
+            'IndexId': 'HNX30', 'IndexValue': '510.56', 'TradingDate': '14/08/2023', 'Time': None,
+            'Change': '19.09', 'RatioChange': '3.89', 'TotalTrade': '0',
+            'TotalMatchVol': '84693600', 'TotalMatchVal': '1836008470000', 'IndexName': 'HNX30',
+            'Advances': '21', 'NoChanges': '4', 'Declines': '5', 'Exchange': 'HNX',
+        }
+        with patch.object(provider, 'get_json', return_value={'status': 'Success', 'totalRecord': 1, 'data': [row]}) as get_json:
+            observations = provider.fetch_hnx_daily_index(
+                index, date(2023, 8, 14), date(2023, 8, 14), credential={'consumerID': 'id', 'consumerSecret': 'secret'},
+            )
+
+        get_json.assert_called_once_with('DailyIndex', {
+            'indexId': 'HNX30', 'fromDate': '14/08/2023', 'toDate': '14/08/2023',
+            'pageIndex': 1, 'pageSize': 1000, 'ascending': 'true',
+        }, credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+        self.assertEqual(observations[0].exchange, 'HNX')
+        self.assertEqual(observations[0].index_value, '510.56')
+        self.assertEqual(observations[0].ratio_change, '3.89')
+
+    def test_ssi_hnx_daily_index_rejects_hose_instrument(self):
+        provider = SsiFastConnectProvider()
+        index = Instrument(
+            id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+            instrument_class='index', name='VN30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        with self.assertRaisesRegex(ValueError, 'only supports HNX'):
+            provider.fetch_hnx_daily_index(
+                index, date(2023, 8, 14), date(2023, 8, 14), credential={},
+            )
+
     def test_ssi_hose_index_catalogue_paginates_and_preserves_index_class(self):
         provider = SsiFastConnectProvider()
         rows = [

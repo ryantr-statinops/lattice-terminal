@@ -321,18 +321,22 @@ class AtomicDatasetPublisher:
                 }
         return None
 
-    def index_daily_snapshot(self, provider_id: str, index_instrument_id: str) -> dict | None:
-        if provider_id != 'ssi' or not index_instrument_id.strip():
-            raise ValueError('provider daily index data requires a supported provider and index')
+    def index_daily_snapshot(self, provider_id: str, index_instrument_id: str, venue: str) -> dict | None:
+        if provider_id != 'ssi' or not index_instrument_id.strip() or venue not in {'HOSE', 'HNX'}:
+            raise ValueError('provider daily index data requires a supported provider, venue, and index')
+        catalogue_capability = f'ssi:market-data:instruments.index:index:{venue}'
+        daily_capability = f'ssi:market-data:indices.daily:index:{venue}'
         index = next((value for value in self.instrument_catalogue(
-            provider_id, 'ssi:market-data:instruments.index:index:HOSE',
+            provider_id, catalogue_capability,
         ) if value.id == index_instrument_id), None)
-        if index is None or index.instrument_class != 'index' or index.venue != 'HOSE':
-            raise ValueError('index is not present in the authorized HOSE provider catalogue')
+        if index is None or index.instrument_class != 'index' or index.venue != venue:
+            raise ValueError(f'index is not present in the authorized {venue} provider catalogue')
         by_date: dict[str, dict] = {}
         used_snapshots: list[str] = []
         for summary in self.manifests(provider_id, 'indices.daily'):
             manifest, envelopes = self.load(summary['snapshot_id'])
+            if manifest['capability_id'] != daily_capability:
+                continue
             self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
             for envelope in envelopes:
                 if not isinstance(envelope.payload, dict) or envelope.payload.get('index_instrument_id') != index_instrument_id:

@@ -629,6 +629,42 @@
         "summary": "Ingest Ssi Hose Index Components"
       }
     },
+    "/internal/v1/market/index-series/ssi/hnx/daily": {
+      "post": {
+        "operationId": "ingest_ssi_hnx_daily_index_internal_v1_market_index_series_ssi_hnx_daily_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiDailyIndexIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hnx Daily Index"
+      }
+    },
     "/internal/v1/market/index-series/ssi/hose/daily": {
       "post": {
         "operationId": "ingest_ssi_hose_daily_index_internal_v1_market_index_series_ssi_hose_daily_post",
@@ -830,6 +866,15 @@
             "required": true,
             "schema": {
               "title": "Index Instrument Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "venue",
+            "required": true,
+            "schema": {
+              "title": "Venue",
               "type": "string"
             }
           }

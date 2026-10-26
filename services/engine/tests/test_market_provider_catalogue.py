@@ -373,9 +373,10 @@ def test_ssi_hose_index_components_checks_store_rights_before_provider_access(tm
     assert not called
 
 
-def test_ssi_hose_daily_index_publishes_and_reads_routed_observations(tmp_path):
-    catalogue_capability = 'ssi:market-data:instruments.index:index:HOSE'
-    capability_id = 'ssi:market-data:indices.daily:index:HOSE'
+@pytest.mark.parametrize(('venue', 'index_code'), [('HOSE', 'VN30'), ('HNX', 'HNX30')])
+def test_ssi_daily_index_publishes_and_reads_routed_observations(tmp_path, venue, index_code):
+    catalogue_capability = f'ssi:market-data:instruments.index:index:{venue}'
+    capability_id = f'ssi:market-data:indices.daily:index:{venue}'
     catalogue_fields = ['id', 'venue', 'board', 'native_symbol', 'instrument_class', 'name', 'currency', 'metadata', 'index_code', 'exchange', 'source_id', 'is_synthetic']
     daily_fields = [
         'index_instrument_id', 'index_code', 'exchange', 'trading_date', 'provider_time', 'index_value',
@@ -407,37 +408,38 @@ def test_ssi_hose_daily_index_publishes_and_reads_routed_observations(tmp_path):
         observed_at=now, available_at=now, revision='unknown', schema_version='1', parser_version='ssi-index-list-hose-1',
         unit='instrument', source_timezone='Asia/Ho_Chi_Minh', temporal_semantics='not_time_series',
         adjustment_state='not_applicable', quality='unknown', payload={
-            'id': 'SSI:INDEX:HOSE:VN30', 'venue': 'HOSE', 'board': 'unknown', 'native_symbol': 'VN30',
-            'instrument_class': 'index', 'name': 'VN30', 'currency': None,
-            'metadata': {'index_code': 'VN30', 'exchange': 'HOSE'}, 'source_id': 'SSI-FC-DATA', 'is_synthetic': False,
+            'id': f'SSI:INDEX:{venue}:{index_code}', 'venue': venue, 'board': 'unknown', 'native_symbol': index_code,
+            'instrument_class': 'index', 'name': index_code, 'currency': None,
+            'metadata': {'index_code': index_code, 'exchange': venue}, 'source_id': 'SSI-FC-DATA', 'is_synthetic': False,
         },
     )])
     app = create_app('test-token', str(tmp_path))
-    route_key = 'indices.daily:index:HOSE'
+    route_key = f'indices.daily:index:{venue}'
     app.state.provider_router.update_policy({'datasets': {route_key: capability_id}})
-    app.state.provider_router.providers['ssi'].fetch_hose_daily_index = lambda index, start, end, *, credential: [DailyIndexObservation(
-        index_instrument_id=index.id, index_code=index.native_symbol, exchange='HOSE', trading_date='2025-01-02',
+    setattr(app.state.provider_router.providers['ssi'], f'fetch_{venue.casefold()}_daily_index', lambda index, start, end, *, credential: [DailyIndexObservation(
+        index_instrument_id=index.id, index_code=index.native_symbol, exchange=venue, trading_date='2025-01-02',
         index_value='1320.50', change='-1.25', ratio_change='-0.09', total_trade='123',
         field_units={
             'index_value': 'provider_native_index_value_scale',
             'change': 'provider_native_index_change_scale',
             'ratio_change': 'provider_native_ratio_scale_unverified',
         }, source_id='SSI-FC-DATA',
-    )]
+    )])
 
     with TestClient(app) as client:
         headers = {'Authorization': 'Bearer test-token'}
-        published = client.post('/internal/v1/market/index-series/ssi/hose/daily', headers=headers, json={
+        instrument_id = f'SSI:INDEX:{venue}:{index_code}'
+        published = client.post(f'/internal/v1/market/index-series/ssi/{venue.casefold()}/daily', headers=headers, json={
             'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'},
-            'index_instrument_id': 'SSI:INDEX:HOSE:VN30', 'from_date': '2025-01-02', 'to_date': '2025-01-02',
+            'index_instrument_id': instrument_id, 'from_date': '2025-01-02', 'to_date': '2025-01-02',
         })
         result = client.get(
-            '/internal/v1/market/provider-index-daily?provider_id=ssi&index_instrument_id=SSI%3AINDEX%3AHOSE%3AVN30',
+            f'/internal/v1/market/provider-index-daily?provider_id=ssi&venue={venue}&index_instrument_id=SSI%3AINDEX%3A{venue}%3A{index_code}',
             headers=headers,
         )
         app.state.provider_router.update_policy({'datasets': {}})
         unrouted = client.get(
-            '/internal/v1/market/provider-index-daily?provider_id=ssi&index_instrument_id=SSI%3AINDEX%3AHOSE%3AVN30',
+            f'/internal/v1/market/provider-index-daily?provider_id=ssi&venue={venue}&index_instrument_id=SSI%3AINDEX%3A{venue}%3A{index_code}',
             headers=headers,
         )
 
@@ -445,6 +447,7 @@ def test_ssi_hose_daily_index_publishes_and_reads_routed_observations(tmp_path):
     assert published.json()['row_count'] == 1
     assert result.status_code == 200
     assert result.json()['records'][0]['observation']['index_value'] == '1320.50'
+    assert result.json()['records'][0]['observation']['exchange'] == venue
     assert result.json()['records'][0]['observation']['field_units']['index_value'] == 'provider_native_index_value_scale'
     assert unrouted.status_code == 400
 

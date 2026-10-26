@@ -58,6 +58,7 @@
     "POST /api/v1/ingestion/catalogues/ssi/hose-equity",
     "POST /api/v1/ingestion/catalogues/ssi/hose-indices",
     "POST /api/v1/ingestion/index-constituents/ssi/hose",
+    "POST /api/v1/ingestion/index-series/ssi/hnx/daily",
     "POST /api/v1/ingestion/index-series/ssi/hose/daily",
     "POST /api/v1/portfolio/import/apply",
     "POST /api/v1/portfolio/import/preview",

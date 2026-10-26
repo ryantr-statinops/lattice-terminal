@@ -140,6 +140,7 @@ class ProviderCapabilityRegistry:
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
             ('indices.daily', 'index', 'HOSE', True, 'SSI DailyIndex documents HOSE daily index values and market aggregates; units, provider publication time and local-use rights remain unverified.'),
+            ('indices.daily', 'index', 'HNX', True, 'SSI DailyIndex documents HNX daily index values and market aggregates; units, provider publication time and local-use rights remain unverified.'),
             ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
@@ -351,12 +352,12 @@ def normalize_ssi_hose_index_components(
     )
 
 
-def normalize_ssi_hose_daily_index_rows(
-    rows: list[dict[str, Any]], index: Instrument, start: date, end: date, observed_at: datetime,
+def _normalize_ssi_daily_index_rows(
+    rows: list[dict[str, Any]], index: Instrument, venue: str, start: date, end: date, observed_at: datetime,
 ) -> list[DailyIndexObservation]:
     """Normalize SSI DailyIndex records while retaining provider-local time without a timezone guess."""
-    if index.instrument_class != 'index' or index.venue != 'HOSE':
-        raise ValueError('SSI DailyIndex adapter only supports HOSE indexes')
+    if venue not in {'HOSE', 'HNX'} or index.instrument_class != 'index' or index.venue != venue:
+        raise ValueError(f'SSI DailyIndex adapter only supports {venue} indexes')
     if start > end:
         raise ValueError('SSI DailyIndex date range is invalid')
     if observed_at.tzinfo is None or observed_at.utcoffset() is None:
@@ -398,11 +399,11 @@ def normalize_ssi_hose_daily_index_rows(
             raise ValueError('SSI DailyIndex row must be an object')
         code = optional_text(row, 'index code', 'IndexId', 'IndexCode', 'Indexcode')
         if code is None or code.upper() != index.native_symbol.upper():
-            raise ValueError('SSI DailyIndex row does not match the requested HOSE index')
+            raise ValueError(f'SSI DailyIndex row does not match the requested {venue} index')
         market = optional_text(row, 'market', 'Market')
         exchange = optional_text(row, 'exchange', 'Exchange')
-        if (market and market.upper() != 'HOSE') or (exchange and exchange.upper() != 'HOSE'):
-            raise ValueError('SSI DailyIndex row does not match the requested HOSE venue')
+        if (market and market.upper() != venue) or (exchange and exchange.upper() != venue):
+            raise ValueError(f'SSI DailyIndex row does not match the requested {venue} venue')
         raw_date = optional_text(row, 'trading date', 'TradingDate', 'Trading Date')
         if raw_date is None:
             raise ValueError('SSI DailyIndex TradingDate must use dd/mm/yyyy')
@@ -414,7 +415,7 @@ def normalize_ssi_hose_daily_index_rows(
             raise ValueError('SSI DailyIndex returned a row outside the requested date range')
 
         observation = DailyIndexObservation(
-            index_instrument_id=index.id, index_code=index.native_symbol, exchange='HOSE',
+            index_instrument_id=index.id, index_code=index.native_symbol, exchange=venue,
             trading_date=trading_date, provider_time=optional_text(row, 'time', 'Time'),
             index_value=required_decimal(row, 'IndexValue', 'IndexValue'),
             change=optional_decimal(row, 'Change', 'Change'),
@@ -454,6 +455,18 @@ def normalize_ssi_hose_daily_index_rows(
             raise ValueError('SSI DailyIndex contains conflicting rows for one trading date')
         observations[trading_date] = observation
     return [observations[key] for key in sorted(observations)]
+
+
+def normalize_ssi_hose_daily_index_rows(
+    rows: list[dict[str, Any]], index: Instrument, start: date, end: date, observed_at: datetime,
+) -> list[DailyIndexObservation]:
+    return _normalize_ssi_daily_index_rows(rows, index, 'HOSE', start, end, observed_at)
+
+
+def normalize_ssi_hnx_daily_index_rows(
+    rows: list[dict[str, Any]], index: Instrument, start: date, end: date, observed_at: datetime,
+) -> list[DailyIndexObservation]:
+    return _normalize_ssi_daily_index_rows(rows, index, 'HNX', start, end, observed_at)
 
 
 def normalize_ssi_hose_equity_daily_rows(
@@ -995,11 +1008,11 @@ class SsiFastConnectProvider(BaseMarketProvider):
             raise ValueError('SSI IndexComponents page set is incomplete')
         return normalize_ssi_hose_index_components(rows, index, datetime.now(timezone.utc))
 
-    def fetch_hose_daily_index(
-        self, index: Instrument, start: date, end: date, *, credential: dict[str, str],
+    def _fetch_daily_index(
+        self, index: Instrument, venue: str, start: date, end: date, *, credential: dict[str, str],
     ) -> list[DailyIndexObservation]:
-        if index.instrument_class != 'index' or index.venue != 'HOSE':
-            raise ValueError('SSI DailyIndex adapter only supports HOSE indexes')
+        if venue not in {'HOSE', 'HNX'} or index.instrument_class != 'index' or index.venue != venue:
+            raise ValueError(f'SSI DailyIndex adapter only supports {venue} indexes')
         if start > end:
             raise ValueError('SSI DailyIndex date range is invalid')
         if end >= datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date():
@@ -1040,7 +1053,17 @@ class SsiFastConnectProvider(BaseMarketProvider):
             rows.extend(page_rows)
         if len(rows) != total_records:
             raise ValueError('SSI DailyIndex page set is incomplete')
-        return normalize_ssi_hose_daily_index_rows(rows, index, start, end, datetime.now(timezone.utc))
+        return _normalize_ssi_daily_index_rows(rows, index, venue, start, end, datetime.now(timezone.utc))
+
+    def fetch_hose_daily_index(
+        self, index: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[DailyIndexObservation]:
+        return self._fetch_daily_index(index, 'HOSE', start, end, credential=credential)
+
+    def fetch_hnx_daily_index(
+        self, index: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[DailyIndexObservation]:
+        return self._fetch_daily_index(index, 'HNX', start, end, credential=credential)
 
     def fetch_hose_equity_daily(
         self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],
