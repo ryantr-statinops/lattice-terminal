@@ -66,7 +66,7 @@ func TestProviderRoutingPersistsAndAppliesPatch(t *testing.T) {
 		t.Fatalf("engine got %#v, want %#v", applied, want)
 	}
 	stored, err := db.RoutingPolicy()
-	if err != nil || stored.HistoricalProvider != want.HistoricalProvider || stored.RealtimeProvider != want.RealtimeProvider || stored.FinancialsProvider != want.FinancialsProvider || stored.FallbackEnabled != want.FallbackEnabled || stored.Datasets["candles.1d:equity:HOSE"] != "ssi" {
+	if err != nil || stored.HistoricalProvider != want.HistoricalProvider || stored.RealtimeProvider != want.RealtimeProvider || stored.FinancialsProvider != want.FinancialsProvider || stored.FallbackEnabled != want.FallbackEnabled || stored.Datasets["candles.1d:equity:HOSE"] != capabilityID {
 		t.Fatalf("SQLite policy = %#v, want %#v, err=%v", stored, want, err)
 	}
 }
