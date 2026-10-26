@@ -11,6 +11,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 from .models import Candle,DataQuality,Instrument,MarketSnapshot
+from .revisions import deduplicate_revisions
 
 SCHEMA_V1=pa.schema([
     ('instrument_id',pa.string()),('interval',pa.string()),('open_time',pa.timestamp('us',tz='UTC')),
@@ -40,13 +41,10 @@ class MarketRepository:
         if payload.get('is_synthetic') is not True: raise ValueError('fixture ingestion requires synthetic data')
         instrument=Instrument.model_validate(payload['instrument'])
         rows=[Candle.model_validate(v) for v in payload['candles']]
-        seen={}
         for row in rows:
             if row.instrument_id!=instrument.id: raise ValueError('instrument mismatch')
-            key=(row.interval,row.open_time,row.revision)
-            if key in seen and seen[key]!=row: raise ValueError('conflicting duplicate revision')
-            seen[key]=row
-        rows=sorted(seen.values(),key=lambda v:(v.open_time,v.revision))
+        rows=deduplicate_revisions(rows,logical_key=lambda v:(v.interval,v.open_time),revision=lambda v:v.revision)
+        rows=sorted(rows,key=lambda v:(v.open_time,v.revision))
         # Multiple revisions are retained as distinct snapshots, not silently merged.
         if len({(v.interval,v.open_time) for v in rows})!=len(rows): raise ValueError('select an explicit revision before publishing')
         if any(not v.is_closed for v in rows): raise ValueError('provisional bars cannot enter historical snapshots')
