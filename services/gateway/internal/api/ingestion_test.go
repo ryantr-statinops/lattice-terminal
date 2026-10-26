@@ -199,6 +199,43 @@ func TestSSIHoseCoveredWarrantCatalogueSyncUsesVaultAndPersistsJob(t *testing.T)
 	}
 }
 
+func TestSSIDerFuturesCatalogueSyncUsesVaultAndPersistsJob(t *testing.T) {
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var received map[string]any
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/market/catalogues/ssi/der-futures" || r.Header.Get("Authorization") != "Bearer engine-token" {
+			t.Fatalf("unexpected SSI derivatives ingestion request: %s %s", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"snapshot_id": strings.Repeat("e", 64), "row_count": 7})
+	}))
+	defer engine.Close()
+	credentials := &credentialWriterStub{credential: `{"consumerID":"local-id","consumerSecret":"der-futures-secret"}`}
+	mux := http.NewServeMux()
+	(&API{
+		Store: db, Credentials: credentials,
+		Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}},
+	}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/ingestion/catalogues/ssi/der-futures", strings.NewReader(`{}`)))
+	if response.Code != http.StatusCreated || strings.Contains(response.Body.String(), "der-futures-secret") {
+		t.Fatalf("SSI DER futures ingestion response = %d %s", response.Code, response.Body.String())
+	}
+	if credentials.provider != "ssi" || credentials.service != "market-data" || received["credential"].(map[string]any)["consumerSecret"] != "der-futures-secret" {
+		t.Fatalf("vault credentials were not sent to engine: vault=%s/%s engine=%#v", credentials.provider, credentials.service, received)
+	}
+	jobs, err := db.IngestionJobs()
+	if err != nil || len(jobs) != 1 || jobs[0].Status != "completed" || jobs[0].CapabilityID != "ssi:market-data:instruments.details:derivative:DER" || jobs[0].Dataset != "instruments.details" || jobs[0].AssetClass != "derivative" || jobs[0].Venue != "DER" || jobs[0].ProcessedRecords != 7 {
+		t.Fatalf("SSI DER futures catalogue job = %#v, %v", jobs, err)
+	}
+}
+
 func TestSSIHoseCatalogueSyncRedactsProviderErrors(t *testing.T) {
 	db, err := store.Open(t.TempDir())
 	if err != nil {

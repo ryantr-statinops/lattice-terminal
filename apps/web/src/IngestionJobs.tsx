@@ -13,7 +13,7 @@ function tone(status:IngestionJob['status']):'positive'|'warning'|'negative'|'in
  return 'info';
 }
 
-export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHnxEquity=false,canSyncSsiUpcomEquity=false,canSyncSsiHoseCoveredWarrants=false,canSyncSsiHoseIndices=false,canSyncSsiHnxIndices=false}:{canSyncSsiHoseEquity?:boolean;canSyncSsiHnxEquity?:boolean;canSyncSsiUpcomEquity?:boolean;canSyncSsiHoseCoveredWarrants?:boolean;canSyncSsiHoseIndices?:boolean;canSyncSsiHnxIndices?:boolean}){
+export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHnxEquity=false,canSyncSsiUpcomEquity=false,canSyncSsiHoseCoveredWarrants=false,canSyncSsiDerFutures=false,canSyncSsiHoseIndices=false,canSyncSsiHnxIndices=false}:{canSyncSsiHoseEquity?:boolean;canSyncSsiHnxEquity?:boolean;canSyncSsiUpcomEquity?:boolean;canSyncSsiHoseCoveredWarrants?:boolean;canSyncSsiDerFutures?:boolean;canSyncSsiHoseIndices?:boolean;canSyncSsiHnxIndices?:boolean}){
  const client=useQueryClient();
  const [syncing,setSyncing]=useState(false);
  const [syncError,setSyncError]=useState<unknown>(null);
@@ -55,6 +55,15 @@ export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHnxEquity=fa
   }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
   finally{setSyncing(false)}
  };
+ const syncSsiDerFutures=async()=>{
+  setSyncing(true);setSyncError(null);setSyncMessage('');
+  try{
+   const result=await send<{job:{status:string};snapshot_id:string}>('/ingestion/catalogues/ssi/der-futures',{});
+   setSyncMessage(`SSI DER futures catalogue saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
+   await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']})]);
+  }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
+  finally{setSyncing(false)}
+ };
  const syncSsiIndices=async()=>{
   setSyncing(true);setSyncError(null);setSyncMessage('');
   try{
@@ -74,7 +83,7 @@ export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHnxEquity=fa
   finally{setSyncing(false)}
  };
  return <Panel>
-  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}{canSyncSsiHnxEquity&&<Button pending={syncing} onClick={()=>void syncSsiHnxCatalogue()}>Sync SSI HNX stocks</Button>}{canSyncSsiUpcomEquity&&<Button pending={syncing} onClick={()=>void syncSsiUpcomCatalogue()}>Sync SSI UPCOM stocks</Button>}{canSyncSsiHoseCoveredWarrants&&<Button pending={syncing} onClick={()=>void syncSsiHoseCoveredWarrants()}>Sync SSI HOSE covered warrants</Button>}{canSyncSsiHoseIndices&&<Button pending={syncing} onClick={()=>void syncSsiIndices()}>Sync SSI HOSE indices</Button>}{canSyncSsiHnxIndices&&<Button pending={syncing} onClick={()=>void syncSsiHnxIndices()}>Sync SSI HNX indices</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
+  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}{canSyncSsiHnxEquity&&<Button pending={syncing} onClick={()=>void syncSsiHnxCatalogue()}>Sync SSI HNX stocks</Button>}{canSyncSsiUpcomEquity&&<Button pending={syncing} onClick={()=>void syncSsiUpcomCatalogue()}>Sync SSI UPCOM stocks</Button>}{canSyncSsiHoseCoveredWarrants&&<Button pending={syncing} onClick={()=>void syncSsiHoseCoveredWarrants()}>Sync SSI HOSE covered warrants</Button>}{canSyncSsiDerFutures&&<Button pending={syncing} onClick={()=>void syncSsiDerFutures()}>Sync SSI DER futures</Button>}{canSyncSsiHoseIndices&&<Button pending={syncing} onClick={()=>void syncSsiIndices()}>Sync SSI HOSE indices</Button>}{canSyncSsiHnxIndices&&<Button pending={syncing} onClick={()=>void syncSsiHnxIndices()}>Sync SSI HNX indices</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
   <div className="panel-content">
    <ErrorState error={jobs.error||syncError} onRetry={()=>{void jobs.refetch();setSyncError(null)}}/>
    {syncMessage&&<InlineNotice tone="positive">{syncMessage}</InlineNotice>}

@@ -21,6 +21,7 @@ from kestrel_engine.providers import (
     normalize_ssi_hnx_equity_catalogue,
     normalize_ssi_upcom_equity_catalogue,
     normalize_ssi_hose_covered_warrant_catalogue,
+    normalize_ssi_der_derivative_catalogue,
     normalize_ssi_hose_index_catalogue,
     normalize_ssi_hose_index_components,
 )
@@ -313,6 +314,42 @@ class TestProviders(unittest.TestCase):
                 'data': [{'SecType': 'CW', 'Symbol': 'CWA1', 'Exchange': 'HNX'}],
             })
 
+    def test_ssi_der_derivative_catalogue_preserves_contract_fields_and_class(self):
+        payload = {
+            'status': 'Success', 'data': [{
+                'RepeatedInfo': [
+                    {
+                        'SecType': 'FU', 'Isin': 'vn000000fu01', 'Symbol': 'VN30F1M',
+                        'SymbolName': 'VN30 Futures', 'Exchange': 'DER', 'Underlying': 'VN30',
+                        'ContractMultiplier': '100000', 'SettlMethod': 'C',
+                        'LastTradingDate': '15/12/2027', 'MaturityDate': '15/12/2027',
+                        'LotSize': '1',
+                    },
+                    {'SecType': 'CW', 'Isin': 'vn000000cw02', 'Symbol': 'CW2', 'Exchange': 'DER'},
+                ],
+            }],
+        }
+
+        instruments = normalize_ssi_der_derivative_catalogue(payload)
+
+        self.assertEqual(len(instruments), 1)
+        self.assertEqual(instruments[0].id, 'SSI:ISIN:VN000000FU01')
+        self.assertEqual(instruments[0].venue, 'DER')
+        self.assertEqual(instruments[0].instrument_class, 'derivative')
+        self.assertEqual(instruments[0].metadata, {
+            'underlying': 'VN30', 'contract_multiplier': '100000', 'settlement_method': 'C',
+            'last_trading_date': '15/12/2027', 'maturity_date': '15/12/2027',
+            'lot_size': '1', 'isin': 'VN000000FU01',
+        })
+        self.assertIsNone(instruments[0].currency)
+
+    def test_ssi_der_derivative_catalogue_fails_closed_for_another_venue(self):
+        with self.assertRaisesRegex(ValueError, 'another venue'):
+            normalize_ssi_der_derivative_catalogue({
+                'status': 'Success',
+                'data': [{'SecType': 'FU', 'Symbol': 'VN30F1M', 'Exchange': 'HOSE'}],
+            })
+
     def test_ssi_hose_catalogue_page_uses_documented_endpoint_and_paging(self):
         provider = SsiFastConnectProvider()
         credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
@@ -441,6 +478,23 @@ class TestProviders(unittest.TestCase):
         }))
         self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
             'market': 'HOSE', 'pageIndex': 2, 'pageSize': 1000,
+        }))
+
+    def test_ssi_der_derivative_catalogue_reads_each_documented_page(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        first = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'FU', 'Symbol': 'VN30F1M', 'Exchange': 'DER'}]}
+        second = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'FU', 'Symbol': 'VN30F2M', 'Exchange': 'DER'}]}
+        with patch.object(provider, 'get_json', side_effect=[first, second]) as get_json:
+            instruments = provider.fetch_der_derivative_catalogue(credential=credential)
+
+        self.assertEqual([item.native_symbol for item in instruments], ['VN30F1M', 'VN30F2M'])
+        self.assertTrue(all(item.instrument_class == 'derivative' for item in instruments))
+        self.assertEqual(get_json.call_args_list[0].args, ('SecuritiesDetails', {
+            'market': 'DER', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
+            'market': 'DER', 'pageIndex': 2, 'pageSize': 1000,
         }))
 
     def test_ssi_daily_ohlc_rejects_out_of_scope_instrument_before_network(self):

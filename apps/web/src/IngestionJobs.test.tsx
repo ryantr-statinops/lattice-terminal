@@ -65,6 +65,15 @@ it('starts the supported SSI HOSE covered-warrant catalogue sync',async()=>{
  expect(await screen.findByText('SSI HOSE covered-warrant catalogue saved as snapshot hosecovered1.')).toBeDefined();
 });
 
+it('starts the supported SSI DER futures catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'derfutures123456'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiDerFutures/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI DER futures'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/der-futures',{}));
+ expect(await screen.findByText('SSI DER futures catalogue saved as snapshot derfutures12.')).toBeDefined();
+});
+
 it('starts the supported SSI HOSE index catalogue sync',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});

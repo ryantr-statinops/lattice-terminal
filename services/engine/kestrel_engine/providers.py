@@ -139,6 +139,7 @@ class ProviderCapabilityRegistry:
             ('instruments.details', 'equity', 'HNX', True, 'SSI SecuritiesDetails documents HNX stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.details', 'equity', 'UPCOM', True, 'SSI SecuritiesDetails documents UPCOM stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'HOSE', True, 'SSI SecuritiesDetails documents CW and exchange fields; HOSE parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
+            ('instruments.details', 'derivative', 'DER', True, 'SSI SecuritiesDetails documents FU futures and DER exchange fields; DER parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
@@ -279,6 +280,10 @@ def normalize_ssi_equity_catalogue(payload: dict[str, Any], venue: str) -> list[
 
 def normalize_ssi_hose_covered_warrant_catalogue(payload: dict[str, Any]) -> list[Instrument]:
     return _normalize_ssi_security_catalogue(payload, 'HOSE', {'CW'}, 'covered_warrant')
+
+
+def normalize_ssi_der_derivative_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    return _normalize_ssi_security_catalogue(payload, 'DER', {'FU'}, 'derivative')
 
 
 def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
@@ -984,6 +989,12 @@ class SsiFastConnectProvider(BaseMarketProvider):
 
     def fetch_hose_covered_warrant_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         return self._fetch_security_catalogue('HOSE', {'CW'}, 'covered_warrant', credential=credential)
+
+    def fetch_der_derivative_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_security_catalogue_page('DER', page_index, {'FU'}, 'derivative', credential=credential)
+
+    def fetch_der_derivative_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_security_catalogue('DER', {'FU'}, 'derivative', credential=credential)
 
     def fetch_hose_index_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:
