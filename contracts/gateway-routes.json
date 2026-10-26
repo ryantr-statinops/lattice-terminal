@@ -10,6 +10,8 @@
     "GET /api/v1/funds",
     "GET /api/v1/health",
     "GET /api/v1/local/config",
+    "GET /api/v1/market/instrument-aliases",
+    "GET /api/v1/market/instrument-aliases/resolve",
     "GET /api/v1/portfolio",
     "GET /api/v1/portfolio/export",
     "GET /api/v1/positions",
@@ -50,6 +52,7 @@
     "POST /api/v1/terminal/session",
     "POST /api/v1/workspaces/{kind}/mount",
     "POST /api/v1/workspaces/{kind}/rename",
+    "PUT /api/v1/market/instrument-aliases",
     "PUT /api/v1/providers/routing",
     "PUT /api/v1/providers/{id}/credentials",
     "PUT /api/v1/workspaces/{kind}/file"

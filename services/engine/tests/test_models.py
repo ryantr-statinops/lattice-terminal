@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,Quote,StrategySignal,Trade,ValueSeriesPoint,decimal_text
+from kestrel_engine.models import Candle,CorporateAction,DatasetEnvelope,FinancialStatement,Instrument,OrderBookDepth,ProviderInstrumentAlias,Quote,StrategySignal,Trade,ValueSeriesPoint,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -14,9 +14,6 @@ def test_fixture_contract_and_strict_decimals():
         with pytest.raises(ValueError): decimal_text(value)
     with pytest.raises(ValidationError): Candle.model_validate(raw|{'open_time':'2026-01-01T00:00:00'})
     with pytest.raises(ValidationError): Candle.model_validate(raw|{'high':'1'})
-from kestrel_engine.models import ProviderInstrumentAlias
-
-
 def test_provider_instrument_alias_keeps_provider_identity_separate():
     alias = ProviderInstrumentAlias(
         stable_instrument_id='vn-equity:HOSE:HPG',
@@ -24,6 +21,7 @@ def test_provider_instrument_alias_keeps_provider_identity_separate():
         provider_instrument_id='listing-123',
         native_symbol='HPG',
         venue='HOSE',
+        effective_from='2026-01-01T00:00:00Z',
     )
     assert alias.stable_instrument_id == 'vn-equity:HOSE:HPG'
     assert alias.provider_instrument_id == 'listing-123'
@@ -37,6 +35,19 @@ def test_provider_instrument_alias_rejects_blank_identity():
             provider_id='provider-a',
             provider_instrument_id='listing-123',
             native_symbol=' ',
+            effective_from='2026-01-01T00:00:00Z',
+        )
+
+
+def test_provider_instrument_alias_rejects_reversed_effective_range():
+    with pytest.raises(ValidationError, match='effective_to must be later'):
+        ProviderInstrumentAlias(
+            stable_instrument_id='vn-equity:HOSE:HPG',
+            provider_id='provider-a',
+            provider_instrument_id='listing-123',
+            native_symbol='HPG',
+            effective_from='2026-06-01T00:00:00Z',
+            effective_to='2026-01-01T00:00:00Z',
         )
 
 

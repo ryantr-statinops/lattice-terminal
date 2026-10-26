@@ -961,6 +961,67 @@
     "title": "OrderBookDepth",
     "type": "object"
   },
+  "ProviderInstrumentAlias": {
+    "additionalProperties": false,
+    "description": "Maps one provider's native instrument identifier to a stable local ID.",
+    "properties": {
+      "effective_from": {
+        "format": "date-time",
+        "title": "Effective From",
+        "type": "string"
+      },
+      "effective_to": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Effective To"
+      },
+      "native_symbol": {
+        "title": "Native Symbol",
+        "type": "string"
+      },
+      "provider_id": {
+        "title": "Provider Id",
+        "type": "string"
+      },
+      "provider_instrument_id": {
+        "title": "Provider Instrument Id",
+        "type": "string"
+      },
+      "stable_instrument_id": {
+        "title": "Stable Instrument Id",
+        "type": "string"
+      },
+      "venue": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Venue"
+      }
+    },
+    "required": [
+      "stable_instrument_id",
+      "provider_id",
+      "provider_instrument_id",
+      "native_symbol",
+      "effective_from"
+    ],
+    "title": "ProviderInstrumentAlias",
+    "type": "object"
+  },
   "Quote": {
     "additionalProperties": false,
     "properties": {

@@ -50,6 +50,8 @@ class ProviderInstrumentAlias(Record):
     provider_instrument_id: str
     native_symbol: str
     venue: str | None = None
+    effective_from: AwareDatetime
+    effective_to: AwareDatetime | None = None
 
     @field_validator('stable_instrument_id', 'provider_id', 'provider_instrument_id', 'native_symbol')
     @classmethod
@@ -57,6 +59,12 @@ class ProviderInstrumentAlias(Record):
         if not value.strip():
             raise ValueError('instrument identity fields must not be blank')
         return value
+
+    @model_validator(mode='after')
+    def valid_effective_range(self):
+        if self.effective_to is not None and self.effective_to <= self.effective_from:
+            raise ValueError('effective_to must be later than effective_from')
+        return self
 
 class Candle(Record):
     instrument_id: str
