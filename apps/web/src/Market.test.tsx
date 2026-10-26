@@ -33,7 +33,7 @@ class TestResizeObserver{
  disconnect=vi.fn();
 }
 
-function showMarket(response=(url:string)=>url.includes('/instruments')?instruments:snapshot){
+function showMarket(response=(url:string)=>url.includes('/market/datasets')?[]:url.includes('/instruments')?instruments:snapshot){
  const fetcher=vi.fn(async(input:RequestInfo|URL)=>new Response(JSON.stringify(response(String(input))),{status:200,headers:{'Content-Type':'application/json'}}));
  vi.stubGlobal('fetch',fetcher);
  return render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
@@ -78,7 +78,7 @@ describe('Market ECharts chart',()=>{
  });
 
  it('shows an empty snapshot without creating a chart',async()=>{
-  showMarket(url=>url.includes('/instruments')?instruments:{...snapshot,candles:[]});
+  showMarket(url=>url.includes('/market/datasets')?[]:url.includes('/instruments')?instruments:{...snapshot,candles:[]});
   await screen.findByText('This snapshot has no candles.');
   expect(echarts.init).not.toHaveBeenCalled();
  });
@@ -94,8 +94,27 @@ describe('Market ECharts chart',()=>{
   expect(instrument.value).toBe('VN:BOND01');
  });
 
+ it('loads a provider instrument catalogue and explains missing candle coverage',async()=>{
+  const providerInstrument:Instrument={id:'SSI:ISIN-AAA',venue:'HOSE',board:'unknown',native_symbol:'AAA',instrument_class:'equity',name:'Provider AAA',currency:'VND',is_synthetic:false};
+  const fetcher=vi.fn(async(input:RequestInfo|URL)=>{
+   const url=String(input);
+   const value=url.includes('/market/datasets')?[{provider_id:'ssi',dataset:'instruments.details',snapshot_id:'catalogue-1'}]:url.includes('/instruments?provider_id=ssi')?[providerInstrument]:url.includes('/instruments')?instruments:snapshot;
+   return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
+  });
+  vi.stubGlobal('fetch',fetcher);
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
+
+  const source=await screen.findByLabelText('Instrument source');
+  await screen.findByRole('option',{name:'SSI'});
+  fireEvent.change(source,{target:{value:'ssi'}});
+  await screen.findByRole('option',{name:'AAA · HOSE'});
+  expect(screen.getByText(/Catalogue source: ssi\. No candle snapshot is available/)).toBeDefined();
+  expect(fetcher).toHaveBeenCalledWith('/api/v1/engine/market/instruments?provider_id=ssi',expect.any(Object));
+  expect(echarts.init).not.toHaveBeenCalled();
+ });
+
  it('surfaces stale and incomplete snapshot quality details',async()=>{
-  showMarket(url=>url.includes('/instruments')?instruments:{...snapshot,quality:{state:'partial',gaps:['2026-10-17T02:00:00Z/2026-10-18T02:00:00Z'],adjustment:'unknown',calendar:'provider-calendar',provisional_count:1}});
+  showMarket(url=>url.includes('/market/datasets')?[]:url.includes('/instruments')?instruments:{...snapshot,quality:{state:'partial',gaps:['2026-10-17T02:00:00Z/2026-10-18T02:00:00Z'],adjustment:'unknown',calendar:'provider-calendar',provisional_count:1}});
   expect(await screen.findByText(/Snapshot quality is partial\. Gaps: 2026-10-17T02:00:00Z\/2026-10-18T02:00:00Z\. 1 provisional bars are excluded/)).toBeDefined();
   expect(screen.getByText(/Quality: partial · Gaps: 1 · Provisional: 1 · Adjustment: unknown · Calendar: provider-calendar/)).toBeDefined();
  });
