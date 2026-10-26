@@ -15,7 +15,7 @@ class RunManager:
         if not isinstance(identity,str) or len(identity)!=64 or any(v not in '0123456789abcdef' for v in identity):raise ValueError('invalid run id')
         with self.lock:
             if identity in self.jobs:return
-            job={'events':[],'cancel':threading.Event(),'process':None,'thread':None,'done':False};self.jobs[identity]=job
+            job={'events':[],'signal_ids':set(),'cancel':threading.Event(),'process':None,'thread':None,'done':False};self.jobs[identity]=job
         self.append(identity,'state',{'status':'queued'})
         job['thread']=threading.Thread(target=self._run,args=(config,job),daemon=True)
         job['thread'].start()
@@ -23,6 +23,11 @@ class RunManager:
         with self.lock:
             job=self.jobs[identity]
             if len(job['events'])>=5100:raise ValueError('event limit exceeded')
+            if kind=='signal':
+                signal_id=payload.get('id')
+                if not isinstance(signal_id,str) or not signal_id:raise ValueError('signal event requires a stable id')
+                if signal_id in job['signal_ids']:return
+                job['signal_ids'].add(signal_id)
             job['events'].append({'seq':len(job['events'])+1,'type':kind,'payload':payload})
     def events(self,identity,after):
         with self.lock:

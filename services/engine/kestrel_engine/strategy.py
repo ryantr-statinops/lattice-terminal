@@ -12,7 +12,7 @@ from .models import StrategySignal
 
 class StrategyContext:
     def __init__(self,base,session,strategy_id,source='replay'):
-        self.params=base.params;self._base=base;self._session=session;self.strategy_id=strategy_id;self.source=source;self._current_event=None
+        self.params=base.params;self._base=base;self._session=session;self.strategy_id=strategy_id;self.source=source;self._current_event=None;self._emitted_signal_ids=set()
     def log(self,message):self._base.log(message)
     def _set_event(self,event):self._current_event=event
     def signal(self,*,action:str,reason:str,logical_key:str,instrument_id:str|None=None,price_context:dict[str,str]|None=None,correlation_id:str|None=None,custom_action:str|None=None,expires_in_seconds:int=300):
@@ -31,7 +31,9 @@ class StrategyContext:
             logical_key=logical_key,correlation_id=correlation_id,
             expires_at=event.event_time+timedelta(seconds=expires_in_seconds),
         )
+        if signal.id in self._emitted_signal_ids:return signal
         self._base.emit('signal',signal.model_dump(mode='json'))
+        self._emitted_signal_ids.add(signal.id)
         return signal
     @property
     def portfolio(self):return {'cash':str(self._session.cash),'positions':{k:str(v) for k,v in self._session.positions.items()}}

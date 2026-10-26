@@ -28,6 +28,8 @@ def test_strategy_context_signal_is_independent_from_paper_order_intents(monkeyp
     def on_event(context,event):
         if event.sequence==1:
             signal=context.signal(action='buy',reason='breakout confirmed',logical_key='breakout:HPG')
+            duplicate=context.signal(action='buy',reason='breakout confirmed',logical_key='breakout:HPG')
+            assert duplicate.id==signal.id
             assert signal.expires_at-signal.event_time==timedelta(minutes=5)
         return []
 

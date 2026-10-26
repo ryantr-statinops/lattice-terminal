@@ -49,3 +49,16 @@ def test_engine_shutdown_cancels_running_worker(tmp_path):
     events=manager.events(config['id'],0)['events']
     assert manager.jobs[config['id']]['done']
     assert events[-1]['payload']['status']=='cancelled'
+
+
+def test_run_event_store_deduplicates_signals_by_stable_id(tmp_path):
+    identity='b'*64
+    manager=RunManager(tmp_path)
+    manager.jobs[identity]={'events':[],'signal_ids':set(),'done':False}
+    signal={'id':'stable-signal-id','run_id':identity,'logical_key':'breakout:HPG'}
+    manager.append(identity,'signal',signal)
+    manager.append(identity,'signal',signal)
+    manager.append(identity,'signal',signal|{'id':'another-signal-id'})
+    events=manager.events(identity,0)['events']
+    assert [event['seq'] for event in events]==[1,2]
+    assert [event['payload']['id'] for event in events]==['stable-signal-id','another-signal-id']
