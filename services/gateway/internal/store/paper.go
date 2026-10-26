@@ -48,6 +48,43 @@ func savePosition(tx *sql.Tx, p Position) error {
 	_, err := tx.Exec("INSERT INTO positions VALUES(?,?,?,?,?,?) ON CONFLICT(allocation_id,instrument_id) DO UPDATE SET quantity=excluded.quantity,settled=excluded.settled,average_cost=excluded.average_cost,sell_reserved=excluded.sell_reserved", p.AllocationID, p.InstrumentID, p.Quantity, p.Settled, p.AverageCost, p.SellReserved)
 	return err
 }
+func settleSecurities(tx *sql.Tx, allocation string, day time.Time) error {
+	rows, err := tx.Query("SELECT id,instrument_id,quantity FROM security_settlements WHERE allocation_id=? AND due<=? AND done=0 ORDER BY due,id", allocation, day.UTC().Format("2006-01-02"))
+	if err != nil {
+		return err
+	}
+	type dueShare struct{ id, instrument, quantity string }
+	var matured []dueShare
+	for rows.Next() {
+		var item dueShare
+		if err = rows.Scan(&item.id, &item.instrument, &item.quantity); err != nil {
+			rows.Close()
+			return err
+		}
+		matured = append(matured, item)
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+	for _, item := range matured {
+		p, err := position(tx, allocation, item.instrument)
+		if err != nil {
+			return err
+		}
+		p.Settled = d(p.Settled).Add(d(item.quantity)).String()
+		if err = savePosition(tx, p); err != nil {
+			return err
+		}
+		if _, err = tx.Exec("UPDATE security_settlements SET done=1 WHERE id=? AND done=0", item.id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func d(v string) decimal.Decimal {
 	result, err := decimal.NewFromString(v)
 	if err != nil {
@@ -92,7 +129,8 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	if order.ID == "" || order.InstrumentID == "" || (order.Side != "buy" && order.Side != "sell") {
 		return errors.New("invalid simulated order")
 	}
-	if _, err = time.Parse(time.RFC3339Nano, order.Created); err != nil {
+	created, err := time.Parse(time.RFC3339Nano, order.Created)
+	if err != nil {
 		return errors.New("order timestamp required")
 	}
 	tx, err := s.DB.Begin()
@@ -119,6 +157,9 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	}
 	if a.Mode != "manual" && a.Mode != "strategy" {
 		return errors.New("not a paper allocation")
+	}
+	if err = settleSecurities(tx, a.ID, created); err != nil {
+		return err
 	}
 	cash, reserved := d(a.Cash), d(a.Reserved)
 	p, err := position(tx, a.ID, order.InstrumentID)
@@ -198,8 +239,13 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	if err != nil {
 		return err
 	}
-	if fill.SettlementDate != at.UTC().Format("2006-01-02") {
-		return errors.New("non-immediate settlement requires verified availability-time model; capability blocked")
+	settlementDate, err := time.Parse("2006-01-02", fill.SettlementDate)
+	if err != nil || settlementDate.Before(time.Date(at.UTC().Year(), at.UTC().Month(), at.UTC().Day(), 0, 0, 0, 0, time.UTC)) {
+		return errors.New("invalid settlement date")
+	}
+	tradeDate := time.Date(at.UTC().Year(), at.UTC().Month(), at.UTC().Day(), 0, 0, 0, 0, time.UTC)
+	if fill.Side == "sell" && settlementDate.After(tradeDate) {
+		return errors.New("non-immediate cash settlement requires verified availability-time model; capability blocked")
 	}
 	order, err := scanOrder(tx.QueryRow("SELECT * FROM paper_orders WHERE id=?", fill.OrderID))
 	if err != nil {
@@ -211,6 +257,9 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	}
 	fresh, err := once(tx, key, "paper_fill", a.FundID, a.ID, fill)
 	if err != nil || !fresh {
+		return err
+	}
+	if err = settleSecurities(tx, a.ID, at); err != nil {
 		return err
 	}
 	created, err := time.Parse(time.RFC3339Nano, order.Created)
@@ -241,7 +290,13 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 		total := oldQty.Add(q)
 		p.AverageCost = d(p.AverageCost).Mul(oldQty).Add(cost).Div(total).String()
 		p.Quantity = total.String()
-		p.Settled = d(p.Settled).Add(q).String()
+		if settlementDate.After(tradeDate) {
+			if _, err = tx.Exec("INSERT INTO security_settlements VALUES(?,?,?,?,?,0)", key, a.ID, order.InstrumentID, q.String(), settlementDate.Format("2006-01-02")); err != nil {
+				return err
+			}
+		} else {
+			p.Settled = d(p.Settled).Add(q).String()
+		}
 	} else {
 		if price.LessThan(d(order.Price)) || q.GreaterThan(d(p.Settled)) || q.GreaterThan(d(p.SellReserved)) || fee.Add(tax).GreaterThan(gross) {
 			return errors.New("invalid sell fill")
