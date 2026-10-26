@@ -154,6 +154,44 @@ class Quote(Record):
             raise ValueError('bid price cannot exceed ask price')
         return self
 
+class DepthLevel(Record):
+    price: str
+    quantity: str
+    order_count: int | None = None
+
+    @field_validator('price')
+    @classmethod
+    def valid_depth_price(cls, value):
+        decimal_text(value)
+        if Decimal(value) <= 0:
+            raise ValueError('depth price must be positive')
+        return value
+
+    @field_validator('quantity')
+    @classmethod
+    def valid_depth_quantity(cls, value):
+        decimal_text(value)
+        if Decimal(value) < 0:
+            raise ValueError('depth quantity must not be negative')
+        return value
+
+class OrderBookDepth(Record):
+    instrument_id: str
+    event_time: AwareDatetime
+    available_at: AwareDatetime
+    bids: list[DepthLevel] = Field(default_factory=list)
+    asks: list[DepthLevel] = Field(default_factory=list)
+    source_id: str
+    revision: str = '0'
+
+    @model_validator(mode='after')
+    def sorted_sides(self):
+        if any(Decimal(a.price) < Decimal(b.price) for a, b in zip(self.bids, self.bids[1:])):
+            raise ValueError('bid depth must be sorted highest price first')
+        if any(Decimal(a.price) > Decimal(b.price) for a, b in zip(self.asks, self.asks[1:])):
+            raise ValueError('ask depth must be sorted lowest price first')
+        return self
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []

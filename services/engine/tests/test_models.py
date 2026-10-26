@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,Instrument,Quote,Trade,decimal_text
+from kestrel_engine.models import Candle,Instrument,OrderBookDepth,Quote,Trade,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -101,5 +101,22 @@ def test_quote_record_validates_bid_ask_and_sizes():
         Quote(
             instrument_id='vn-equity:HOSE:HPG', event_time=event,
             available_at=event, bid_price='25.20', ask_price='25.15',
+            source_id='fixture',
+        )
+
+
+def test_order_book_depth_requires_price_ordering_by_side():
+    event = datetime.fromisoformat('2026-10-26T03:00:00+00:00')
+    depth = OrderBookDepth(
+        instrument_id='vn-equity:HOSE:HPG', event_time=event,
+        available_at=event, bids=[{'price':'25.10','quantity':'100'}, {'price':'25.05','quantity':'200'}],
+        asks=[{'price':'25.15','quantity':'100'}, {'price':'25.20','quantity':'100'}],
+        source_id='fixture',
+    )
+    assert depth.bids[0].price == '25.10'
+    with pytest.raises(ValueError, match='bid depth must be sorted'):
+        OrderBookDepth(
+            instrument_id='vn-equity:HOSE:HPG', event_time=event,
+            available_at=event, bids=[{'price':'25.05','quantity':'1'}, {'price':'25.10','quantity':'1'}],
             source_id='fixture',
         )
