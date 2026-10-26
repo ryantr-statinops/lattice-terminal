@@ -24,6 +24,23 @@
       "2026-10-02"
     ]
   },
+  "fill_models": [
+    {
+      "id": "SYNTHETIC-HOSE-REGULAR-EQUITY-LO-CONTINUOUS-V1",
+      "venue": "HOSE",
+      "board": "REGULAR",
+      "instrument_class": "equity",
+      "order_type": "LO",
+      "session": "synthetic-continuous",
+      "effective_from": "2026-01-01",
+      "effective_to": "2026-12-31",
+      "implementation": "displayed_quote_crossing",
+      "synthetic": true,
+      "implemented": true,
+      "verified": false,
+      "evidence": []
+    }
+  ],
   "events": [
     {
       "id": "synthetic-quote-1-0",
