@@ -479,6 +479,89 @@
     "title": "MarketSnapshot",
     "type": "object"
   },
+  "OrderBookDepth": {
+    "$defs": {
+      "DepthLevel": {
+        "additionalProperties": false,
+        "properties": {
+          "order_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Order Count"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "price",
+          "quantity"
+        ],
+        "title": "DepthLevel",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "asks": {
+        "items": {
+          "$ref": "#/$defs/DepthLevel"
+        },
+        "title": "Asks",
+        "type": "array"
+      },
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "bids": {
+        "items": {
+          "$ref": "#/$defs/DepthLevel"
+        },
+        "title": "Bids",
+        "type": "array"
+      },
+      "event_time": {
+        "format": "date-time",
+        "title": "Event Time",
+        "type": "string"
+      },
+      "instrument_id": {
+        "title": "Instrument Id",
+        "type": "string"
+      },
+      "revision": {
+        "default": "0",
+        "title": "Revision",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "instrument_id",
+      "event_time",
+      "available_at",
+      "source_id"
+    ],
+    "title": "OrderBookDepth",
+    "type": "object"
+  },
   "Quote": {
     "additionalProperties": false,
     "properties": {
