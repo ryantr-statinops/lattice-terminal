@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {request,type Candle,type Instrument,type Snapshot} from './api';
 import {PageHeader,Panel,PanelHeader,Toolbar} from './ui/layout';
@@ -14,16 +14,19 @@ import type {IndicatorConfig} from './market/indicators';
 export function Market(){
  const appearance=useAppearance();
  const instruments=useQuery({queryKey:['instruments'],queryFn:()=>request<Instrument[]>('/engine/market/instruments')});
- const [selected,setSelected]=useState(''),[notice,setNotice]=useState('');
+ const [selected,setSelected]=useState(''),[assetClass,setAssetClass]=useState('all'),[notice,setNotice]=useState('');
  const [indicators,setIndicators]=useState<IndicatorConfig>({ma20:true,ma50:false,volume:true});
  const [watchlist,setWatchlist]=useState<string[]>(()=>{try{const saved=JSON.parse(localStorage.getItem('kestrel.watchlist')||'[]');return Array.isArray(saved)?saved.filter((v:unknown)=>typeof v==='string'):[]}catch{return []}});
- const id=selected||instruments.data?.[0]?.id||'';
+ const availableClasses=useMemo(()=>Array.from(new Set((instruments.data??[]).map(instrument=>instrument.instrument_class||'unknown'))).sort(),[instruments.data]);
+ const filteredInstruments=useMemo(()=> (instruments.data??[]).filter(instrument=>assetClass==='all'||(instrument.instrument_class||'unknown')===assetClass),[instruments.data,assetClass]);
+ const id=filteredInstruments.some(instrument=>instrument.id===selected)?selected:filteredInstruments[0]?.id||'';
  const data=useQuery({queryKey:['candles',id],queryFn:()=>request<Snapshot>('/engine/market/candles?instrument_id='+encodeURIComponent(id)),enabled:!!id});
  const toggle=()=>{const next=watchlist.includes(id)?watchlist.filter(v=>v!==id):[...watchlist,id];setWatchlist(next);try{localStorage.setItem('kestrel.watchlist',JSON.stringify(next));setNotice('')}catch{setNotice('Watchlist changes are saved for this session only.')}};
  const snapshot=data.data;
  return <section><PageHeader title="Market" actions={<StatusLabel tone="warning">SYNTHETIC</StatusLabel>}/>
  <Toolbar>
-  <Select aria-label="Instrument" value={id} disabled={instruments.isPending||!instruments.data?.length} onChange={e=>setSelected(e.target.value)}>{instruments.data?.map(v=><option value={v.id} key={v.id}>{v.native_symbol} · {v.venue}</option>)}</Select>
+  <Select aria-label="Asset class" value={assetClass} disabled={instruments.isPending||availableClasses.length===0} onChange={e=>setAssetClass(e.target.value)}><option value="all">All asset classes</option>{availableClasses.map(value=><option value={value} key={value}>{value.replaceAll('_',' ')}</option>)}</Select>
+  <Select aria-label="Instrument" value={id} disabled={instruments.isPending||!filteredInstruments.length} onChange={e=>setSelected(e.target.value)}>{filteredInstruments.map(v=><option value={v.id} key={v.id}>{v.native_symbol} · {v.venue??'No venue'}</option>)}</Select>
   <Button disabled={!id} aria-pressed={watchlist.includes(id)} onClick={toggle}>{watchlist.includes(id)?'★ Watching':'☆ Watch'}</Button>
   <Button disabled={!id} pending={data.isFetching} onClick={()=>void data.refetch()}>Refresh</Button>
   <Button aria-pressed={indicators.ma20} onClick={()=>setIndicators(i=>({...i,ma20:!i.ma20}))}>MA20</Button>

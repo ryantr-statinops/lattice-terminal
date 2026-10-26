@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {act,cleanup,render,screen,waitFor} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 
 const echarts=vi.hoisted(()=>{
@@ -16,7 +16,10 @@ import {Market} from './Market';
 import {setColor,resetAppearance} from './theme/store';
 import type {Candle,Instrument,Snapshot} from './api';
 
-const instruments:Instrument[]=[{id:'VN:SYN01',venue:'HOSE',native_symbol:'SYN01',name:'Synthetic One',is_synthetic:true}];
+const instruments:Instrument[]=[
+ {id:'VN:SYN01',venue:'HOSE',native_symbol:'SYN01',instrument_class:'equity',name:'Synthetic One',is_synthetic:true},
+ {id:'VN:BOND01',venue:'HNX',native_symbol:'BOND01',instrument_class:'bond',name:'Synthetic Bond',is_synthetic:true},
+];
 const candles:Candle[]=[
  {open_time:'2026-10-19T02:00:00Z',close_time:'2026-10-19T09:00:00Z',available_at:'2026-10-19T09:00:00Z',open:'100',high:'112',low:'99',close:'110',volume:'1200',is_closed:true},
  {open_time:'2026-10-20T02:00:00Z',close_time:'2026-10-20T09:00:00Z',available_at:'2026-10-20T09:00:00Z',open:'110',high:'115',low:'108',close:'109',volume:'1500',is_closed:true},
@@ -71,6 +74,17 @@ describe('Market ECharts chart',()=>{
   showMarket(url=>url.includes('/instruments')?instruments:{...snapshot,candles:[]});
   await screen.findByText('This snapshot has no candles.');
   expect(echarts.init).not.toHaveBeenCalled();
+ });
+
+ it('filters instrument choices by asset class',async()=>{
+  showMarket();
+  const filter=await screen.findByLabelText('Asset class');
+  await screen.findByRole('option',{name:'SYN01 · HOSE'});
+  const instrument=screen.getByLabelText('Instrument') as HTMLSelectElement;
+  expect(Array.from(instrument.options).map(option=>option.value)).toEqual(['VN:SYN01','VN:BOND01']);
+  fireEvent.change(filter,{target:{value:'bond'}});
+  expect(Array.from(instrument.options).map(option=>option.value)).toEqual(['VN:BOND01']);
+  expect(instrument.value).toBe('VN:BOND01');
  });
 
  it('keeps API errors visible and does not create a chart',async()=>{
