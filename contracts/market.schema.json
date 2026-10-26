@@ -59,8 +59,22 @@
         "type": "string"
       },
       "instrument_class": {
-        "const": "equity",
         "default": "equity",
+        "enum": [
+          "equity",
+          "index",
+          "covered_warrant",
+          "derivative",
+          "bond",
+          "fund",
+          "etf",
+          "fx",
+          "crypto",
+          "commodity",
+          "macro_series",
+          "real_estate",
+          "unknown"
+        ],
         "title": "Instrument Class",
         "type": "string"
       },
@@ -68,6 +82,11 @@
         "default": true,
         "title": "Is Synthetic",
         "type": "boolean"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
       },
       "name": {
         "title": "Name",
@@ -257,8 +276,22 @@
             "type": "string"
           },
           "instrument_class": {
-            "const": "equity",
             "default": "equity",
+            "enum": [
+              "equity",
+              "index",
+              "covered_warrant",
+              "derivative",
+              "bond",
+              "fund",
+              "etf",
+              "fx",
+              "crypto",
+              "commodity",
+              "macro_series",
+              "real_estate",
+              "unknown"
+            ],
             "title": "Instrument Class",
             "type": "string"
           },
@@ -266,6 +299,11 @@
             "default": true,
             "title": "Is Synthetic",
             "type": "boolean"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
           },
           "name": {
             "title": "Name",

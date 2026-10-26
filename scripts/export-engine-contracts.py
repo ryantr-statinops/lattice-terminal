@@ -37,7 +37,8 @@ args = parser.parse_args()
 
 targets = [args.only] if args.only else ['engine.openapi.json', 'market.schema.json']
 for name in targets:
-    target = ROOT / 'contracts' / name
+    target_name = 'market.schema.json' if name in MODELS else name
+    target = ROOT / 'contracts' / target_name
     if name == 'engine.openapi.json':
         value = create_app().openapi()
     elif name == 'market.schema.json':
