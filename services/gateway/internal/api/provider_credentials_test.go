@@ -70,3 +70,15 @@ func TestProviderCredentialWriteRequiresVaultAndObject(t *testing.T) {
 		t.Fatalf("non-object credential accepted: %d %#v", response.Code, writer)
 	}
 }
+
+func TestProviderCredentialWriteRejectsInvalidReference(t *testing.T) {
+	writer := &credentialWriterStub{}
+	mux := http.NewServeMux()
+	(&API{Credentials: writer}).Routes(mux)
+	request := httptest.NewRequest(http.MethodPut, "/api/v1/providers/ssi/credentials", strings.NewReader(`{"service":"market data","credential":{"secret":"private-secret"}}`))
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest || writer.provider != "" {
+		t.Fatalf("invalid credential reference accepted: %d %#v", response.Code, writer)
+	}
+}

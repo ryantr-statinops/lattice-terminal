@@ -64,7 +64,7 @@ func newVault(root string, key []byte) (*Vault, error) {
 	return &Vault{path: filepath.Join(root, "provider-vault", "credentials.json"), aead: aead}, nil
 }
 
-func validVaultID(value string) bool { return vaultIDPattern.MatchString(value) }
+func ValidVaultID(value string) bool { return vaultIDPattern.MatchString(value) }
 
 func vaultRecordKey(provider, service string) string { return provider + "/" + service }
 
@@ -137,7 +137,7 @@ func (v *Vault) write(doc vaultDocument) error {
 
 // Set encrypts one JSON credential document and atomically persists the vault.
 func (v *Vault) Set(provider, service string, plaintext []byte) error {
-	if !validVaultID(provider) || !validVaultID(service) || len(plaintext) == 0 || len(plaintext) > maxSecretSize || !json.Valid(plaintext) {
+	if !ValidVaultID(provider) || !ValidVaultID(service) || len(plaintext) == 0 || len(plaintext) > maxSecretSize || !json.Valid(plaintext) {
 		return errors.New("invalid provider credential")
 	}
 	v.mu.Lock()
@@ -161,7 +161,7 @@ func (v *Vault) Set(provider, service string, plaintext []byte) error {
 
 // Get returns a decrypted copy of one credential document.
 func (v *Vault) Get(provider, service string) ([]byte, error) {
-	if !validVaultID(provider) || !validVaultID(service) {
+	if !ValidVaultID(provider) || !ValidVaultID(service) {
 		return nil, errors.New("invalid provider credential reference")
 	}
 	v.mu.Lock()
@@ -188,7 +188,7 @@ func (v *Vault) Get(provider, service string) ([]byte, error) {
 
 // Delete removes one credential record and atomically persists the vault.
 func (v *Vault) Delete(provider, service string) error {
-	if !validVaultID(provider) || !validVaultID(service) {
+	if !ValidVaultID(provider) || !ValidVaultID(service) {
 		return errors.New("invalid provider credential reference")
 	}
 	v.mu.Lock()

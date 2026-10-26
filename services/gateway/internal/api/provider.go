@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"kestrel-terminal/gateway/internal/secret"
 )
 
 func (a *API) providerRoutes(m *http.ServeMux) {
@@ -66,7 +68,7 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 			return
 		}
 		var document map[string]json.RawMessage
-		if input.Service == "" || len(input.Credential) == 0 || len(input.Credential) > 1024*1024 || json.Unmarshal(input.Credential, &document) != nil || len(document) == 0 {
+		if !secret.ValidVaultID(r.PathValue("id")) || !secret.ValidVaultID(input.Service) || len(input.Credential) == 0 || len(input.Credential) > 1024*1024 || json.Unmarshal(input.Credential, &document) != nil || len(document) == 0 {
 			JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid provider credential"})
 			return
 		}
