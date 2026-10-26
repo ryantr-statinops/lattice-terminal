@@ -18,6 +18,7 @@ from kestrel_engine.models import (  # noqa: E402
     OrderBookDepth,
     Quote,
     SourceCapability,
+    StrategySignal,
     Trade,
     ValueSeriesPoint,
 )
@@ -32,15 +33,17 @@ MODELS = {
 }
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true')
-parser.add_argument('--only', choices=['engine.openapi.json', 'market.schema.json', *MODELS])
+parser.add_argument('--only', choices=['engine.openapi.json', 'market.schema.json', 'strategy.signal.schema.json', *MODELS])
 args = parser.parse_args()
 
-targets = [args.only] if args.only else ['engine.openapi.json', 'market.schema.json']
+targets = [args.only] if args.only else ['engine.openapi.json', 'market.schema.json', 'strategy.signal.schema.json']
 for name in targets:
     target_name = 'market.schema.json' if name in MODELS else name
     target = ROOT / 'contracts' / target_name
     if name == 'engine.openapi.json':
         value = create_app().openapi()
+    elif name == 'strategy.signal.schema.json':
+        value = StrategySignal.model_json_schema()
     elif name == 'market.schema.json':
         value = {key: model.model_json_schema() for key, model in MODELS.items()}
     else:

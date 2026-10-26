@@ -1,0 +1,103 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "buy",
+        "sell",
+        "exit",
+        "reduce",
+        "custom"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correlation Id"
+    },
+    "custom_action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Custom Action"
+    },
+    "event_time": {
+      "format": "date-time",
+      "title": "Event Time",
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "instrument_id": {
+      "title": "Instrument Id",
+      "type": "string"
+    },
+    "logical_key": {
+      "title": "Logical Key",
+      "type": "string"
+    },
+    "price_context": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Price Context",
+      "type": "object"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "live",
+        "replay"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "strategy_id": {
+      "title": "Strategy Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "run_id",
+    "strategy_id",
+    "instrument_id",
+    "action",
+    "event_time",
+    "reason",
+    "source",
+    "logical_key",
+    "expires_at"
+  ],
+  "title": "StrategySignal",
+  "type": "object"
+}
