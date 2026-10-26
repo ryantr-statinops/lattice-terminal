@@ -80,6 +80,22 @@ def test_dataset_publisher_fails_closed_without_rights_or_for_unapproved_fields(
     assert not (tmp_path / 'restricted' / 'datasets').exists()
 
 
+def test_expired_dataset_snapshots_are_removed_and_cannot_be_loaded(tmp_path):
+    publisher = AtomicDatasetPublisher(tmp_path / 'market', gate(tmp_path))
+    expired = publisher.publish(CAPABILITY, 'Market/Securities', [envelope('OLD', 'Expired')])
+    retained = publisher.publish(CAPABILITY, 'Market/Securities', [envelope('NEW', 'Retained')])
+    expired_manifest_path = tmp_path / 'market' / 'datasets' / expired['snapshot_id'] / 'manifest.json'
+    expired_manifest = json.loads(expired_manifest_path.read_text(encoding='utf-8'))
+    expired_manifest['expires_at'] = '2020-01-01T00:00:00+00:00'
+    expired_manifest_path.write_text(json.dumps(expired_manifest), encoding='utf-8')
+
+    with pytest.raises(ValueError, match='retention authorization expired'):
+        publisher.load(expired['snapshot_id'])
+    assert publisher.prune_expired() == [expired['snapshot_id']]
+    assert not (tmp_path / 'market' / 'datasets' / expired['snapshot_id']).exists()
+    assert publisher.load(retained['snapshot_id'])[0]['snapshot_id'] == retained['snapshot_id']
+
+
 def test_dataset_publisher_requires_one_provider_and_dataset_and_rejects_quarantine(tmp_path):
     publisher = AtomicDatasetPublisher(tmp_path / 'market', gate(tmp_path))
     mixed_provider = envelope('AAA', 'Alpha').model_copy(update={'provider_id': 'other'})

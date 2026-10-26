@@ -52,6 +52,7 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     provider_router = ProviderRouter(root / 'market')
     gate=SourceGate(root,provider_router.capabilities.source_ids())
     dataset_publisher=AtomicDatasetPublisher(root/'market',gate)
+    dataset_publisher.prune_expired()
     app.state.dataset_publisher=dataset_publisher
 
     @app.on_event('shutdown')

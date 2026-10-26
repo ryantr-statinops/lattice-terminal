@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+from datetime import datetime, timezone
 from threading import RLock
 
 import pyarrow as pa
@@ -164,6 +165,8 @@ class AtomicDatasetPublisher:
             raise ValueError('invalid dataset snapshot identity')
         target = self.root / 'datasets' / snapshot_id
         manifest = self._load_manifest(target, snapshot_id)
+        if self._is_expired(manifest, datetime.now(timezone.utc)):
+            raise ValueError('dataset snapshot retention authorization expired')
         table = pq.read_table(target / 'records.parquet')
         envelopes = []
         for row in table.to_pylist():
@@ -181,6 +184,7 @@ class AtomicDatasetPublisher:
         registry = self.root / 'datasets'
         if not registry.exists():
             return []
+        self.prune_expired()
         result = []
         for directory in registry.iterdir():
             if not directory.is_dir() or directory.name.startswith('.pending-'):
@@ -198,3 +202,36 @@ class AtomicDatasetPublisher:
                 'terms_reference', 'entitlement_reference', 'expires_at',
             )})
         return sorted(result, key=lambda item: (item['available_to'], item['snapshot_id']), reverse=True)
+
+    @staticmethod
+    def _is_expired(manifest: dict, now: datetime) -> bool:
+        try:
+            expires_at = datetime.fromisoformat(str(manifest['expires_at']).replace('Z', '+00:00'))
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError('dataset snapshot has invalid retention expiry') from error
+        if expires_at.tzinfo is None or expires_at.utcoffset() is None:
+            raise ValueError('dataset snapshot has invalid retention expiry')
+        return now >= expires_at.astimezone(timezone.utc)
+
+    def prune_expired(self, now: datetime | None = None) -> list[str]:
+        """Remove published snapshots after their approved retention scope expires."""
+        registry = self.root / 'datasets'
+        if not registry.exists():
+            return []
+        current = now or datetime.now(timezone.utc)
+        if current.tzinfo is None or current.utcoffset() is None:
+            raise ValueError('retention cleanup time must be timezone-aware')
+        current = current.astimezone(timezone.utc)
+        removed = []
+        with self._lock:
+            for directory in registry.iterdir():
+                if directory.is_symlink() or not directory.is_dir():
+                    continue
+                snapshot_id = directory.name
+                if len(snapshot_id) != 64 or any(value not in '0123456789abcdef' for value in snapshot_id):
+                    continue
+                manifest = self._load_manifest(directory, snapshot_id)
+                if self._is_expired(manifest, current):
+                    shutil.rmtree(directory)
+                    removed.append(snapshot_id)
+        return removed
