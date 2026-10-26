@@ -484,6 +484,93 @@
     "title": "FinancialStatement",
     "type": "object"
   },
+  "IndexConstituentSet": {
+    "$defs": {
+      "ProviderIndexConstituent": {
+        "additionalProperties": false,
+        "description": "A provider-reported index member; the source identifier is not assumed to be an ISIN.",
+        "properties": {
+          "native_symbol": {
+            "title": "Native Symbol",
+            "type": "string"
+          },
+          "provider_security_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Provider Security Id"
+          }
+        },
+        "required": [
+          "native_symbol"
+        ],
+        "title": "ProviderIndexConstituent",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Observed membership snapshot; it carries no inferred historical effective date.",
+    "properties": {
+      "constituents": {
+        "items": {
+          "$ref": "#/$defs/ProviderIndexConstituent"
+        },
+        "title": "Constituents",
+        "type": "array"
+      },
+      "exchange": {
+        "enum": [
+          "HOSE",
+          "HNX"
+        ],
+        "title": "Exchange",
+        "type": "string"
+      },
+      "index_code": {
+        "title": "Index Code",
+        "type": "string"
+      },
+      "index_instrument_id": {
+        "title": "Index Instrument Id",
+        "type": "string"
+      },
+      "index_name": {
+        "title": "Index Name",
+        "type": "string"
+      },
+      "observed_at": {
+        "format": "date-time",
+        "title": "Observed At",
+        "type": "string"
+      },
+      "reported_total_symbol_count": {
+        "title": "Reported Total Symbol Count",
+        "type": "integer"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "index_instrument_id",
+      "index_code",
+      "index_name",
+      "exchange",
+      "reported_total_symbol_count",
+      "constituents",
+      "source_id",
+      "observed_at"
+    ],
+    "title": "IndexConstituentSet",
+    "type": "object"
+  },
   "Instrument": {
     "additionalProperties": false,
     "properties": {
@@ -959,6 +1046,33 @@
       "source_id"
     ],
     "title": "OrderBookDepth",
+    "type": "object"
+  },
+  "ProviderIndexConstituent": {
+    "additionalProperties": false,
+    "description": "A provider-reported index member; the source identifier is not assumed to be an ISIN.",
+    "properties": {
+      "native_symbol": {
+        "title": "Native Symbol",
+        "type": "string"
+      },
+      "provider_security_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Provider Security Id"
+      }
+    },
+    "required": [
+      "native_symbol"
+    ],
+    "title": "ProviderIndexConstituent",
     "type": "object"
   },
   "ProviderInstrumentAlias": {

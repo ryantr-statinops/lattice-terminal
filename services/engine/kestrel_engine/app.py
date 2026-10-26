@@ -56,6 +56,10 @@ class SsiDailyOhlcIngest(Record):
     from_date:date
     to_date:date
 
+class SsiIndexComponentsIngest(Record):
+    credential:dict[str,str]
+    index_instrument_id:str
+
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.internal_token = token
@@ -171,6 +175,26 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         ) for instrument in instruments]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
+    @app.post('/internal/v1/market/index-components/ssi/hose')
+    def ingest_ssi_hose_index_components(value:SsiIndexComponentsIngest):
+        capability_id='ssi:market-data:indices.constituents:index:HOSE'
+        endpoint='Market/IndexComponents'
+        gate.authorize(capability_id,'store',endpoint)
+        index=next((item for item in dataset_publisher.instrument_catalogue(
+            'ssi','ssi:market-data:instruments.index:index:HOSE',
+        ) if item.id==value.index_instrument_id),None)
+        if index is None or index.instrument_class!='index' or index.venue!='HOSE':
+            raise ValueError('index is not present in the authorized SSI HOSE index catalogue')
+        constituents=provider_router.providers['ssi'].fetch_hose_index_components(index,credential=value.credential)
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='indices.constituents',source_id=constituents.source_id,
+            observed_at=constituents.observed_at,available_at=constituents.observed_at,revision='unknown',
+            schema_version='1',parser_version='ssi-index-components-hose-1',unit='constituents',
+            source_timezone='Asia/Ho_Chi_Minh',temporal_semantics='observation_time',
+            adjustment_state='not_applicable',quality='unknown',payload=constituents.model_dump(mode='json'),
+        )]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
     @app.post('/internal/v1/market/candles/ssi/hose-equity/daily')
     def ingest_ssi_hose_equity_daily(value:SsiDailyOhlcIngest):
         capability_id='ssi:market-data:candles.1d:equity:HOSE'
@@ -198,6 +222,14 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         if provider_router.policy.datasets.get(route_key)!=capability_id:
             raise ValueError('provider candle dataset is not selected in routing policy')
         return dataset_publisher.candle_snapshot(provider_id,instrument_id)
+
+    @app.get('/internal/v1/market/provider-index-constituents')
+    def provider_index_constituents(provider_id:str,index_instrument_id:str):
+        route_key='indices.constituents:index:HOSE'
+        capability_id=f'{provider_id}:market-data:{route_key}'
+        if provider_router.policy.datasets.get(route_key)!=capability_id:
+            raise ValueError('provider index constituent dataset is not selected in routing policy')
+        return dataset_publisher.index_constituent_snapshot(provider_id,index_instrument_id)
 
     @app.get('/internal/v1/backtest/data')
     def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]

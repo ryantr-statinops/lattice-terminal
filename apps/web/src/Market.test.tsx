@@ -126,7 +126,7 @@ describe('Market ECharts chart',()=>{
   await screen.findByRole('option',{name:'SSI'});
   fireEvent.change(await screen.findByLabelText('Instrument source'),{target:{value:'ssi'}});
   await screen.findByRole('option',{name:'VN30 · HOSE'});
-  expect(await screen.findByText('Index catalogue entry is available for browsing. Daily index observations are not implemented yet.')).toBeDefined();
+  expect(await screen.findByText(/HOSE membership can be saved as an observed snapshot/)).toBeDefined();
   expect(screen.queryByRole('img',{name:'Candlestick chart; data table below'})).toBeNull();
  });
 
@@ -143,6 +143,36 @@ describe('Market ECharts chart',()=>{
   fireEvent.change(await screen.findByLabelText('Instrument source'),{target:{value:'ssi'}});
   expect(await screen.findByRole('option',{name:'HNX30 · HNX'})).toBeDefined();
   expect(await screen.findByText('Index catalogue entry is available for browsing. Daily index observations are not implemented yet.')).toBeDefined();
+ });
+
+ it('syncs and displays an observed SSI HOSE constituent snapshot',async()=>{
+  const providerIndex:Instrument={id:'SSI:INDEX:HOSE:VN30',venue:'HOSE',board:'unknown',native_symbol:'VN30',instrument_class:'index',name:'VN30',metadata:{index_code:'VN30',exchange:'HOSE'},is_synthetic:false};
+  let synced=false;
+  const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+   const url=String(input);
+   let value:unknown=[];
+   if(url.includes('/market/datasets'))value=synced?[{provider_id:'ssi',dataset:'instruments.index',snapshot_id:'hose-indices-1'},{provider_id:'ssi',dataset:'indices.constituents',snapshot_id:'hose-members-1'}]:[{provider_id:'ssi',dataset:'instruments.index',snapshot_id:'hose-indices-1'}];
+   else if(url.includes('/providers/routing'))value={datasets:{'indices.constituents:index:HOSE':'ssi:market-data:indices.constituents:index:HOSE'}};
+   else if(url.includes('/instruments?provider_id=ssi'))value=[providerIndex];
+   else if(url.includes('/ingestion/index-constituents/ssi/hose')&&init?.method==='POST'){synced=true;value={job:{status:'completed'},snapshot_id:'feed0123456789ab'};}
+   else if(url.includes('/market/provider-index-constituents'))value={snapshot_id:'hose-members-1',index:providerIndex,observed_at:'2026-10-27T02:00:00Z',constituents:{index_instrument_id:providerIndex.id,index_code:'VN30',index_name:'VN30',exchange:'HOSE',reported_total_symbol_count:1,constituents:[{provider_security_id:'ACB',native_symbol:'ACB'}],source_id:'SSI-FC-DATA',observed_at:'2026-10-27T02:00:00Z'}};
+   else if(url.includes('/instruments'))value=instruments;
+   else value=snapshot;
+   return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
+  });
+  vi.stubGlobal('fetch',fetcher);
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
+  await screen.findByRole('option',{name:'SSI'});
+  fireEvent.change(await screen.findByLabelText('Instrument source'),{target:{value:'ssi'}});
+  expect(await screen.findByText(/historical effective dates are not inferred/)).toBeDefined();
+  fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HOSE constituents'}));
+  await screen.findByText('SSI HOSE constituent snapshot saved as feed01234567.');
+  expect(await screen.findByRole('region',{name:'SSI HOSE index constituents'})).toBeDefined();
+  expect(screen.getAllByText('ACB')).toHaveLength(2);
+  expect(screen.getByText(/Provider reports 1 members\. This is the observed membership set at/)).toBeDefined();
+  const requestCall=fetcher.mock.calls.find(([url,init])=>String(url).includes('/ingestion/index-constituents/ssi/hose')&&init?.method==='POST');
+  expect(requestCall).toBeDefined();
+  expect(JSON.parse(String(requestCall?.[1]?.body))).toEqual({index_instrument_id:providerIndex.id});
  });
 
  it('syncs SSI daily candles for the selected HOSE instrument and displays the stored snapshot',async()=>{

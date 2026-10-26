@@ -14,9 +14,11 @@ from kestrel_engine.models import (  # noqa: E402
     DatasetEnvelope,
     FinancialStatement,
     Instrument,
+    IndexConstituentSet,
     MarketSnapshot,
     OrderBookDepth,
     ProviderInstrumentAlias,
+    ProviderIndexConstituent,
     Quote,
     SourceCapability,
     StrategySignal,
@@ -27,7 +29,8 @@ from kestrel_engine.models import (  # noqa: E402
 MODELS = {
     model.__name__: model
     for model in [
-        Instrument, ProviderInstrumentAlias, Candle, Trade, Quote, OrderBookDepth, DatasetEnvelope,
+        Instrument, ProviderInstrumentAlias, ProviderIndexConstituent, IndexConstituentSet,
+        Candle, Trade, Quote, OrderBookDepth, DatasetEnvelope,
         CorporateAction, FinancialStatement, ValueSeriesPoint, MarketSnapshot,
         DataQuality, SourceCapability,
     ]

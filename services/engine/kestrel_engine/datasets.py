@@ -11,7 +11,7 @@ from threading import RLock
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .models import Candle, DataQuality, DatasetEnvelope, Instrument, MarketSnapshot
+from .models import Candle, DataQuality, DatasetEnvelope, IndexConstituentSet, Instrument, MarketSnapshot
 from .sources import SourceGate
 
 STORAGE_SCHEMA_VERSION = '1'
@@ -226,9 +226,11 @@ class AtomicDatasetPublisher:
             )})
         return sorted(result, key=lambda item: (item['available_to'], item['snapshot_id']), reverse=True)
 
-    def instrument_catalogue(self, provider_id: str) -> list[Instrument]:
+    def instrument_catalogue(self, provider_id: str, capability_id: str | None = None) -> list[Instrument]:
         if not provider_id.strip():
             raise ValueError('provider id is required for a provider instrument catalogue')
+        if capability_id is not None and not capability_id.startswith(provider_id + ':'):
+            raise ValueError('instrument catalogue capability does not match its provider')
         registry = self.root / 'datasets'
         if not registry.exists():
             return []
@@ -242,6 +244,8 @@ class AtomicDatasetPublisher:
                 continue
             manifest = self._load_manifest(directory, snapshot_id)
             if manifest['provider_id'] != provider_id or not manifest['dataset'].startswith('instruments.'):
+                continue
+            if capability_id is not None and manifest['capability_id'] != capability_id:
                 continue
             self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
             key = (manifest['dataset'], manifest['capability_id'])
@@ -292,6 +296,29 @@ class AtomicDatasetPublisher:
                     ),
                     candles=candles,
                 )
+        return None
+
+    def index_constituent_snapshot(self, provider_id: str, index_instrument_id: str) -> dict | None:
+        if provider_id != 'ssi' or not index_instrument_id.strip():
+            raise ValueError('provider index constituents require a supported provider and index')
+        index = next((value for value in self.instrument_catalogue(
+            provider_id, 'ssi:market-data:instruments.index:index:HOSE',
+        ) if value.id == index_instrument_id), None)
+        if index is None or index.instrument_class != 'index' or index.venue != 'HOSE':
+            raise ValueError('index is not present in the authorized HOSE provider catalogue')
+        for summary in self.manifests(provider_id, 'indices.constituents'):
+            manifest, envelopes = self.load(summary['snapshot_id'])
+            self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
+            for envelope in envelopes:
+                if not isinstance(envelope.payload, dict) or envelope.payload.get('index_instrument_id') != index_instrument_id:
+                    continue
+                constituents = IndexConstituentSet.model_validate(envelope.payload)
+                return {
+                    'snapshot_id': manifest['snapshot_id'],
+                    'index': index.model_dump(mode='json'),
+                    'observed_at': envelope.observed_at.isoformat(),
+                    'constituents': constituents.model_dump(mode='json'),
+                }
         return None
 
     @staticmethod

@@ -228,6 +228,28 @@
         "title": "SsiIndexCatalogueIngest",
         "type": "object"
       },
+      "SsiIndexComponentsIngest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Credential",
+            "type": "object"
+          },
+          "index_instrument_id": {
+            "title": "Index Instrument Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential",
+          "index_instrument_id"
+        ],
+        "title": "SsiIndexComponentsIngest",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -537,6 +559,42 @@
         "summary": "Dataset Snapshots"
       }
     },
+    "/internal/v1/market/index-components/ssi/hose": {
+      "post": {
+        "operationId": "ingest_ssi_hose_index_components_internal_v1_market_index_components_ssi_hose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiIndexComponentsIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hose Index Components"
+      }
+    },
     "/internal/v1/market/instruments": {
       "get": {
         "operationId": "instruments_internal_v1_market_instruments_get",
@@ -635,6 +693,52 @@
           }
         },
         "summary": "Provider Candles"
+      }
+    },
+    "/internal/v1/market/provider-index-constituents": {
+      "get": {
+        "operationId": "provider_index_constituents_internal_v1_market_provider_index_constituents_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "index_instrument_id",
+            "required": true,
+            "schema": {
+              "title": "Index Instrument Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provider Index Constituents"
       }
     },
     "/internal/v1/market/snapshots": {

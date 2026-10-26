@@ -19,9 +19,45 @@ from kestrel_engine.providers import (
     normalize_ssi_index_catalogue,
     normalize_ssi_hose_equity_catalogue,
     normalize_ssi_hose_index_catalogue,
+    normalize_ssi_hose_index_components,
 )
 
 class TestProviders(unittest.TestCase):
+    def test_ssi_hose_index_components_preserve_provider_identifier_without_calling_it_isin(self):
+        provider = SsiFastConnectProvider()
+        index = Instrument(
+            id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+            instrument_class='index', name='VN30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        index_row = {
+            'IndexCode': 'VN30', 'IndexName': 'VN30', 'Exchange': 'HOSE', 'TotalSymbolNo': 1,
+            'IndexComponent': [{'Isin': 'ACB', 'StockSymbol': 'ACB'}],
+        }
+        response = {'status': 'Success', 'totalRecord': 2, 'data': [index_row, index_row]}
+        with patch.object(provider, 'get_json', return_value=response) as get_json:
+            constituents = provider.fetch_hose_index_components(index, credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+
+        get_json.assert_called_once_with('IndexComponents', {
+            'indexCode': 'VN30', 'pageIndex': 1, 'pageSize': 1000,
+        }, credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+        self.assertEqual(constituents.index_instrument_id, index.id)
+        self.assertEqual(constituents.reported_total_symbol_count, 1)
+        self.assertEqual(len(constituents.constituents), 1)
+        self.assertEqual(constituents.constituents[0].provider_security_id, 'ACB')
+        self.assertEqual(constituents.constituents[0].native_symbol, 'ACB')
+        self.assertTrue(constituents.observed_at.tzinfo)
+
+    def test_ssi_hose_index_components_reject_another_index(self):
+        index = Instrument(
+            id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+            instrument_class='index', name='VN30', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        with self.assertRaisesRegex(ValueError, 'does not match'):
+            normalize_ssi_hose_index_components([{
+                'IndexCode': 'VN100', 'IndexName': 'VN100', 'Exchange': 'HOSE',
+                'TotalSymbolNo': 1, 'IndexComponent': [{'StockSymbol': 'ACB'}],
+            }], index, datetime.now(timezone.utc))
+
     def test_ssi_hose_index_catalogue_paginates_and_preserves_index_class(self):
         provider = SsiFastConnectProvider()
         rows = [

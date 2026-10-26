@@ -14,7 +14,7 @@ import urllib.request
 from pydantic import BaseModel, Field
 
 from zoneinfo import ZoneInfo
-from .models import Candle, Instrument, decimal_text
+from .models import Candle, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
 
 def _is_retryable_read_error(error: Exception) -> bool:
     if isinstance(error, urllib.error.HTTPError):
@@ -138,6 +138,7 @@ class ProviderCapabilityRegistry:
             ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
             ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
@@ -281,6 +282,72 @@ def normalize_ssi_index_catalogue(rows: list[dict[str, Any]], exchange: str) -> 
 def normalize_ssi_hose_index_catalogue(rows: list[dict[str, Any]]) -> list[Instrument]:
     """Normalize the SSI HOSE index catalogue."""
     return normalize_ssi_index_catalogue(rows, 'HOSE')
+
+
+def normalize_ssi_hose_index_components(
+    rows: list[dict[str, Any]], index: Instrument, observed_at: datetime,
+) -> IndexConstituentSet:
+    """Preserve the provider's observed membership set without inferring an ISIN or effective date."""
+    if index.instrument_class != 'index' or index.venue != 'HOSE':
+        raise ValueError('SSI IndexComponents adapter only supports HOSE indexes')
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        raise ValueError('SSI IndexComponents observation time must include a timezone')
+    reported_total: int | None = None
+    index_name = ''
+    members: dict[str, ProviderIndexConstituent] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError('SSI IndexComponents row must be an object')
+        code = str(row.get('IndexCode') or '').strip().upper()
+        exchange = str(row.get('Exchange') or '').strip().upper()
+        if code != index.native_symbol.upper() or exchange != 'HOSE':
+            raise ValueError('SSI IndexComponents response does not match the requested HOSE index')
+        current_total = row.get('TotalSymbolNo')
+        if isinstance(current_total, bool) or not isinstance(current_total, (int, str)):
+            raise ValueError('SSI IndexComponents has an invalid TotalSymbolNo')
+        try:
+            current_total = int(current_total)
+        except (TypeError, ValueError) as error:
+            raise ValueError('SSI IndexComponents has an invalid TotalSymbolNo') from error
+        if current_total < 0 or (reported_total is not None and reported_total != current_total):
+            raise ValueError('SSI IndexComponents TotalSymbolNo changed within the response')
+        reported_total = current_total
+        current_name = str(row.get('IndexName') or '').strip()
+        if index_name and current_name and index_name != current_name:
+            raise ValueError('SSI IndexComponents index name changed within the response')
+        if current_name:
+            index_name = current_name
+        components = row.get('IndexComponent')
+        if not isinstance(components, list) or any(not isinstance(value, dict) for value in components):
+            raise ValueError('SSI IndexComponents member list is invalid')
+        for component in components:
+            symbol = str(component.get('StockSymbol') or '').strip().upper()
+            if not symbol:
+                raise ValueError('SSI IndexComponents member is missing StockSymbol')
+            raw_security_id = component.get('Isin')
+            provider_security_id = None if raw_security_id in (None, '') else str(raw_security_id).strip()
+            if provider_security_id == '':
+                provider_security_id = None
+            member = ProviderIndexConstituent(
+                provider_security_id=provider_security_id,
+                native_symbol=symbol,
+            )
+            previous_member = members.get(member.native_symbol)
+            if previous_member is not None and previous_member != member:
+                raise ValueError('SSI IndexComponents contains conflicting identifiers for one member symbol')
+            members[member.native_symbol] = member
+    if reported_total is None or not index_name:
+        raise ValueError('SSI IndexComponents response is empty or incomplete')
+    return IndexConstituentSet(
+        index_instrument_id=index.id,
+        index_code=index.native_symbol,
+        index_name=index_name,
+        exchange='HOSE',
+        reported_total_symbol_count=reported_total,
+        constituents=sorted(members.values(), key=lambda value: value.native_symbol),
+        source_id='SSI-FC-DATA',
+        observed_at=observed_at,
+    )
 
 
 def normalize_ssi_hose_equity_daily_rows(
@@ -781,6 +848,46 @@ class SsiFastConnectProvider(BaseMarketProvider):
         if not instruments:
             raise ValueError('SSI returned no HNX indexes')
         return instruments
+
+    def fetch_hose_index_components(
+        self, index: Instrument, *, credential: dict[str, str],
+    ) -> IndexConstituentSet:
+        if index.instrument_class != 'index' or index.venue != 'HOSE':
+            raise ValueError('SSI IndexComponents adapter only supports HOSE indexes')
+
+        def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:
+            payload = self.get_json('IndexComponents', {
+                'indexCode': index.native_symbol,
+                'pageIndex': page_index,
+                'pageSize': 1000,
+            }, credential=credential)
+            status = str(payload.get('status', '')).strip().casefold()
+            if status not in {'success', '200'}:
+                raise ValueError('SSI IndexComponents returned an unsuccessful response')
+            total_raw = payload.get('totalRecord')
+            if isinstance(total_raw, bool) or not isinstance(total_raw, (int, str)):
+                raise ValueError('SSI IndexComponents response has an invalid totalRecord')
+            try:
+                total = int(total_raw)
+            except (TypeError, ValueError) as error:
+                raise ValueError('SSI IndexComponents response has an invalid totalRecord') from error
+            rows = payload.get('data')
+            if total < 0 or not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('SSI IndexComponents response has invalid data')
+            return total, rows
+
+        total_records, rows = checked_page(1)
+        if total_records > 10000:
+            raise ValueError('SSI IndexComponents exceeds the documented 10-page limit')
+        page_count = max(1, (total_records + 999) // 1000)
+        for page_index in range(2, page_count + 1):
+            page_total, page_rows = checked_page(page_index)
+            if page_total != total_records:
+                raise ValueError('SSI IndexComponents totalRecord changed during pagination')
+            rows.extend(page_rows)
+        if len(rows) != total_records:
+            raise ValueError('SSI IndexComponents page set is incomplete')
+        return normalize_ssi_hose_index_components(rows, index, datetime.now(timezone.utc))
 
     def fetch_hose_equity_daily(
         self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],

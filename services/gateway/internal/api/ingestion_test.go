@@ -257,3 +257,40 @@ func TestSSIHnxIndexCatalogueSyncUsesVaultAndPersistsHnxIndexJob(t *testing.T) {
 		t.Fatalf("SSI HNX index catalogue job = %#v, %v", jobs, err)
 	}
 }
+
+func TestSSIHoseIndexConstituentSyncUsesVaultAndPersistsConstituentJob(t *testing.T) {
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var received map[string]any
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/market/index-components/ssi/hose" {
+			t.Fatalf("unexpected SSI index constituent request: %s %s", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"snapshot_id": strings.Repeat("e", 64), "row_count": 1})
+	}))
+	defer engine.Close()
+	credentials := &credentialWriterStub{credential: `{"consumerID":"local-id","consumerSecret":"constituent-secret"}`}
+	mux := http.NewServeMux()
+	(&API{
+		Store: db, Credentials: credentials,
+		Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}},
+	}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/ingestion/index-constituents/ssi/hose", strings.NewReader(`{"index_instrument_id":"SSI:INDEX:HOSE:VN30"}`)))
+	if response.Code != http.StatusCreated || strings.Contains(response.Body.String(), "constituent-secret") {
+		t.Fatalf("SSI index constituent response = %d %s", response.Code, response.Body.String())
+	}
+	if credentials.provider != "ssi" || credentials.service != "market-data" || received["credential"].(map[string]any)["consumerSecret"] != "constituent-secret" || received["index_instrument_id"] != "SSI:INDEX:HOSE:VN30" {
+		t.Fatalf("vault credentials or index identity were not sent to engine: vault=%s/%s engine=%#v", credentials.provider, credentials.service, received)
+	}
+	jobs, err := db.IngestionJobs()
+	if err != nil || len(jobs) != 1 || jobs[0].Status != "completed" || jobs[0].CapabilityID != "ssi:market-data:indices.constituents:index:HOSE" || jobs[0].Dataset != "indices.constituents" || jobs[0].AssetClass != "index" || jobs[0].Venue != "HOSE" || jobs[0].ProcessedRecords != 1 {
+		t.Fatalf("SSI index constituent job = %#v, %v", jobs, err)
+	}
+}

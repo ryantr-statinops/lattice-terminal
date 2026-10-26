@@ -66,6 +66,39 @@ class ProviderInstrumentAlias(Record):
             raise ValueError('effective_to must be later than effective_from')
         return self
 
+class ProviderIndexConstituent(Record):
+    """A provider-reported index member; the source identifier is not assumed to be an ISIN."""
+    provider_security_id: str | None = None
+    native_symbol: str
+
+    @field_validator('provider_security_id', 'native_symbol')
+    @classmethod
+    def trim_member_identity(cls, value):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError('index constituent identifiers must not be blank')
+        return value
+
+class IndexConstituentSet(Record):
+    """Observed membership snapshot; it carries no inferred historical effective date."""
+    index_instrument_id: str
+    index_code: str
+    index_name: str
+    exchange: Literal['HOSE', 'HNX']
+    reported_total_symbol_count: int
+    constituents: list[ProviderIndexConstituent]
+    source_id: str
+    observed_at: AwareDatetime
+
+    @field_validator('reported_total_symbol_count')
+    @classmethod
+    def non_negative_reported_count(cls, value):
+        if value < 0:
+            raise ValueError('reported index constituent count must not be negative')
+        return value
+
 class Candle(Record):
     instrument_id: str
     interval: Literal['1m','5m','15m','30m','1h','1d','1w','1mo']
