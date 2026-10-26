@@ -56,6 +56,15 @@ it('starts the supported SSI UPCOM equity catalogue sync',async()=>{
  expect(await screen.findByText('SSI UPCOM catalogue saved as snapshot upcomstocks1.')).toBeDefined();
 });
 
+it('starts the supported SSI HOSE covered-warrant catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'hosecovered123456'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHoseCoveredWarrants/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HOSE covered warrants'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hose-covered-warrants',{}));
+ expect(await screen.findByText('SSI HOSE covered-warrant catalogue saved as snapshot hosecovered1.')).toBeDefined();
+});
+
 it('starts the supported SSI HOSE index catalogue sync',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});
