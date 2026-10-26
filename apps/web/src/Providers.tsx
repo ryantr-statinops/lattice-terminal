@@ -20,6 +20,19 @@ export type ProviderStatus = {
   configured: boolean;
 };
 
+export type ProviderCapability = {
+  provider_id: string;
+  dataset: string;
+  asset_class: string;
+  venues: string[];
+  documented: boolean;
+  implemented: boolean;
+  access_state: 'unknown' | 'configured' | 'available' | 'blocked';
+  rights_state: 'unknown' | 'unverified' | 'approved' | 'denied';
+  health_state: 'unknown' | 'connected' | 'offline' | 'blocked';
+  evidence: string;
+};
+
 export type RoutingPolicy = {
   historical_provider: string;
   realtime_provider: string;
@@ -49,6 +62,11 @@ export function Providers() {
   const providers = useQuery({
     queryKey: ['providers'],
     queryFn: () => request<ProviderStatus[]>('/providers'),
+  });
+
+  const capabilities = useQuery({
+    queryKey: ['providers-capabilities'],
+    queryFn: () => request<ProviderCapability[]>('/providers/capabilities'),
   });
 
   const routing = useQuery({
@@ -111,7 +129,7 @@ export function Providers() {
       </Toolbar>
 
       {providers.isPending && <LoadingState>Loading provider configuration…</LoadingState>}
-      <ErrorState error={providers.error || routing.error || routingError} onRetry={() => { void providers.refetch(); void routing.refetch(); }} />
+      <ErrorState error={providers.error || capabilities.error || routing.error || routingError} onRetry={() => { void providers.refetch(); void capabilities.refetch(); void routing.refetch(); }} />
 
       {providers.data && (
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12, margin: '12px 0'}}>
@@ -145,6 +163,24 @@ export function Providers() {
                         {cap}
                       </span>
                     ))}
+                  </div>
+
+                  <div aria-label={`${p.name} configuration and access status`} style={{display: 'grid', gap: 4, fontSize: 11}}>
+                    <span>Configuration: {p.configured ? 'configured' : 'not configured'}</span>
+                    <span>Connection check: {activeState}</span>
+                    {capabilities.data
+                      ?.filter(capability => capability.provider_id === p.id)
+                      .map(capability => (
+                        <div key={`${capability.dataset}:${capability.asset_class}`} style={{borderTop: '1px solid var(--border)', paddingTop: 4}}>
+                          <strong>{capability.dataset} · {capability.asset_class}</strong>
+                          <div>Documentation: {capability.documented ? 'documented' : 'unverified'}</div>
+                          <div>Adapter: {capability.implemented ? 'implemented' : 'not implemented'}</div>
+                          <div>Access: {capability.access_state}</div>
+                          <div>Rights: {capability.rights_state}</div>
+                          <div>Capability health: {capability.health_state}</div>
+                          {capability.evidence && <div className="muted">{capability.evidence}</div>}
+                        </div>
+                      ))}
                   </div>
 
                   {(currentPing?.error || p.error) && (
