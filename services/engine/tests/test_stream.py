@@ -103,3 +103,54 @@ def test_live_runtime_requires_provider_event_delivery_contract():
         runtime.set('manual',{('provider-feed','SYN')},lambda _:None)
     assert runtime.subscriptions.required()==set()
     assert 'manual' not in runtime._consumers
+
+def test_live_gap_backfill_persists_contiguous_history_before_resuming():
+    class Connection:
+        def set_instruments(self,instruments):pass
+        def set_event_handler(self,handler):self.on_event=handler
+        def close(self):pass
+
+    connection=Connection();runtime=ReconciledLiveFeeds(lambda _:connection,max_age=timedelta(seconds=5))
+    received=[];persisted=[]
+    runtime.set('strategy',{('quote','SYN')},received.append)
+    first=event(1).model_copy(update={'feed':'quote'})
+    runtime.reconcile('quote',first.event_time,0)
+    assert connection.on_event(first)
+    gap=event(4).model_copy(update={'feed':'quote'})
+    assert not connection.on_event(gap)
+
+    def fetch(feed,after,through):
+        assert (feed,after,through)==('quote',1,3)
+        return [event(seq).model_copy(update={'feed':'quote'}) for seq in (2,3)]
+
+    assert runtime.backfill('quote',3,fetch,persisted.extend)==2
+    assert [value.sequence for value in persisted]==[2,3]
+    assert [value.sequence for value in received]==[1]
+    assert runtime.status('quote')['state']=='ready'
+    assert connection.on_event(gap)
+    assert [value.sequence for value in received]==[1,4]
+
+def test_live_gap_backfill_rejects_missing_or_unpersisted_range():
+    class Connection:
+        def set_instruments(self,instruments):pass
+        def set_event_handler(self,handler):self.on_event=handler
+        def close(self):pass
+
+    connection=Connection();runtime=ReconciledLiveFeeds(lambda _:connection)
+    first=event(1).model_copy(update={'feed':'quote'})
+    runtime.set('manual',{('quote','SYN')},lambda _:None)
+    runtime.reconcile('quote',first.event_time,0)
+    connection.on_event(first)
+    assert not connection.on_event(event(3).model_copy(update={'feed':'quote'}))
+    stored=[]
+
+    import pytest
+    with pytest.raises(ValueError,match='sequence gaps'):
+        runtime.backfill('quote',2,lambda *_:[event(2).model_copy(update={'feed':'other'}),event(3).model_copy(update={'feed':'quote'})],stored.extend)
+    assert stored==[]
+    assert runtime.status('quote')['state']=='gap'
+
+    def fail_to_persist(_):raise RuntimeError('storage unavailable')
+    with pytest.raises(RuntimeError,match='storage unavailable'):
+        runtime.backfill('quote',3,lambda *_:[event(seq).model_copy(update={'feed':'quote'}) for seq in (2,3)],fail_to_persist)
+    assert runtime.status('quote')['state']=='gap'

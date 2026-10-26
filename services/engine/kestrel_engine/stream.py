@@ -162,6 +162,7 @@ class ReconciledLiveFeeds:
         self.max_age = max_age
         self._reconcilers: dict[str, Reconciler] = {}
         self._consumers: dict[str, tuple[set[tuple[str, str]], Callable[[MarketEvent], None]]] = {}
+        self._recovering: set[str] = set()
         self._lock = RLock()
         self.subscriptions = Subscriptions(connector, event_handler=self.publish, require_event_handler=True)
 
@@ -190,6 +191,8 @@ class ReconciledLiveFeeds:
         if not feed.strip() or sequence < 0:
             raise ValueError('feed and non-negative sequence are required')
         with self._lock:
+            if feed in self._recovering:
+                raise RuntimeError('feed reconciliation is owned by an active backfill')
             self._reconcilers.setdefault(feed, Reconciler(self.max_age)).reconcile(cutoff, sequence)
 
     def disconnect(self, feed: str) -> None:
@@ -210,6 +213,51 @@ class ReconciledLiveFeeds:
         for handler in handlers:
             handler(event)
         return True
+
+    def backfill(self, feed: str, through_sequence: int,
+                 fetch: Callable[[str, int, int], list[MarketEvent]],
+                 persist: Callable[[list[MarketEvent]], None]) -> int:
+        """Persist a complete sequence gap before reopening live event delivery."""
+        with self._lock:
+            reconciler = self._reconcilers.get(feed)
+            if reconciler is None or reconciler.sequence is None or reconciler.last_time is None:
+                raise ValueError('live feed has no reconciliation point to backfill from')
+            if reconciler.state == 'ready':
+                raise ValueError('live feed must be paused before gap backfill')
+            if feed in self._recovering:
+                raise RuntimeError('live feed already has a backfill in progress')
+            previous_sequence = reconciler.sequence
+            previous_time = reconciler.last_time
+            if through_sequence < previous_sequence:
+                raise ValueError('backfill watermark precedes the last accepted event')
+            self._recovering.add(feed)
+
+        try:
+            events = fetch(feed, previous_sequence, through_sequence)
+            expected_sequence = previous_sequence
+            last_time = previous_time
+            for event in events:
+                expected_sequence += 1
+                if event.feed != feed or event.sequence != expected_sequence:
+                    raise ValueError('backfill events must match the feed and contain no sequence gaps')
+                if event.event_time < last_time or event.received_at < event.event_time:
+                    raise ValueError('backfill event time must be ordered and available')
+                last_time = event.event_time
+            if expected_sequence != through_sequence:
+                raise ValueError('backfill does not cover the requested sequence watermark')
+
+            if events:
+                persist(events)
+
+            with self._lock:
+                current = self._reconcilers.get(feed)
+                if current is not reconciler or current.sequence != previous_sequence or current.state == 'ready':
+                    raise RuntimeError('live feed changed while its gap was being backfilled')
+                current.reconcile(last_time, through_sequence)
+            return len(events)
+        finally:
+            with self._lock:
+                self._recovering.discard(feed)
 
     def status(self, feed: str) -> dict[str, object]:
         with self._lock:
