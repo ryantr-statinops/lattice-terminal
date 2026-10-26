@@ -30,7 +30,7 @@ class Record(BaseModel):
 
 class Instrument(Record):
     id: str
-    venue: Literal['HOSE','HNX','UPCOM']
+    venue: str | None = None
     board: str
     native_symbol: str
     instrument_class: Literal[

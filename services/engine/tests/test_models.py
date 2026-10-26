@@ -53,6 +53,20 @@ def test_instrument_accepts_additional_asset_classes(instrument_class):
     assert instrument.instrument_class == instrument_class
 
 
+def test_instrument_accepts_other_and_unspecified_venues():
+    overseas = Instrument(
+        id='provider:NYSE:ABC', venue='NYSE', board='MAIN',
+        native_symbol='ABC', name='Example Corp',
+    )
+    macro = Instrument(
+        id='provider:macro:policy-rate', venue=None, board='SERIES',
+        native_symbol='POLICY_RATE', instrument_class='macro_series',
+        name='Policy rate',
+    )
+    assert overseas.venue == 'NYSE'
+    assert macro.venue is None
+
+
 def test_instrument_preserves_asset_specific_metadata():
     instrument = Instrument(
         id='provider:future-123',

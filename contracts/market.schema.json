@@ -479,18 +479,20 @@
         "type": "string"
       },
       "venue": {
-        "enum": [
-          "HOSE",
-          "HNX",
-          "UPCOM"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
         ],
-        "title": "Venue",
-        "type": "string"
+        "default": null,
+        "title": "Venue"
       }
     },
     "required": [
       "id",
-      "venue",
       "board",
       "native_symbol",
       "name"
@@ -702,18 +704,20 @@
             "type": "string"
           },
           "venue": {
-            "enum": [
-              "HOSE",
-              "HNX",
-              "UPCOM"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Venue",
-            "type": "string"
+            "default": null,
+            "title": "Venue"
           }
         },
         "required": [
           "id",
-          "venue",
           "board",
           "native_symbol",
           "name"
