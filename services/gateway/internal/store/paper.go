@@ -85,6 +85,70 @@ func settleSecurities(tx *sql.Tx, allocation string, day time.Time) error {
 	}
 	return nil
 }
+func settleCash(tx *sql.Tx, allocation string, day time.Time) error {
+	rows, err := tx.Query("SELECT id,cash FROM settlements WHERE allocation_id=? AND due<=? AND done=0 ORDER BY due,id", allocation, day.UTC().Format("2006-01-02"))
+	if err != nil {
+		return err
+	}
+	type dueCash struct{ id, amount string }
+	var matured []dueCash
+	total := decimal.Zero
+	for rows.Next() {
+		var item dueCash
+		if err = rows.Scan(&item.id, &item.amount); err != nil {
+			rows.Close()
+			return err
+		}
+		matured = append(matured, item)
+		total = total.Add(d(item.amount))
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
+	}
+	if len(matured) == 0 {
+		return nil
+	}
+	var cash, unsettled string
+	if err = tx.QueryRow("SELECT cash,unsettled FROM allocations WHERE id=?", allocation).Scan(&cash, &unsettled); err != nil {
+		return err
+	}
+	newCash := d(cash).Add(total)
+	if newCash.IsNegative() {
+		return errors.New("cash settlement would make available cash negative")
+	}
+	if _, err = tx.Exec("UPDATE allocations SET cash=?,unsettled=? WHERE id=?", newCash.String(), d(unsettled).Sub(total).String(), allocation); err != nil {
+		return err
+	}
+	for _, item := range matured {
+		if _, err = tx.Exec("UPDATE settlements SET done=1 WHERE id=? AND done=0", item.id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func pendingCashPayables(tx *sql.Tx, allocation string) (decimal.Decimal, error) {
+	rows, err := tx.Query("SELECT cash FROM settlements WHERE allocation_id=? AND done=0", allocation)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	defer rows.Close()
+	total := decimal.Zero
+	for rows.Next() {
+		var raw string
+		if err = rows.Scan(&raw); err != nil {
+			return decimal.Zero, err
+		}
+		value := d(raw)
+		if value.IsNegative() {
+			total = total.Sub(value)
+		}
+	}
+	return total, rows.Err()
+}
 func d(v string) decimal.Decimal {
 	result, err := decimal.NewFromString(v)
 	if err != nil {
@@ -161,6 +225,13 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	if err = settleSecurities(tx, a.ID, created); err != nil {
 		return err
 	}
+	if err = settleCash(tx, a.ID, created); err != nil {
+		return err
+	}
+	a, err = scanAllocation(tx.QueryRow("SELECT * FROM allocations WHERE id=?", a.ID))
+	if err != nil {
+		return err
+	}
 	cash, reserved := d(a.Cash), d(a.Reserved)
 	p, err := position(tx, a.ID, order.InstrumentID)
 	if err != nil {
@@ -168,7 +239,11 @@ func (s *Store) PlacePaper(order PaperOrder, key, controller string) error {
 	}
 	if order.Side == "buy" {
 		budget := price.Mul(qty).Mul(decimal.NewFromInt(1).Add(rate))
-		if budget.GreaterThan(cash) {
+		payables, err := pendingCashPayables(tx, a.ID)
+		if err != nil {
+			return err
+		}
+		if budget.GreaterThan(cash.Sub(payables)) {
 			return errors.New("insufficient allocated cash")
 		}
 		cash = cash.Sub(budget)
@@ -244,9 +319,6 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 		return errors.New("invalid settlement date")
 	}
 	tradeDate := time.Date(at.UTC().Year(), at.UTC().Month(), at.UTC().Day(), 0, 0, 0, 0, time.UTC)
-	if fill.Side == "sell" && settlementDate.After(tradeDate) {
-		return errors.New("non-immediate cash settlement requires verified availability-time model; capability blocked")
-	}
 	order, err := scanOrder(tx.QueryRow("SELECT * FROM paper_orders WHERE id=?", fill.OrderID))
 	if err != nil {
 		return err
@@ -262,6 +334,13 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	if err = settleSecurities(tx, a.ID, at); err != nil {
 		return err
 	}
+	if err = settleCash(tx, a.ID, at); err != nil {
+		return err
+	}
+	a, err = scanAllocation(tx.QueryRow("SELECT * FROM allocations WHERE id=?", a.ID))
+	if err != nil {
+		return err
+	}
 	created, err := time.Parse(time.RFC3339Nano, order.Created)
 	if err != nil {
 		return err
@@ -273,7 +352,7 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	if err != nil {
 		return err
 	}
-	cash, reserved := d(a.Cash), d(a.Reserved)
+	cash, reserved, unsettled := d(a.Cash), d(a.Reserved), d(a.Unsettled)
 	gross := price.Mul(q)
 	if order.Side == "buy" {
 		if price.GreaterThan(d(order.Price)) {
@@ -284,7 +363,15 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 		if cost.GreaterThan(release) || release.GreaterThan(reserved) {
 			return errors.New("fill costs exceed reservation")
 		}
-		cash = cash.Add(release.Sub(cost))
+		if settlementDate.After(tradeDate) {
+			cash = cash.Add(release)
+			unsettled = unsettled.Sub(cost)
+			if _, err = tx.Exec("INSERT INTO settlements VALUES(?,?,?,?,?,?,0)", key, a.ID, order.InstrumentID, q.String(), cost.Neg().String(), settlementDate.Format("2006-01-02")); err != nil {
+				return err
+			}
+		} else {
+			cash = cash.Add(release.Sub(cost))
+		}
 		reserved = reserved.Sub(release)
 		oldQty := d(p.Quantity)
 		total := oldQty.Add(q)
@@ -301,7 +388,15 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 		if price.LessThan(d(order.Price)) || q.GreaterThan(d(p.Settled)) || q.GreaterThan(d(p.SellReserved)) || fee.Add(tax).GreaterThan(gross) {
 			return errors.New("invalid sell fill")
 		}
-		cash = cash.Add(gross.Sub(fee).Sub(tax))
+		proceeds := gross.Sub(fee).Sub(tax)
+		if settlementDate.After(tradeDate) {
+			unsettled = unsettled.Add(proceeds)
+			if _, err = tx.Exec("INSERT INTO settlements VALUES(?,?,?,?,?,?,0)", key, a.ID, order.InstrumentID, q.String(), proceeds.String(), settlementDate.Format("2006-01-02")); err != nil {
+				return err
+			}
+		} else {
+			cash = cash.Add(proceeds)
+		}
 		p.Quantity = d(p.Quantity).Sub(q).String()
 		p.Settled = d(p.Settled).Sub(q).String()
 		p.SellReserved = d(p.SellReserved).Sub(q).String()
@@ -320,7 +415,7 @@ func (s *Store) fillPaper(tx *sql.Tx, fill PaperFill, key string) error {
 	if _, err = tx.Exec("UPDATE paper_orders SET remaining=?,status=? WHERE id=?", remaining.String(), status, order.ID); err != nil {
 		return err
 	}
-	if _, err = tx.Exec("UPDATE allocations SET cash=?,reserved=? WHERE id=?", cash.String(), reserved.String(), a.ID); err != nil {
+	if _, err = tx.Exec("UPDATE allocations SET cash=?,reserved=?,unsettled=? WHERE id=?", cash.String(), reserved.String(), unsettled.String(), a.ID); err != nil {
 		return err
 	}
 	return nil

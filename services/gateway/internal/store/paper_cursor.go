@@ -49,6 +49,12 @@ func (s *Store) advanceCursor(tx *sql.Tx, id, snapshot string, seq int64, at, sy
 	if (old != "" && old != snapshot) || seq != previous+1 {
 		return errors.New("paper cursor source/sequence gap")
 	}
+	if err = settleSecurities(tx, id, when); err != nil {
+		return err
+	}
+	if err = settleCash(tx, id, when); err != nil {
+		return err
+	}
 	_, err = tx.Exec("INSERT INTO paper_cursors VALUES(?,?,?,?) ON CONFLICT(allocation_id) DO UPDATE SET snapshot=excluded.snapshot,sequence=excluded.sequence,event_time=excluded.event_time", id, snapshot, seq, when.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return err

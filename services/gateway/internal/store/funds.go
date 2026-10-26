@@ -273,7 +273,11 @@ func (s *Store) Release(id, value, key string) error {
 	}
 	cash, _ := decimal.NewFromString(a.Cash)
 	capital, _ := decimal.NewFromString(a.Capital)
-	if a.Status == "running" || cash.LessThan(v) {
+	payables, err := pendingCashPayables(tx, id)
+	if err != nil {
+		return err
+	}
+	if a.Status == "running" || cash.Sub(payables).LessThan(v) {
 		return errors.New("stop controller first; only settled available cash can be released")
 	}
 	var parent string
