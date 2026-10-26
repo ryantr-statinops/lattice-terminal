@@ -70,6 +70,7 @@ func (a *API) Routes(m *http.ServeMux) {
 	a.reportRoutes(m)
 	a.terminalRoutes(m)
 	a.providerRoutes(m)
+	a.ingestionRoutes(m)
 	a.instrumentAliasRoutes(m)
 	m.HandleFunc("GET /api/v1/workspaces/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		files, err := a.Workspace.List(r.PathValue("kind"))

@@ -312,6 +312,107 @@
       ],
       "type": "object"
     },
+    "IngestionCheckpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version",
+        "kind",
+        "value"
+      ],
+      "type": "object"
+    },
+    "IngestionJob": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_class": {
+          "type": "string"
+        },
+        "capability_id": {
+          "type": "string"
+        },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "version",
+                "kind",
+                "value"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "dataset": {
+          "type": "string"
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "processed_records": {
+          "type": "integer"
+        },
+        "provider_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "total_records": {
+          "type": "integer"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "venue": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "provider_id",
+        "capability_id",
+        "dataset",
+        "asset_class",
+        "status",
+        "processed_records",
+        "total_records",
+        "created_at",
+        "updated_at"
+      ],
+      "type": "object"
+    },
     "PaperFill": {
       "additionalProperties": false,
       "properties": {
@@ -529,6 +630,12 @@
     "RoutingPolicy": {
       "additionalProperties": false,
       "properties": {
+        "datasets": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
         "fallback_enabled": {
           "type": "boolean"
         },
@@ -546,7 +653,8 @@
         "historical_provider",
         "realtime_provider",
         "financials_provider",
-        "fallback_enabled"
+        "fallback_enabled",
+        "datasets"
       ],
       "type": "object"
     },

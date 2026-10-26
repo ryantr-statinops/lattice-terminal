@@ -32,7 +32,8 @@ func schema(t reflect.Type) any {
 				required = append(required, nested["required"].([]string)...)
 				continue
 			}
-			name := strings.Split(f.Tag.Get("json"), ",")[0]
+			tag := strings.Split(f.Tag.Get("json"), ",")
+			name := tag[0]
 			if name == "" {
 				name = f.Name
 			}
@@ -40,11 +41,22 @@ func schema(t reflect.Type) any {
 				continue
 			}
 			p[name] = schema(f.Type)
-			required = append(required, name)
+			optional := false
+			for _, option := range tag[1:] {
+				if option == "omitempty" {
+					optional = true
+					break
+				}
+			}
+			if !optional {
+				required = append(required, name)
+			}
 		}
 		return map[string]any{"type": "object", "properties": p, "required": required, "additionalProperties": false}
 	case reflect.Slice:
 		return map[string]any{"type": "array", "items": schema(t.Elem())}
+	case reflect.Map:
+		return map[string]any{"type": "object", "additionalProperties": schema(t.Elem())}
 	case reflect.Int, reflect.Int64:
 		return map[string]string{"type": "integer"}
 	case reflect.Bool:
@@ -55,7 +67,7 @@ func schema(t reflect.Type) any {
 }
 func main() {
 	defs := map[string]any{}
-	for _, v := range []any{store.Run{}, store.Event{}, store.Artifact{}, store.Fund{}, store.Allocation{}, store.PositionValue{}, store.FundValue{}, store.RecordedTrade{}, store.ImportPreview{}, store.PaperOrder{}, store.PaperFill{}, store.RoutingPolicy{}} {
+	for _, v := range []any{store.Run{}, store.Event{}, store.Artifact{}, store.Fund{}, store.Allocation{}, store.PositionValue{}, store.FundValue{}, store.RecordedTrade{}, store.ImportPreview{}, store.PaperOrder{}, store.PaperFill{}, store.RoutingPolicy{}, store.IngestionJob{}, store.IngestionCheckpoint{}} {
 		t := reflect.TypeOf(v)
 		defs[t.Name()] = schema(t)
 	}

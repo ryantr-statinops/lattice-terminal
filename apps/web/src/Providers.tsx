@@ -7,6 +7,7 @@ import {Field,Select} from './ui/fields';
 import {StatusLabel} from './ui/data';
 import {EmptyState,ErrorState,LoadingState} from './ui/feedback';
 import {ProviderCredentialEditor} from './ProviderCredentialEditor';
+import {IngestionJobs} from './IngestionJobs';
 
 export type ProviderStatus = {
   id: string;
@@ -231,6 +232,8 @@ export function Providers() {
           })}
         </div>
       )}
+
+      <IngestionJobs />
 
       {routing.data && (
         <Panel>

@@ -149,7 +149,7 @@ func (s *Store) IngestionJob(id string) (IngestionJob, error) {
 }
 
 func (s *Store) IngestionJobs() ([]IngestionJob, error) {
-	rows, err := s.DB.Query(`SELECT id,provider_id,capability_id,dataset,asset_class,venue,status,processed_records,total_records,error_code,created_at,updated_at
+	rows, err := s.DB.Query(`SELECT id,provider_id,capability_id,dataset,asset_class,venue,status,processed_records,total_records,error_code,checkpoint_version,cursor_kind,cursor_value,created_at,updated_at
 		FROM ingestion_jobs ORDER BY created_at DESC,id LIMIT 100`)
 	if err != nil {
 		return nil, err
@@ -158,9 +158,14 @@ func (s *Store) IngestionJobs() ([]IngestionJob, error) {
 	result := []IngestionJob{}
 	for rows.Next() {
 		var job IngestionJob
+		var version int64
+		var kind, value string
 		if err = rows.Scan(&job.ID, &job.ProviderID, &job.CapabilityID, &job.Dataset, &job.AssetClass, &job.Venue,
-			&job.Status, &job.ProcessedRecords, &job.TotalRecords, &job.ErrorCode, &job.CreatedAt, &job.UpdatedAt); err != nil {
+			&job.Status, &job.ProcessedRecords, &job.TotalRecords, &job.ErrorCode, &version, &kind, &value, &job.CreatedAt, &job.UpdatedAt); err != nil {
 			return nil, err
+		}
+		if version > 0 {
+			job.Checkpoint = &IngestionCheckpoint{Version: version, Kind: kind, Value: value}
 		}
 		result = append(result, job)
 	}
