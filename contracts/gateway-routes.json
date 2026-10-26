@@ -1,6 +1,7 @@
 {
   "version": 1,
   "routes": [
+    "DELETE /api/v1/providers/{id}/credentials",
     "DELETE /api/v1/workspaces/{kind}/file",
     "DELETE /api/v1/workspaces/{kind}/mount",
     "GET /api/v1/allocations",

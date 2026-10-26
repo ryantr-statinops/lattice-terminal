@@ -29,6 +29,7 @@ type API struct {
 
 type CredentialWriter interface {
 	Set(provider, service string, credential []byte) error
+	Delete(provider, service string) error
 }
 
 func JSON(w http.ResponseWriter, status int, value any) {

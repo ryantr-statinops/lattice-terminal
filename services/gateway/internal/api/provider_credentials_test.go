@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -13,10 +14,16 @@ type credentialWriterStub struct {
 	service    string
 	credential string
 	err        error
+	deleted    bool
 }
 
 func (s *credentialWriterStub) Set(provider, service string, credential []byte) error {
 	s.provider, s.service, s.credential = provider, service, string(credential)
+	return s.err
+}
+
+func (s *credentialWriterStub) Delete(provider, service string) error {
+	s.provider, s.service, s.deleted = provider, service, true
 	return s.err
 }
 
@@ -80,5 +87,29 @@ func TestProviderCredentialWriteRejectsInvalidReference(t *testing.T) {
 	mux.ServeHTTP(response, request)
 	if response.Code != http.StatusBadRequest || writer.provider != "" {
 		t.Fatalf("invalid credential reference accepted: %d %#v", response.Code, writer)
+	}
+}
+
+func TestProviderCredentialDeleteDoesNotReturnSecret(t *testing.T) {
+	writer := &credentialWriterStub{}
+	mux := http.NewServeMux()
+	(&API{Credentials: writer}).Routes(mux)
+	request := httptest.NewRequest(http.MethodDelete, "/api/v1/providers/ssi/credentials?service=market-data", nil)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent || response.Body.Len() != 0 || !writer.deleted || writer.provider != "ssi" || writer.service != "market-data" {
+		t.Fatalf("delete response = %d %q, writer = %#v", response.Code, response.Body.String(), writer)
+	}
+}
+
+func TestProviderCredentialDeleteDistinguishesMissingRecord(t *testing.T) {
+	writer := &credentialWriterStub{err: os.ErrNotExist}
+	mux := http.NewServeMux()
+	(&API{Credentials: writer}).Routes(mux)
+	request := httptest.NewRequest(http.MethodDelete, "/api/v1/providers/ssi/credentials?service=market-data", nil)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusNotFound || strings.Contains(response.Body.String(), "private-secret") {
+		t.Fatalf("missing credential response = %d %s", response.Code, response.Body.String())
 	}
 }

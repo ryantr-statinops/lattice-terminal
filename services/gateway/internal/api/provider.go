@@ -3,8 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"kestrel-terminal/gateway/internal/secret"
@@ -74,6 +76,28 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 		}
 		if err := a.Credentials.Set(r.PathValue("id"), input.Service, input.Credential); err != nil {
 			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not save provider credentials"})
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	m.HandleFunc("DELETE /api/v1/providers/{id}/credentials", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		if a.Credentials == nil {
+			JSON(w, http.StatusServiceUnavailable, map[string]string{"error": "credential vault is not initialized"})
+			return
+		}
+		provider, service := r.PathValue("id"), r.URL.Query().Get("service")
+		if !secret.ValidVaultID(provider) || !secret.ValidVaultID(service) {
+			JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid provider credential reference"})
+			return
+		}
+		if err := a.Credentials.Delete(provider, service); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				JSON(w, http.StatusNotFound, map[string]string{"error": "provider credential not found"})
+				return
+			}
+			JSON(w, http.StatusInternalServerError, map[string]string{"error": "could not delete provider credentials"})
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
