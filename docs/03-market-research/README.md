@@ -17,7 +17,8 @@
 11. [Other Vietnamese API candidates](other-vietnam-providers.md).
 12. [Provider × dataset coverage matrix](provider-coverage-matrix.md).
 13. [Simulation rule checklist](simulation-rule-checklist.md).
-14. [Source register and approval gates](source-register.md).
-15. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
+14. [Capability implementation task inventory](implementation-task-inventory.md).
+15. [Source register and approval gates](source-register.md).
+16. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
 
 Official documentation proves documented capability, not entitlement or rights. Provider status must distinguish documentation, configuration, access, rights and operating approval. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
