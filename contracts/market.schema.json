@@ -341,6 +341,89 @@
     "title": "DatasetEnvelope",
     "type": "object"
   },
+  "FinancialStatement": {
+    "additionalProperties": false,
+    "properties": {
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "currency": {
+        "title": "Currency",
+        "type": "string"
+      },
+      "instrument_id": {
+        "title": "Instrument Id",
+        "type": "string"
+      },
+      "period_end": {
+        "format": "date",
+        "title": "Period End",
+        "type": "string"
+      },
+      "period_start": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Period Start"
+      },
+      "published_at": {
+        "format": "date-time",
+        "title": "Published At",
+        "type": "string"
+      },
+      "revision": {
+        "default": "0",
+        "title": "Revision",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      },
+      "statement_id": {
+        "title": "Statement Id",
+        "type": "string"
+      },
+      "statement_type": {
+        "title": "Statement Type",
+        "type": "string"
+      },
+      "unit": {
+        "title": "Unit",
+        "type": "string"
+      },
+      "values": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Values",
+        "type": "object"
+      }
+    },
+    "required": [
+      "instrument_id",
+      "statement_id",
+      "statement_type",
+      "period_end",
+      "published_at",
+      "available_at",
+      "currency",
+      "unit",
+      "values",
+      "source_id"
+    ],
+    "title": "FinancialStatement",
+    "type": "object"
+  },
   "Instrument": {
     "additionalProperties": false,
     "properties": {
