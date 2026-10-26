@@ -423,6 +423,22 @@
         "summary": "List Providers"
       }
     },
+    "/internal/v1/providers/capabilities": {
+      "get": {
+        "operationId": "list_provider_capabilities_internal_v1_providers_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Provider Capabilities"
+      }
+    },
     "/internal/v1/providers/routing": {
       "get": {
         "operationId": "get_routing_internal_v1_providers_routing_get",
