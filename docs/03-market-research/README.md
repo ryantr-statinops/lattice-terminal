@@ -14,7 +14,8 @@
 8. [Vietstock DataFeed](vietstock-datafeed.md).
 9. [FireAnt REST API](fireant-api.md).
 10. [HayInsights Open API](hayinsights.md).
-11. [Source register and approval gates](source-register.md).
-12. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
+11. [Other Vietnamese API candidates](other-vietnam-providers.md).
+12. [Source register and approval gates](source-register.md).
+13. [Market comparison](market-comparison.md) — background research; provider and dataset eligibility must be revalidated.
 
 Official documentation proves documented capability, not entitlement or rights. Provider status must distinguish documentation, configuration, access, rights and operating approval. Any bounded access test before production approval needs separate authorization under the [probe policy](source-register.md#access-probes-and-operating-states). Do not persist payloads without confirmed rights.
