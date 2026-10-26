@@ -22,6 +22,7 @@ from kestrel_engine.providers import (
     normalize_ssi_upcom_equity_catalogue,
     normalize_ssi_hose_covered_warrant_catalogue,
     normalize_ssi_der_derivative_catalogue,
+    normalize_ssi_hose_etf_catalogue,
     normalize_ssi_hose_index_catalogue,
     normalize_ssi_hose_index_components,
 )
@@ -350,6 +351,39 @@ class TestProviders(unittest.TestCase):
                 'data': [{'SecType': 'FU', 'Symbol': 'VN30F1M', 'Exchange': 'HOSE'}],
             })
 
+    def test_ssi_hose_etf_catalogue_normalizes_only_documented_etf_type(self):
+        payload = {
+            'status': 'Success', 'data': [{
+                'RepeatedInfo': [
+                    {
+                        'SecType': 'EF', 'Isin': 'vn000000etf1', 'Symbol': 'ETF1',
+                        'SymbolName': 'Example ETF', 'Exchange': 'HOSE', 'Issuer': 'Example AM',
+                        'IssueDate': '01/01/2020', 'ListedShare': '1000000',
+                    },
+                    {'SecType': 'ST', 'Isin': 'vn000000st2', 'Symbol': 'AAA', 'Exchange': 'HOSE'},
+                ],
+            }],
+        }
+
+        instruments = normalize_ssi_hose_etf_catalogue(payload)
+
+        self.assertEqual(len(instruments), 1)
+        self.assertEqual(instruments[0].id, 'SSI:ISIN:VN000000ETF1')
+        self.assertEqual(instruments[0].venue, 'HOSE')
+        self.assertEqual(instruments[0].instrument_class, 'etf')
+        self.assertEqual(instruments[0].metadata, {
+            'issuer': 'Example AM', 'issue_date': '01/01/2020',
+            'listed_share': '1000000', 'isin': 'VN000000ETF1',
+        })
+        self.assertIsNone(instruments[0].currency)
+
+    def test_ssi_hose_etf_catalogue_fails_closed_for_another_venue(self):
+        with self.assertRaisesRegex(ValueError, 'another venue'):
+            normalize_ssi_hose_etf_catalogue({
+                'status': 'Success',
+                'data': [{'SecType': 'EF', 'Symbol': 'ETF1', 'Exchange': 'HNX'}],
+            })
+
     def test_ssi_hose_catalogue_page_uses_documented_endpoint_and_paging(self):
         provider = SsiFastConnectProvider()
         credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
@@ -495,6 +529,23 @@ class TestProviders(unittest.TestCase):
         }))
         self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
             'market': 'DER', 'pageIndex': 2, 'pageSize': 1000,
+        }))
+
+    def test_ssi_hose_etf_catalogue_reads_each_documented_page(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        first = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'EF', 'Symbol': 'ETF1', 'Exchange': 'HOSE'}]}
+        second = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'EF', 'Symbol': 'ETF2', 'Exchange': 'HOSE'}]}
+        with patch.object(provider, 'get_json', side_effect=[first, second]) as get_json:
+            instruments = provider.fetch_hose_etf_catalogue(credential=credential)
+
+        self.assertEqual([item.native_symbol for item in instruments], ['ETF1', 'ETF2'])
+        self.assertTrue(all(item.instrument_class == 'etf' for item in instruments))
+        self.assertEqual(get_json.call_args_list[0].args, ('SecuritiesDetails', {
+            'market': 'HOSE', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
+            'market': 'HOSE', 'pageIndex': 2, 'pageSize': 1000,
         }))
 
     def test_ssi_daily_ohlc_rejects_out_of_scope_instrument_before_network(self):
