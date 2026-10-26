@@ -24,6 +24,7 @@
 | P-ssi-instrument-covered-warrant-hose | HOSE covered-warrant catalogue | DOCS / WAIT_ACCOUNT; local path is offline-tested and contract fields are preserved as provider metadata; confirm this class/venue pairing from an entitled sample, access and rights remain unverified |
 | P-ssi-instrument-derivative-der | DER futures catalogue | DOCS / WAIT_ACCOUNT; local path is offline-tested and contract fields are preserved as provider metadata; confirm this class/venue pairing from an entitled sample, access and rights remain unverified |
 | P-ssi-instrument-etf-hose | HOSE ETF catalogue | DOCS / WAIT_ACCOUNT; local path is offline-tested; confirm this class/venue pairing from an entitled sample, access and rights remain unverified |
+| P-ssi-instrument-bond-hnxbond | HNXBOND bond catalogue | DOCS / WAIT_ACCOUNT; local path is offline-tested and bond terms are preserved as provider metadata; confirm this class/venue pairing from an entitled sample, access and rights remain unverified |
 | P-ssi-instrument-other-classes | Remaining fund, bond, ETF and derivative venue/class combinations | DOCS / WAIT_ACCOUNT; each class/venue remains a separate parser and task |
 | P-ssi-equity-daily-bars | Equity EOD/OHLCV | DOCS / WAIT_ACCOUNT; rights/adjustment cần xác minh |
 | P-ssi-equity-intraday-bars | Equity interval riêng từng resolution | DOCS / WAIT_ACCOUNT; mỗi resolution semantic khác là task riêng |

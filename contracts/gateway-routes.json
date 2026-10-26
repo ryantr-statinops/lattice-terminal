@@ -57,6 +57,7 @@
     "POST /api/v1/ingestion/catalogues/ssi/der-futures",
     "POST /api/v1/ingestion/catalogues/ssi/hnx-equity",
     "POST /api/v1/ingestion/catalogues/ssi/hnx-indices",
+    "POST /api/v1/ingestion/catalogues/ssi/hnxbond-bonds",
     "POST /api/v1/ingestion/catalogues/ssi/hose-covered-warrants",
     "POST /api/v1/ingestion/catalogues/ssi/hose-equity",
     "POST /api/v1/ingestion/catalogues/ssi/hose-etfs",

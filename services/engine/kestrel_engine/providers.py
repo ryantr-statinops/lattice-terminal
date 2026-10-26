@@ -141,6 +141,7 @@ class ProviderCapabilityRegistry:
             ('instruments.details', 'covered_warrant', 'HOSE', True, 'SSI SecuritiesDetails documents CW and exchange fields; HOSE parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
             ('instruments.details', 'derivative', 'DER', True, 'SSI SecuritiesDetails documents FU futures and DER exchange fields; DER parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
             ('instruments.details', 'etf', 'HOSE', True, 'SSI SecuritiesDetails documents EF exchange-traded funds and exchange fields; HOSE parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
+            ('instruments.details', 'bond', 'HNXBOND', True, 'SSI SecuritiesDetails documents BO bonds and exchange fields; HNXBOND parser/path is offline-tested, but the class-venue mapping, access and rights still need entitled confirmation.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
@@ -289,6 +290,10 @@ def normalize_ssi_der_derivative_catalogue(payload: dict[str, Any]) -> list[Inst
 
 def normalize_ssi_hose_etf_catalogue(payload: dict[str, Any]) -> list[Instrument]:
     return _normalize_ssi_security_catalogue(payload, 'HOSE', {'EF'}, 'etf')
+
+
+def normalize_ssi_hnxbond_bond_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    return _normalize_ssi_security_catalogue(payload, 'HNXBOND', {'BO'}, 'bond')
 
 
 def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
@@ -1006,6 +1011,12 @@ class SsiFastConnectProvider(BaseMarketProvider):
 
     def fetch_hose_etf_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         return self._fetch_security_catalogue('HOSE', {'EF'}, 'etf', credential=credential)
+
+    def fetch_hnxbond_bond_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_security_catalogue_page('HNXBOND', page_index, {'BO'}, 'bond', credential=credential)
+
+    def fetch_hnxbond_bond_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_security_catalogue('HNXBOND', {'BO'}, 'bond', credential=credential)
 
     def fetch_hose_index_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:

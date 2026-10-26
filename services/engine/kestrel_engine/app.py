@@ -209,6 +209,22 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         ) for instrument in instruments]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
+    @app.post('/internal/v1/market/catalogues/ssi/hnxbond-bonds')
+    def ingest_ssi_hnxbond_bond_catalogue(value:SsiCatalogueIngest):
+        capability_id='ssi:market-data:instruments.details:bond:HNXBOND'
+        endpoint='Market/SecuritiesDetails'
+        gate.authorize(capability_id,'store',endpoint)
+        instruments=provider_router.providers['ssi'].fetch_hnxbond_bond_catalogue(credential=value.credential)
+        if not instruments:raise ValueError('SSI returned no HNXBOND bonds')
+        observed_at=datetime.now(timezone.utc)
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='instruments.details',source_id=instrument.source_id,
+            observed_at=observed_at,available_at=observed_at,revision='0',schema_version='1',
+            parser_version='ssi-hnxbond-bond-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
+            temporal_semantics='not_time_series',quality='unknown',payload=instrument.model_dump(mode='json'),
+        ) for instrument in instruments]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
     @app.post('/internal/v1/market/catalogues/ssi/hose-indices')
     def ingest_ssi_hose_index_catalogue(value:SsiIndexCatalogueIngest):
         capability_id='ssi:market-data:instruments.index:index:HOSE'

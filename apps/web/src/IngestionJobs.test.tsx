@@ -83,6 +83,15 @@ it('starts the supported SSI HOSE ETF catalogue sync',async()=>{
  expect(await screen.findByText('SSI HOSE ETF catalogue saved as snapshot hoseetfs1234.')).toBeDefined();
 });
 
+it('starts the supported SSI HNX bond catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'hnxbond123456'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHnxBonds/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HNX bonds'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hnxbond-bonds',{}));
+ expect(await screen.findByText('SSI HNX bond catalogue saved as snapshot hnxbond12345.')).toBeDefined();
+});
+
 it('starts the supported SSI HOSE index catalogue sync',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});
