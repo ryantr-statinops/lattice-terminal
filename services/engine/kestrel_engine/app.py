@@ -96,7 +96,10 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         return JSONResponse({'error':str(error)},status_code=400)
 
     @app.get('/internal/v1/market/instruments')
-    def instruments(): return market.instruments()
+    def instruments(provider_id:str=''):
+        if provider_id:
+            return dataset_publisher.instrument_catalogue(provider_id)
+        return market.instruments()
 
     @app.get('/internal/v1/market/snapshots')
     def snapshots(): return market.manifests()

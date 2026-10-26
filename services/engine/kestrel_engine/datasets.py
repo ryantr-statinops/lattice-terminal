@@ -11,7 +11,7 @@ from threading import RLock
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .models import DatasetEnvelope
+from .models import DatasetEnvelope, Instrument
 from .sources import SourceGate
 
 STORAGE_SCHEMA_VERSION = '1'
@@ -225,6 +225,47 @@ class AtomicDatasetPublisher:
                 'terms_reference', 'entitlement_reference', 'expires_at',
             )})
         return sorted(result, key=lambda item: (item['available_to'], item['snapshot_id']), reverse=True)
+
+    def instrument_catalogue(self, provider_id: str) -> list[Instrument]:
+        if not provider_id.strip():
+            raise ValueError('provider id is required for a provider instrument catalogue')
+        registry = self.root / 'datasets'
+        if not registry.exists():
+            return []
+        self.prune_expired()
+        latest: dict[tuple[str, str], dict] = {}
+        for directory in registry.iterdir():
+            if directory.is_symlink() or not directory.is_dir() or directory.name.startswith('.pending-'):
+                continue
+            snapshot_id = directory.name
+            if len(snapshot_id) != 64 or any(value not in '0123456789abcdef' for value in snapshot_id):
+                continue
+            manifest = self._load_manifest(directory, snapshot_id)
+            if manifest['provider_id'] != provider_id or not manifest['dataset'].startswith('instruments.'):
+                continue
+            key = (manifest['dataset'], manifest['capability_id'])
+            existing = latest.get(key)
+            if existing is None or (manifest['available_to'], snapshot_id) > (existing['available_to'], existing['snapshot_id']):
+                latest[key] = manifest
+
+        instruments: dict[str, Instrument] = {}
+        for manifest in latest.values():
+            _, envelopes = self.load(manifest['snapshot_id'])
+            for envelope in envelopes:
+                if not isinstance(envelope.payload, dict):
+                    raise ValueError('instrument catalogue payload must be an object')
+                instrument = Instrument.model_validate({
+                    **envelope.payload,
+                    'source_id': envelope.source_id,
+                    'is_synthetic': False,
+                })
+                previous = instruments.get(instrument.id)
+                if previous is not None and previous != instrument:
+                    raise ValueError('provider instrument catalogue has conflicting stable identities')
+                instruments[instrument.id] = instrument
+        return sorted(instruments.values(), key=lambda item: (
+            item.instrument_class, item.venue or '', item.native_symbol, item.id,
+        ))
 
     @staticmethod
     def _is_expired(manifest: dict, now: datetime) -> bool:
