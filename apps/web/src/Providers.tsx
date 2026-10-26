@@ -55,6 +55,10 @@ function supportsRoute(provider: ProviderStatus, route: ProviderRouteKey) {
   return routeCapabilityGroups[route].some(capability => provider.capabilities.includes(capability));
 }
 
+function datasetRouteKey(capability: ProviderCapability) {
+  return `${capability.dataset}:${capability.asset_class}:${capability.venue}`;
+}
+
 export function Providers() {
   const client = useQueryClient();
   const [pinging, setPinging] = useState<string | null>(null);
@@ -106,6 +110,18 @@ export function Providers() {
       setRoutingError(error);
     }
   };
+
+  const updateDatasetRoute = (routeKey: string, capabilityId: string) => {
+    const datasets = {...(routing.data?.datasets ?? {})};
+    if (capabilityId) datasets[routeKey] = capabilityId;
+    else delete datasets[routeKey];
+    void updateRouting({datasets});
+  };
+
+  const datasetRouteKeys = Array.from(new Set([
+    ...Object.keys(routing.data?.datasets ?? {}),
+    ...(capabilities.data ?? []).filter(capability => capability.implemented).map(datasetRouteKey),
+  ])).sort();
 
   const getTone = (state: string): 'positive' | 'warning' | 'negative' | 'info' => {
     if (state === 'connected') return 'positive';
@@ -220,7 +236,33 @@ export function Providers() {
         <Panel>
           <PanelHeader title="DATA ROUTING & DISPATCH POLICY" />
           <div className="panel-content">
-            <p className="muted">Provider choices are limited to declared coverage for each dataset group. A declared capability does not prove access or data rights.</p>
+            <p className="muted">Choose a service capability for each dataset, asset class and venue. A declared adapter does not prove provider access or data rights.</p>
+
+            <div className="form-grid" style={{marginTop: 12}}>
+              {datasetRouteKeys.map(routeKey => {
+                const choices = (capabilities.data ?? []).filter(capability => capability.implemented && datasetRouteKey(capability) === routeKey);
+                const selected = routing.data?.datasets?.[routeKey] ?? '';
+                return (
+                  <Field key={routeKey} label={`Dataset route · ${routeKey}`}>
+                    <Select
+                      aria-label={`Dataset route · ${routeKey}`}
+                      value={selected}
+                      disabled={providers.isPending || capabilities.isPending || !capabilities.data}
+                      onChange={event => updateDatasetRoute(routeKey, event.target.value)}
+                    >
+                      <option value="">No provider selected</option>
+                      {selected && !choices.some(choice => choice.capability_id === selected) && (
+                        <option value={selected} disabled>{selected} — unavailable</option>
+                      )}
+                      {choices.map(capability => {
+                        const providerName = providers.data?.find(provider => provider.id === capability.provider_id)?.name ?? capability.provider_id;
+                        return <option key={capability.capability_id} value={capability.capability_id}>{providerName} · {capability.service}</option>;
+                      })}
+                    </Select>
+                  </Field>
+                );
+              })}
+            </div>
 
             <div className="form-grid" style={{marginTop: 12}}>
               <Field label="Historical EOD & Backtest Feed">

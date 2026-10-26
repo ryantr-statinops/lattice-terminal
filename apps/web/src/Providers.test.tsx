@@ -138,6 +138,32 @@ it('limits routing choices to providers declaring matching capabilities', async 
   expect(financials.options[0].disabled).toBe(true);
 });
 
+it('routes a dataset to a specific implemented provider service capability', async () => {
+  vi.mocked(request).mockImplementation(async path => {
+    if (path === '/providers') return mockProviders;
+    if (path === '/providers/capabilities') return mockCapabilities;
+    if (path === '/providers/routing') return mockRouting;
+    return null;
+  });
+  vi.mocked(send).mockResolvedValue(mockRouting);
+
+  render(
+    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
+      <Providers />
+    </QueryClientProvider>
+  );
+
+  const route = await screen.findByLabelText('Dataset route · candles.1d:equity:HOSE') as HTMLSelectElement;
+  expect(Array.from(route.options).map(option => option.value)).toEqual([
+    '', 'vndirect:dchart-community:candles.1d:equity:HOSE',
+  ]);
+  fireEvent.change(route, {target: {value: 'vndirect:dchart-community:candles.1d:equity:HOSE'}});
+
+  await waitFor(() => expect(send).toHaveBeenCalledWith('/providers/routing', {
+    datasets: {'candles.1d:equity:HOSE': 'vndirect:dchart-community:candles.1d:equity:HOSE'},
+  }, 'PUT'));
+});
+
 it('shows configuration, access rights, and connection health separately', async () => {
   vi.mocked(request).mockImplementation(async path => {
     if (path === '/providers') return mockProviders;
