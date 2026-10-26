@@ -43,3 +43,17 @@ func BootstrapVaultMasterKey() (bool, error) {
 	}
 	return created, nil
 }
+
+// OpenVault loads the already-bootstrapped key from the OS keyring. It never
+// creates or replaces a key while opening stored credentials.
+func OpenVault(root string) (*Vault, error) {
+	encoded, err := getVaultKeyringValue()
+	if err != nil {
+		return nil, errors.New("vault master key is not available in the OS keyring")
+	}
+	key, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil || len(key) != 32 {
+		return nil, errors.New("vault master key is invalid")
+	}
+	return newVault(root, key)
+}

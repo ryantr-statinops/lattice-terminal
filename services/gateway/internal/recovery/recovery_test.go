@@ -5,6 +5,7 @@ import (
 	"kestrel-terminal/gateway/internal/store"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -23,6 +24,8 @@ func TestBackupRestoreExcludesSecretsAndNeverResumes(t *testing.T) {
 	s.Close()
 	os.WriteFile(filepath.Join(root, "profile.json"), []byte("private verifier"), 0600)
 	os.WriteFile(filepath.Join(root, "source-policy.json"), []byte("private approval"), 0600)
+	os.MkdirAll(filepath.Join(root, "provider-vault"), 0700)
+	os.WriteFile(filepath.Join(root, "provider-vault", "credentials.json"), []byte("encrypted provider credentials"), 0600)
 	os.MkdirAll(filepath.Join(root, "workspaces", "research"), 0700)
 	os.WriteFile(filepath.Join(root, "workspaces", "research", "sample.py"), []byte("KESTREL_KIND='research'"), 0600)
 	os.WriteFile(filepath.Join(root, "workspaces", "research", "common.py"), []byte("VALUE=1"), 0600)
@@ -32,6 +35,17 @@ func TestBackupRestoreExcludesSecretsAndNeverResumes(t *testing.T) {
 	if e = Backup(root, archive); e != nil {
 		t.Fatal(e)
 	}
+	backup, e := zip.OpenReader(archive)
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, entry := range backup.File {
+		if strings.HasPrefix(entry.Name, "provider-vault/") {
+			backup.Close()
+			t.Fatal("provider vault was included in backup")
+		}
+	}
+	backup.Close()
 	restored := filepath.Join(base, "restored")
 	if e = Restore(archive, restored); e != nil {
 		t.Fatal(e)
@@ -39,7 +53,7 @@ func TestBackupRestoreExcludesSecretsAndNeverResumes(t *testing.T) {
 	if _, e = os.Stat(filepath.Join(restored, "market", "snapshots", "fixture", "manifest.json")); e != nil {
 		t.Fatal("market snapshot missing", e)
 	}
-	for _, name := range []string{"profile.json", "source-policy.json"} {
+	for _, name := range []string{"profile.json", "source-policy.json", "provider-vault/credentials.json"} {
 		if _, e = os.Stat(filepath.Join(restored, name)); !os.IsNotExist(e) {
 			t.Fatal("secret/approval restored")
 		}
