@@ -53,7 +53,7 @@ Interrupted allocations require explicit reconciliation; open remainder is cance
 ## Still missing / blocked before real-data V1
 
 1. SSI account-specific entitlement, access, rights, field/history/quota and approval evidence. No probe is authorized by these commits.
-2. Actual SSI REST pagination/checkpoint/retry/retention implementation and streaming transport/reconnect/backfill integration. Current code has offline gates/reconciler and synthetic publication, not a connected adapter.
+2. SSI access and rights remain unverified. A SourceGate-protected `SecuritiesDetails` HOSE-equity catalogue path now authenticates, paginates, normalizes and publishes Parquet, but no account-backed call has been made. Durable page checkpoints, daily/intraday/index datasets, streaming transport/reconnect/backfill and rights-approved retention still need implementation or evidence.
 3. Approved detailed historical data plus venue/board/class/effective-date rule packs, calendars, costs, auctions/price limits and corporate actions.
 4. Real settlement availability-time accounting/recovery. Current Go paper ledger supports **fictional immediate synthetic settlement only**, and rejects other settlement dates.
 5. Production fill realism and globally shared exchange liquidity across allocations. Current allocations replay independent synthetic clocks and do not reconstruct queues or missing fills.

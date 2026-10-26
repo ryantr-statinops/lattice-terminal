@@ -5,7 +5,7 @@
 ## Read order
 
 1. [Repository implementation gap map](implementation-gap.md).
-2. [Vietnam and SSI FastConnect Data capabilities](vn-equities.md).
+2. [Vietnam market capabilities](vn-equities.md) and the [SSI FastConnect Data profile](ssi-fastconnect.md).
 3. [DNSE OpenAPI capabilities](dnse.md).
 4. [TCBS OpenAPI capabilities](tcbs-openapi.md).
 5. [VPBankS NeoAPI capabilities](vpbanks-neoapi.md).
