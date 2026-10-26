@@ -132,22 +132,30 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def dataset_snapshots(provider_id:str='',dataset:str=''):
         return dataset_publisher.manifests(provider_id,dataset)
 
-    @app.post('/internal/v1/market/catalogues/ssi/hose-equity')
-    def ingest_ssi_hose_equity_catalogue(value:SsiCatalogueIngest):
-        capability_id='ssi:market-data:instruments.details:equity:HOSE'
+    def _ingest_ssi_equity_catalogue(value:SsiCatalogueIngest,venue:str):
+        capability_id=f'ssi:market-data:instruments.details:equity:{venue}'
         endpoint='Market/SecuritiesDetails'
         gate.authorize(capability_id,'store',endpoint)
         provider=provider_router.providers['ssi']
-        instruments=provider.fetch_hose_equity_catalogue(credential=value.credential)
-        if not instruments:raise ValueError('SSI returned no HOSE equity instruments')
+        fetch=getattr(provider,f'fetch_{venue.casefold()}_equity_catalogue')
+        instruments=fetch(credential=value.credential)
+        if not instruments:raise ValueError(f'SSI returned no {venue} equity instruments')
         observed_at=datetime.now(timezone.utc)
         envelopes=[DatasetEnvelope(
             provider_id='ssi',dataset='instruments.details',source_id=instrument.source_id,
             observed_at=observed_at,available_at=observed_at,revision='0',schema_version='1',
-            parser_version='ssi-hose-equity-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
+            parser_version=f'ssi-{venue.casefold()}-equity-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
             temporal_semantics='not_time_series',quality='unknown',payload=instrument.model_dump(mode='json'),
         ) for instrument in instruments]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
+    @app.post('/internal/v1/market/catalogues/ssi/hose-equity')
+    def ingest_ssi_hose_equity_catalogue(value:SsiCatalogueIngest):
+        return _ingest_ssi_equity_catalogue(value,'HOSE')
+
+    @app.post('/internal/v1/market/catalogues/ssi/hnx-equity')
+    def ingest_ssi_hnx_equity_catalogue(value:SsiCatalogueIngest):
+        return _ingest_ssi_equity_catalogue(value,'HNX')
 
     @app.post('/internal/v1/market/catalogues/ssi/hose-indices')
     def ingest_ssi_hose_index_catalogue(value:SsiIndexCatalogueIngest):

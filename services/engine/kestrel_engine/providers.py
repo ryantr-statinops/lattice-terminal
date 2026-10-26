@@ -136,6 +136,7 @@ class ProviderCapabilityRegistry:
             )
         for dataset, asset_class, venue, implemented, evidence in (
             ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('instruments.details', 'equity', 'HNX', True, 'SSI SecuritiesDetails documents HNX stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('indices.constituents', 'index', 'HOSE', True, 'SSI IndexComponents documents provider-reported HOSE membership snapshots; source security identifiers and historical effective dates remain unverified.'),
@@ -192,8 +193,11 @@ class BaseMarketProvider(ABC):
         ...
 
 
-def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
-    """Normalize only SSI HOSE stocks; other security types stay with their own adapters."""
+def normalize_ssi_equity_catalogue(payload: dict[str, Any], venue: str) -> list[Instrument]:
+    """Normalize SSI stock details for one explicitly selected exchange."""
+    venue = venue.strip().upper()
+    if venue not in {'HOSE', 'HNX'}:
+        raise ValueError('SSI equity catalogue supports only HOSE and HNX')
     status = str(payload.get('status', '')).strip().casefold()
     if status not in {'success', '200'}:
         raise ValueError('SSI returned an unsuccessful SecuritiesDetails response')
@@ -221,13 +225,13 @@ def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrum
         if security_type not in {'ST', 'S'}:
             continue
         exchange = str(detail.get('Exchange') or detail.get('MarketId') or detail.get('Market') or '').strip().upper()
-        if exchange and exchange != 'HOSE':
-            raise ValueError('SSI HOSE catalogue contained a security from another venue')
+        if exchange != venue:
+            raise ValueError(f'SSI {venue} catalogue contained a security from another venue or without a venue')
         symbol = str(detail.get('Symbol') or '').strip().upper()
         if not symbol:
-            raise ValueError('SSI HOSE stock is missing its symbol')
+            raise ValueError(f'SSI {venue} stock is missing its symbol')
         isin = str(detail.get('Isin') or '').strip().upper()
-        instrument_id = f'SSI:ISIN:{isin}' if isin else f'SSI:HOSE:{symbol}'
+        instrument_id = f'SSI:ISIN:{isin}' if isin else f'SSI:{venue}:{symbol}'
         name = str(detail.get('SymbolName') or detail.get('SymbolEngName') or symbol).strip()
         metadata = {
             key: str(detail[source])
@@ -241,15 +245,23 @@ def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrum
         if isin:
             metadata['isin'] = isin
         instrument = Instrument(
-            id=instrument_id, venue='HOSE', board='unknown', native_symbol=symbol,
+            id=instrument_id, venue=venue, board='unknown', native_symbol=symbol,
             instrument_class='equity', name=name, metadata=metadata,
             source_id='SSI-FC-DATA', is_synthetic=False,
         )
         previous = instruments.get(instrument.id)
         if previous is not None and previous != instrument:
-            raise ValueError('SSI HOSE catalogue has conflicting stock identities')
+            raise ValueError(f'SSI {venue} catalogue has conflicting stock identities')
         instruments[instrument.id] = instrument
     return sorted(instruments.values(), key=lambda value: (value.native_symbol, value.id))
+
+
+def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    return normalize_ssi_equity_catalogue(payload, 'HOSE')
+
+
+def normalize_ssi_hnx_equity_catalogue(payload: dict[str, Any]) -> list[Instrument]:
+    return normalize_ssi_equity_catalogue(payload, 'HNX')
 
 
 def normalize_ssi_index_catalogue(rows: list[dict[str, Any]], exchange: str) -> list[Instrument]:
@@ -858,20 +870,32 @@ class SsiFastConnectProvider(BaseMarketProvider):
             raise ValueError('SSI market-data token refresh failed')
         return read()
 
-    def fetch_hose_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+    def _fetch_equity_catalogue_page(self, venue: str, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        venue = venue.strip().upper()
+        if venue not in {'HOSE', 'HNX'}:
+            raise ValueError('SSI equity catalogue supports only HOSE and HNX')
         if isinstance(page_index, bool) or page_index < 1 or page_index > 10:
             raise ValueError('SSI SecuritiesDetails page index must be between 1 and 10')
         payload = self.get_json(
             'SecuritiesDetails',
-            {'market': 'HOSE', 'pageIndex': page_index, 'pageSize': 1000},
+            {'market': venue, 'pageIndex': page_index, 'pageSize': 1000},
             credential=credential,
         )
-        return normalize_ssi_hose_equity_catalogue(payload)
+        return normalize_ssi_equity_catalogue(payload, venue)
 
-    def fetch_hose_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+    def fetch_hose_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue_page('HOSE', page_index, credential=credential)
+
+    def fetch_hnx_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue_page('HNX', page_index, credential=credential)
+
+    def _fetch_equity_catalogue(self, venue: str, *, credential: dict[str, str]) -> list[Instrument]:
+        venue = venue.strip().upper()
+        if venue not in {'HOSE', 'HNX'}:
+            raise ValueError('SSI equity catalogue supports only HOSE and HNX')
         first_page = self.get_json(
             'SecuritiesDetails',
-            {'market': 'HOSE', 'pageIndex': 1, 'pageSize': 1000},
+            {'market': venue, 'pageIndex': 1, 'pageSize': 1000},
             credential=credential,
         )
         total_raw = first_page.get('totalRecord')
@@ -882,19 +906,25 @@ class SsiFastConnectProvider(BaseMarketProvider):
         except (TypeError, ValueError) as error:
             raise ValueError('SSI SecuritiesDetails response has an invalid totalRecord') from error
         if total_records < 0 or total_records > 10000:
-            raise ValueError('SSI HOSE catalogue exceeds the documented 10-page limit')
+            raise ValueError(f'SSI {venue} catalogue exceeds the documented 10-page limit')
         page_count = max(1, (total_records + 999) // 1000)
-        instruments = normalize_ssi_hose_equity_catalogue(first_page)
+        instruments = normalize_ssi_equity_catalogue(first_page, venue)
         for page_index in range(2, page_count + 1):
-            instruments.extend(self.fetch_hose_equity_catalogue_page(page_index, credential=credential))
+            instruments.extend(self._fetch_equity_catalogue_page(venue, page_index, credential=credential))
 
         unique: dict[str, Instrument] = {}
         for instrument in instruments:
             previous = unique.get(instrument.id)
             if previous is not None and previous != instrument:
-                raise ValueError('SSI HOSE catalogue has conflicting stock identities across pages')
+                raise ValueError(f'SSI {venue} catalogue has conflicting stock identities across pages')
             unique[instrument.id] = instrument
         return sorted(unique.values(), key=lambda value: (value.native_symbol, value.id))
+
+    def fetch_hose_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue('HOSE', credential=credential)
+
+    def fetch_hnx_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        return self._fetch_equity_catalogue('HNX', credential=credential)
 
     def fetch_hose_index_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
         def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:

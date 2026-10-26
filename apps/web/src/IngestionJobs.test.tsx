@@ -38,6 +38,15 @@ it('starts the supported SSI catalogue sync and refreshes its job list',async()=
  expect(await screen.findByText('SSI HOSE catalogue saved as snapshot abcdefghijkl.')).toBeDefined();
 });
 
+it('starts the supported SSI HNX equity catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'hnxstocks12345678'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHnxEquity/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HNX stocks'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hnx-equity',{}));
+ expect(await screen.findByText('SSI HNX catalogue saved as snapshot hnxstocks123.')).toBeDefined();
+});
+
 it('starts the supported SSI HOSE index catalogue sync',async()=>{
  vi.mocked(request).mockResolvedValue([]);
  vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});

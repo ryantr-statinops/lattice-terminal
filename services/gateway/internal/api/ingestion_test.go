@@ -88,6 +88,43 @@ func TestSSIHoseCatalogueSyncUsesVaultAndPersistsJob(t *testing.T) {
 	}
 }
 
+func TestSSIHNXCatalogueSyncUsesVaultAndPersistsJob(t *testing.T) {
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var received map[string]any
+	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/market/catalogues/ssi/hnx-equity" || r.Header.Get("Authorization") != "Bearer engine-token" {
+			t.Fatalf("unexpected SSI HNX ingestion request: %s %s", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"snapshot_id": strings.Repeat("b", 64), "row_count": 17})
+	}))
+	defer engine.Close()
+	credentials := &credentialWriterStub{credential: `{"consumerID":"local-id","consumerSecret":"hnx-catalogue-secret"}`}
+	mux := http.NewServeMux()
+	(&API{
+		Store: db, Credentials: credentials,
+		Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}},
+	}).Routes(mux)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/ingestion/catalogues/ssi/hnx-equity", strings.NewReader(`{}`)))
+	if response.Code != http.StatusCreated || strings.Contains(response.Body.String(), "hnx-catalogue-secret") {
+		t.Fatalf("SSI HNX ingestion response = %d %s", response.Code, response.Body.String())
+	}
+	if credentials.provider != "ssi" || credentials.service != "market-data" || received["credential"].(map[string]any)["consumerSecret"] != "hnx-catalogue-secret" {
+		t.Fatalf("vault credentials were not sent to engine: vault=%s/%s engine=%#v", credentials.provider, credentials.service, received)
+	}
+	jobs, err := db.IngestionJobs()
+	if err != nil || len(jobs) != 1 || jobs[0].Status != "completed" || jobs[0].CapabilityID != "ssi:market-data:instruments.details:equity:HNX" || jobs[0].Dataset != "instruments.details" || jobs[0].AssetClass != "equity" || jobs[0].Venue != "HNX" || jobs[0].ProcessedRecords != 17 {
+		t.Fatalf("SSI HNX catalogue job = %#v, %v", jobs, err)
+	}
+}
+
 func TestSSIHoseCatalogueSyncRedactsProviderErrors(t *testing.T) {
 	db, err := store.Open(t.TempDir())
 	if err != nil {

@@ -18,6 +18,7 @@ from kestrel_engine.providers import (
     TcbsCommunityProvider,
     normalize_ssi_index_catalogue,
     normalize_ssi_hose_equity_catalogue,
+    normalize_ssi_hnx_equity_catalogue,
     normalize_ssi_hose_index_catalogue,
     normalize_ssi_hose_index_components,
 )
@@ -226,6 +227,29 @@ class TestProviders(unittest.TestCase):
                 'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HNX'}],
             })
 
+    def test_ssi_hnx_catalogue_normalizes_only_hnx_stock_security_types(self):
+        payload = {
+            'status': 'Success', 'totalRecord': 3, 'data': [{
+                'RepeatedInfo': [
+                    {'SecType': 'ST', 'Isin': 'vn000000hnx1', 'Symbol': 'hnxa', 'SymbolName': 'HNX Alpha', 'Exchange': 'HNX'},
+                    {'SecType': 'CW', 'Isin': 'vn000000hnx2', 'Symbol': 'hnxa1', 'SymbolName': 'HNX warrant', 'Exchange': 'HNX'},
+                    {'Symbol': 'UNKNOWN', 'SymbolName': 'Unclassified security', 'Exchange': 'HNX'},
+                ],
+            }],
+        }
+        instruments = normalize_ssi_hnx_equity_catalogue(payload)
+        self.assertEqual(len(instruments), 1)
+        self.assertEqual(instruments[0].id, 'SSI:ISIN:VN000000HNX1')
+        self.assertEqual(instruments[0].venue, 'HNX')
+        self.assertEqual(instruments[0].instrument_class, 'equity')
+
+    def test_ssi_hnx_catalogue_fails_closed_for_another_venue(self):
+        with self.assertRaisesRegex(ValueError, 'another venue'):
+            normalize_ssi_hnx_equity_catalogue({
+                'status': 'Success',
+                'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HOSE'}],
+            })
+
     def test_ssi_hose_catalogue_page_uses_documented_endpoint_and_paging(self):
         provider = SsiFastConnectProvider()
         credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
@@ -304,6 +328,23 @@ class TestProviders(unittest.TestCase):
             'pageIndex': 1, 'pageSize': 1000, 'ascending': 'true',
         }))
         self.assertEqual(get_json.call_args_list[1].args[1]['pageIndex'], 2)
+
+    def test_ssi_hnx_catalogue_reads_each_documented_page(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        first = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'ST', 'Symbol': 'HNXA', 'Exchange': 'HNX'}]}
+        second = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'ST', 'Symbol': 'HNXB', 'Exchange': 'HNX'}]}
+        with patch.object(provider, 'get_json', side_effect=[first, second]) as get_json:
+            instruments = provider.fetch_hnx_equity_catalogue(credential=credential)
+
+        self.assertEqual([item.native_symbol for item in instruments], ['HNXA', 'HNXB'])
+        self.assertTrue(all(item.venue == 'HNX' for item in instruments))
+        self.assertEqual(get_json.call_args_list[0].args, ('SecuritiesDetails', {
+            'market': 'HNX', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
+            'market': 'HNX', 'pageIndex': 2, 'pageSize': 1000,
+        }))
 
     def test_ssi_daily_ohlc_rejects_out_of_scope_instrument_before_network(self):
         provider = SsiFastConnectProvider()

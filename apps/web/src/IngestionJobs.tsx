@@ -13,7 +13,7 @@ function tone(status:IngestionJob['status']):'positive'|'warning'|'negative'|'in
  return 'info';
 }
 
-export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHoseIndices=false,canSyncSsiHnxIndices=false}:{canSyncSsiHoseEquity?:boolean;canSyncSsiHoseIndices?:boolean;canSyncSsiHnxIndices?:boolean}){
+export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHnxEquity=false,canSyncSsiHoseIndices=false,canSyncSsiHnxIndices=false}:{canSyncSsiHoseEquity?:boolean;canSyncSsiHnxEquity?:boolean;canSyncSsiHoseIndices?:boolean;canSyncSsiHnxIndices?:boolean}){
  const client=useQueryClient();
  const [syncing,setSyncing]=useState(false);
  const [syncError,setSyncError]=useState<unknown>(null);
@@ -24,6 +24,15 @@ export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHoseIndices=
   try{
    const result=await send<{job:{status:string};snapshot_id:string}>('/ingestion/catalogues/ssi/hose-equity',{});
    setSyncMessage(`SSI HOSE catalogue saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
+   await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']})]);
+  }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
+  finally{setSyncing(false)}
+ };
+ const syncSsiHnxCatalogue=async()=>{
+  setSyncing(true);setSyncError(null);setSyncMessage('');
+  try{
+   const result=await send<{job:{status:string};snapshot_id:string}>('/ingestion/catalogues/ssi/hnx-equity',{});
+   setSyncMessage(`SSI HNX catalogue saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
    await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']})]);
   }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
   finally{setSyncing(false)}
@@ -47,7 +56,7 @@ export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHoseIndices=
   finally{setSyncing(false)}
  };
  return <Panel>
-  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}{canSyncSsiHoseIndices&&<Button pending={syncing} onClick={()=>void syncSsiIndices()}>Sync SSI HOSE indices</Button>}{canSyncSsiHnxIndices&&<Button pending={syncing} onClick={()=>void syncSsiHnxIndices()}>Sync SSI HNX indices</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
+  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}{canSyncSsiHnxEquity&&<Button pending={syncing} onClick={()=>void syncSsiHnxCatalogue()}>Sync SSI HNX stocks</Button>}{canSyncSsiHoseIndices&&<Button pending={syncing} onClick={()=>void syncSsiIndices()}>Sync SSI HOSE indices</Button>}{canSyncSsiHnxIndices&&<Button pending={syncing} onClick={()=>void syncSsiHnxIndices()}>Sync SSI HNX indices</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
   <div className="panel-content">
    <ErrorState error={jobs.error||syncError} onRetry={()=>{void jobs.refetch();setSyncError(null)}}/>
    {syncMessage&&<InlineNotice tone="positive">{syncMessage}</InlineNotice>}

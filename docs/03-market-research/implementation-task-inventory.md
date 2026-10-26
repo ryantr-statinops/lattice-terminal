@@ -18,7 +18,9 @@
 | Task | Dataset/operation | Bằng chứng/trạng thái |
 |---|---|---|
 | P-ssi-auth-market | Market-data token | DOCS / WAIT_ACCOUNT; AccessToken probe có mock test offline; chưa kiểm tra credential thật, IP allowlist hoặc quyền dữ liệu |
-| P-ssi-instrument-catalogue | Instruments theo venue | DOCS / WAIT_ACCOUNT |
+| P-ssi-instrument-equity-hose | HOSE stock catalogue | DOCS / WAIT_ACCOUNT; local catalogue path is offline-tested; access and rights remain unverified |
+| P-ssi-instrument-equity-hnx | HNX stock catalogue | DOCS / WAIT_ACCOUNT; local catalogue path is offline-tested; access and rights remain unverified |
+| P-ssi-instrument-other-classes | Covered warrants, ETFs, funds, bonds and derivatives by venue/class | DOCS / WAIT_ACCOUNT; each class/venue remains a separate parser and task |
 | P-ssi-equity-daily-bars | Equity EOD/OHLCV | DOCS / WAIT_ACCOUNT; rights/adjustment cần xác minh |
 | P-ssi-equity-intraday-bars | Equity interval riêng từng resolution | DOCS / WAIT_ACCOUNT; mỗi resolution semantic khác là task riêng |
 | P-ssi-indices | HOSE/HNX index catalogue | DOCS / WAIT_ACCOUNT; HOSE/HNX IndexList adapters are offline-tested; account access remains pending |
