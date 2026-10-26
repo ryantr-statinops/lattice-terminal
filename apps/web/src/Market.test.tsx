@@ -91,6 +91,12 @@ describe('Market ECharts chart',()=>{
   expect(instrument.value).toBe('VN:BOND01');
  });
 
+ it('surfaces stale and incomplete snapshot quality details',async()=>{
+  showMarket(url=>url.includes('/instruments')?instruments:{...snapshot,quality:{state:'partial',gaps:['2026-10-17T02:00:00Z/2026-10-18T02:00:00Z'],adjustment:'unknown',calendar:'provider-calendar',provisional_count:1}});
+  expect(await screen.findByText(/Snapshot quality is partial\. Gaps: 2026-10-17T02:00:00Z\/2026-10-18T02:00:00Z\. 1 provisional bars are excluded/)).toBeDefined();
+  expect(screen.getByText(/Quality: partial · Gaps: 1 · Provisional: 1 · Adjustment: unknown · Calendar: provider-calendar/)).toBeDefined();
+ });
+
  it('keeps API errors visible and does not create a chart',async()=>{
   vi.stubGlobal('fetch',vi.fn(async()=>new Response('market unavailable',{status:503})));
   render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);

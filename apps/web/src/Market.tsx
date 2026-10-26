@@ -24,6 +24,8 @@ export function Market(){
  const toggle=()=>{const next=watchlist.includes(id)?watchlist.filter(v=>v!==id):[...watchlist,id];setWatchlist(next);try{localStorage.setItem('kestrel.watchlist',JSON.stringify(next));setNotice('')}catch{setNotice('Watchlist changes are saved for this session only.')}};
  const snapshot=data.data;
  const latest=snapshot?.candles.at(-1);
+ const quality=snapshot?.quality;
+ const hasQualityWarnings=!!quality&&(quality.state==='partial'||quality.state==='stale'||quality.state==='unavailable'||quality.gaps.length>0||(quality.provisional_count||0)>0);
  const currency=latest?.currency&&latest.currency!=='unknown'?latest.currency:snapshot?.instrument.currency||'unknown';
  const priceUnit=latest?.price_unit||'unknown';
  const volumeUnit=latest?.volume_unit||'unknown';
@@ -39,8 +41,9 @@ export function Market(){
  </Toolbar>
  {notice&&<InlineNotice tone="warning">{notice}</InlineNotice>}{(instruments.isPending||data.isFetching)&&<LoadingState>Loading snapshot…</LoadingState>}<ErrorState error={instruments.error||data.error} onRetry={()=>{void instruments.refetch();if(id)void data.refetch()}}/>
  {!instruments.isPending&&!instruments.error&&!instruments.data?.length&&<EmptyState>No instruments are available.</EmptyState>}
+ {hasQualityWarnings&&quality&&<InlineNotice tone="warning">Snapshot quality is {quality.state}. {quality.gaps.length?`Gaps: ${quality.gaps.join(', ')}. `:''}{quality.provisional_count?`${quality.provisional_count} provisional bars are excluded from historical use.`:''}</InlineNotice>}
  {snapshot&&<><Panel><PanelHeader title={snapshot.instrument.name} actions={<span>{snapshot.quality.state} · {snapshot.candles.length} daily bars · {currency}</span>}/>{snapshot.candles.length?<MarketChart candles={snapshot.candles} indicators={indicators}/>:<EmptyState>This snapshot has no candles.</EmptyState>}</Panel>
- <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Source: {latest?.source_id||'unknown'} · Revision: {latest?.revision||'unknown'} · Currency: {currency} · Prices: {priceUnit} · Volume: {volumeUnit} · {latest?.available_at?formatDateTime(latest.available_at,appearance.dateTimeRegion):'unavailable'}</SourceMetadata>
+ <SourceMetadata>Snapshot {snapshot.snapshot_id.slice(0,16)} · Source: {latest?.source_id||'unknown'} · Revision: {latest?.revision||'unknown'} · Quality: {quality?.state||'unknown'} · Gaps: {quality?.gaps.length??0} · Provisional: {quality?.provisional_count??0} · Adjustment: {quality?.adjustment||'unknown'} · Calendar: {quality?.calendar||'unknown'} · Currency: {currency} · Prices: {priceUnit} · Volume: {volumeUnit} · {latest?.available_at?formatDateTime(latest.available_at,appearance.dateTimeRegion):'unavailable'}</SourceMetadata>
  <Panel><DataTable caption="Latest candles" rows={snapshot.candles.slice(-10)} rowKey={v=>v.open_time} columns={[{key:'date',label:'Date',render:v=>formatDate(v.open_time,appearance.dateTimeRegion)},...(['open','high','low','close'] as const).map(key=>({key,label:`${key.toUpperCase()} · ${priceUnit}`,numeric:true,render:(v:Candle)=><NumericValue value={v[key]}/>})),{key:'volume',label:`VOLUME · ${volumeUnit}`,numeric:true,render:(v:Candle)=><NumericValue value={v.volume}/>} ]}/></Panel></>}
  </section>;
 }
