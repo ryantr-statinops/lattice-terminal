@@ -1,6 +1,7 @@
 """Multi-provider abstractions for market data feeds (VNDIRECT, TCBS, DNSE, SSI, Local, Fixture)."""
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import date, datetime, time as daytime, timedelta, timezone
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
@@ -12,7 +13,8 @@ from urllib.parse import urlencode
 import urllib.request
 from pydantic import BaseModel, Field
 
-from .models import Candle, Instrument
+from zoneinfo import ZoneInfo
+from .models import Candle, Instrument, decimal_text
 
 def _is_retryable_read_error(error: Exception) -> bool:
     if isinstance(error, urllib.error.HTTPError):
@@ -134,6 +136,7 @@ class ProviderCapabilityRegistry:
             )
         for dataset, asset_class, venue, implemented, evidence in (
             ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
             ('instruments.details', 'etf', 'unknown', False, 'SSI SecuritiesDetails documents EF security type; exact venue coverage requires account inventory.'),
@@ -242,6 +245,64 @@ def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrum
             raise ValueError('SSI HOSE catalogue has conflicting stock identities')
         instruments[instrument.id] = instrument
     return sorted(instruments.values(), key=lambda value: (value.native_symbol, value.id))
+
+
+def normalize_ssi_hose_equity_daily_rows(
+    rows: list[dict[str, Any]], instrument: Instrument, start: date, end: date,
+    available_at: datetime,
+) -> list[Candle]:
+    """Normalize SSI DailyOhlc while preserving provider-native price decimals."""
+    if instrument.instrument_class != 'equity' or instrument.venue != 'HOSE':
+        raise ValueError('SSI DailyOhlc adapter only supports HOSE equity instruments')
+    if start > end:
+        raise ValueError('SSI DailyOhlc date range is invalid')
+    if available_at.tzinfo is None or available_at.utcoffset() is None:
+        raise ValueError('SSI DailyOhlc observation time must include a timezone')
+
+    timezone_vietnam = ZoneInfo('Asia/Ho_Chi_Minh')
+    candles: dict[date, Candle] = {}
+
+    def decimal_string(value: Any, field: str) -> str:
+        if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+            raise ValueError(f'SSI DailyOhlc {field} must be an exact decimal value')
+        result = str(value).strip()
+        decimal_text(result)
+        return result
+
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError('SSI DailyOhlc row must be an object')
+        symbol = str(row.get('Symbol') or '').strip().upper()
+        venue = str(row.get('Market') or '').strip().upper()
+        if symbol != instrument.native_symbol.upper() or venue != 'HOSE':
+            raise ValueError('SSI DailyOhlc row does not match the requested HOSE instrument')
+        raw_date = row.get('TradingDate')
+        if not isinstance(raw_date, str):
+            raise ValueError('SSI DailyOhlc TradingDate must use dd/mm/yyyy')
+        try:
+            trading_date = datetime.strptime(raw_date, '%d/%m/%Y').date()
+        except ValueError as error:
+            raise ValueError('SSI DailyOhlc TradingDate must use dd/mm/yyyy') from error
+        if trading_date < start or trading_date > end:
+            raise ValueError('SSI DailyOhlc returned a row outside the requested date range')
+        open_time = datetime.combine(trading_date, daytime.min, tzinfo=timezone_vietnam)
+        close_time = datetime.combine(trading_date + timedelta(days=1), daytime.min, tzinfo=timezone_vietnam)
+        candle = Candle(
+            instrument_id=instrument.id, interval='1d', open_time=open_time,
+            close_time=close_time, available_at=available_at, is_closed=True,
+            open=decimal_string(row.get('Open'), 'Open'),
+            high=decimal_string(row.get('High'), 'High'),
+            low=decimal_string(row.get('Low'), 'Low'),
+            close=decimal_string(row.get('Close'), 'Close'),
+            volume=decimal_string(row.get('Volume'), 'Volume'),
+            currency='unknown', price_unit='unknown', volume_unit='unknown',
+            revision='unknown', session='daily', source_id='SSI-FC-DATA',
+        )
+        existing = candles.get(trading_date)
+        if existing is not None and existing != candle:
+            raise ValueError('SSI DailyOhlc contains conflicting rows for one trading date')
+        candles[trading_date] = candle
+    return sorted(candles.values(), key=lambda value: value.open_time)
 
 class VndirectCommunityProvider(BaseMarketProvider):
     """Free public TradingView UDF provider hosted by VNDIRECT (dchart-api)."""
@@ -559,7 +620,7 @@ class SsiFastConnectProvider(BaseMarketProvider):
                 body = response.read(16 * 1024 * 1024 + 1)
             if len(body) > 16 * 1024 * 1024:
                 raise ValueError('SSI market-data response exceeds the size limit')
-            payload = json.loads(body.decode('utf-8'))
+            payload = json.loads(body.decode('utf-8'), parse_float=Decimal)
             if not isinstance(payload, dict):
                 raise ValueError('SSI market-data response must be an object')
             return payload
@@ -612,6 +673,54 @@ class SsiFastConnectProvider(BaseMarketProvider):
                 raise ValueError('SSI HOSE catalogue has conflicting stock identities across pages')
             unique[instrument.id] = instrument
         return sorted(unique.values(), key=lambda value: (value.native_symbol, value.id))
+
+    def fetch_hose_equity_daily(
+        self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[Candle]:
+        if instrument.instrument_class != 'equity' or instrument.venue != 'HOSE':
+            raise ValueError('SSI DailyOhlc adapter only supports HOSE equity instruments')
+        if start > end:
+            raise ValueError('SSI DailyOhlc date range is invalid')
+        if end >= datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date():
+            raise ValueError('SSI DailyOhlc history must end before the current Vietnam date until publication timing is verified')
+
+        def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:
+            payload = self.get_json('DailyOhlc', {
+                'symbol': instrument.native_symbol,
+                'fromDate': start.strftime('%d/%m/%Y'),
+                'toDate': end.strftime('%d/%m/%Y'),
+                'pageIndex': page_index,
+                'pageSize': 1000,
+                'ascending': 'true',
+            }, credential=credential)
+            status = str(payload.get('status', '')).strip().casefold()
+            if status not in {'success', '200'}:
+                raise ValueError('SSI DailyOhlc returned an unsuccessful response')
+            total_raw = payload.get('totalRecord')
+            if isinstance(total_raw, bool) or not isinstance(total_raw, (int, str)):
+                raise ValueError('SSI DailyOhlc response has an invalid totalRecord')
+            try:
+                total = int(total_raw)
+            except (TypeError, ValueError) as error:
+                raise ValueError('SSI DailyOhlc response has an invalid totalRecord') from error
+            rows = payload.get('data')
+            if total < 0 or not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('SSI DailyOhlc response has invalid data')
+            return total, rows
+
+        total_records, rows = checked_page(1)
+        if total_records > 10000:
+            raise ValueError('SSI DailyOhlc range exceeds the documented 10-page limit')
+        page_count = max(1, (total_records + 999) // 1000)
+        for page_index in range(2, page_count + 1):
+            page_total, page_rows = checked_page(page_index)
+            if page_total != total_records:
+                raise ValueError('SSI DailyOhlc totalRecord changed during pagination')
+            rows.extend(page_rows)
+        if len(rows) != total_records:
+            raise ValueError('SSI DailyOhlc page set is incomplete')
+        observed_at = datetime.now(timezone.utc)
+        return normalize_ssi_hose_equity_daily_rows(rows, instrument, start, end, observed_at)
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')

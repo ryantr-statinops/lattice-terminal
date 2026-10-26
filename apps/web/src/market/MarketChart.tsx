@@ -206,7 +206,7 @@ export function MarketChart({candles, indicators}: {candles: Candle[]; indicator
   return (
     <div
       role="img"
-      aria-label="Synthetic candlestick chart; data table below"
+      aria-label="Candlestick chart; data table below"
       ref={container}
       style={{height: 360, width: '100%'}}
     />

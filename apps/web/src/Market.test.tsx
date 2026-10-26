@@ -33,7 +33,7 @@ class TestResizeObserver{
  disconnect=vi.fn();
 }
 
-function showMarket(response=(url:string)=>url.includes('/market/datasets')?[]:url.includes('/instruments')?instruments:snapshot){
+function showMarket(response=(url:string)=>url.includes('/market/datasets')?[]:url.includes('/providers/routing')?{datasets:{}}:url.includes('/instruments')?instruments:snapshot){
  const fetcher=vi.fn(async(input:RequestInfo|URL)=>new Response(JSON.stringify(response(String(input))),{status:200,headers:{'Content-Type':'application/json'}}));
  vi.stubGlobal('fetch',fetcher);
  return render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
@@ -49,7 +49,7 @@ afterEach(()=>{cleanup();resetAppearance();vi.unstubAllGlobals();vi.clearAllMock
 describe('Market ECharts chart',()=>{
  it('maps daily OHLC into a Vietnamese-localized, zoomable candlestick chart',async()=>{
   showMarket();
-  await screen.findByRole('img',{name:'Synthetic candlestick chart; data table below'});
+  await screen.findByRole('img',{name:'Candlestick chart; data table below'});
   await waitFor(()=>expect(echarts.instance.setOption).toHaveBeenCalledOnce());
   const option=echarts.instance.setOption.mock.calls[0][0] as {series:{type:string;data:number[][]}[];xAxis:{data:string[]};dataZoom:{type:string}[];tooltip:{axisPointer:{type:string};formatter:(params:unknown)=>string}};
   expect(option.series[0].type).toBe('candlestick');
@@ -108,9 +108,43 @@ describe('Market ECharts chart',()=>{
   await screen.findByRole('option',{name:'SSI'});
   fireEvent.change(source,{target:{value:'ssi'}});
   await screen.findByRole('option',{name:'AAA · HOSE'});
-  expect(screen.getByText(/Catalogue source: ssi\. No candle snapshot is available/)).toBeDefined();
+  expect(screen.getByText(/Historical candles are stored with provider provenance/)).toBeDefined();
+  expect(screen.getByText(/No daily candle snapshot is saved\. Sync requires approval for exact SSI access and storage rights/)).toBeDefined();
   expect(fetcher).toHaveBeenCalledWith('/api/v1/engine/market/instruments?provider_id=ssi',expect.any(Object));
   expect(echarts.init).not.toHaveBeenCalled();
+ });
+
+ it('syncs SSI daily candles for the selected HOSE instrument and displays the stored snapshot',async()=>{
+  const providerInstrument:Instrument={id:'SSI:ISIN-AAA',venue:'HOSE',board:'unknown',native_symbol:'AAA',instrument_class:'equity',name:'Provider AAA',currency:'unknown',is_synthetic:false};
+  const providerSnapshot:Snapshot={...snapshot,snapshot_id:'ssi-daily-snapshot',instrument:providerInstrument,quality:{state:'partial',gaps:[],adjustment:'unknown',calendar:'provider availability and exchange calendar unverified'},candles:candles.map(candle=>({...candle,currency:'unknown',price_unit:'unknown',volume_unit:'unknown',source_id:'SSI-FC-DATA'}))};
+  let synced=false;
+  const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+   const url=String(input);
+   let value:unknown=[];
+   if(url.includes('/market/datasets'))value=synced?[{provider_id:'ssi',dataset:'instruments.details',snapshot_id:'catalogue-1'},{provider_id:'ssi',dataset:'candles.1d',snapshot_id:'daily-1'}]:[{provider_id:'ssi',dataset:'instruments.details',snapshot_id:'catalogue-1'}];
+   else if(url.includes('/providers/routing'))value={datasets:{'candles.1d:equity:HOSE':'ssi:market-data:candles.1d:equity:HOSE'}};
+   else if(url.includes('/instruments?provider_id=ssi'))value=[providerInstrument];
+   else if(url.includes('/market/provider-candles'))value=providerSnapshot;
+   else if(url.includes('/ingestion/candles/ssi/hose-equity/daily')&&init?.method==='POST'){synced=true;value={job:{status:'completed'},snapshot_id:'abcdef0123456789'};}
+   else if(url.includes('/instruments'))value=instruments;
+   else value=snapshot;
+   return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
+  });
+  vi.stubGlobal('fetch',fetcher);
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
+  await screen.findByRole('option',{name:'SSI'});
+  fireEvent.change(await screen.findByLabelText('Instrument source'),{target:{value:'ssi'}});
+  const sync=await screen.findByRole('button',{name:'Sync SSI daily candles'});
+  fireEvent.click(sync);
+  await screen.findByText('SSI daily candles saved as snapshot abcdef012345.');
+  await screen.findByRole('img',{name:'Candlestick chart; data table below'});
+  const requestCall=fetcher.mock.calls.find(([url,init])=>String(url).includes('/ingestion/candles/ssi/hose-equity/daily')&&init?.method==='POST');
+  expect(requestCall).toBeDefined();
+  const requestBody=JSON.parse(String(requestCall?.[1]?.body));
+  expect(requestBody).toMatchObject({instrument_id:'SSI:ISIN-AAA'});
+  expect(requestBody.from_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(requestBody.to_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(screen.getByText(/not enabled for simulation/)).toBeDefined();
  });
 
  it('surfaces stale and incomplete snapshot quality details',async()=>{

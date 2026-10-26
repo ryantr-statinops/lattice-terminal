@@ -11,7 +11,7 @@ from threading import RLock
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .models import DatasetEnvelope, Instrument
+from .models import Candle, DataQuality, DatasetEnvelope, Instrument, MarketSnapshot
 from .sources import SourceGate
 
 STORAGE_SCHEMA_VERSION = '1'
@@ -267,6 +267,32 @@ class AtomicDatasetPublisher:
         return sorted(instruments.values(), key=lambda item: (
             item.instrument_class, item.venue or '', item.native_symbol, item.id,
         ))
+
+    def candle_snapshot(self, provider_id: str, instrument_id: str) -> MarketSnapshot | None:
+        if provider_id != 'ssi' or not instrument_id.strip():
+            raise ValueError('provider candle snapshot requires a supported provider and instrument')
+        instrument = next((value for value in self.instrument_catalogue(provider_id) if value.id == instrument_id), None)
+        if instrument is None:
+            raise ValueError('instrument is not present in the authorized provider catalogue')
+        manifests = self.manifests(provider_id, 'candles.1d')
+        for summary in manifests:
+            manifest, envelopes = self.load(summary['snapshot_id'])
+            self.source_gate.authorize(manifest['capability_id'], 'display', manifest['endpoint'])
+            candles = []
+            for envelope in envelopes:
+                if not isinstance(envelope.payload, dict) or envelope.payload.get('instrument_id') != instrument_id:
+                    continue
+                candles.append(Candle.model_validate(envelope.payload))
+            if candles:
+                candles.sort(key=lambda value: (value.open_time, value.revision))
+                return MarketSnapshot(
+                    schema_version='2', snapshot_id=manifest['snapshot_id'], instrument=instrument,
+                    quality=DataQuality(
+                        state='partial', adjustment='unknown', calendar='provider availability and exchange calendar unverified',
+                    ),
+                    candles=candles,
+                )
+        return None
 
     @staticmethod
     def _is_expired(manifest: dict, now: datetime) -> bool:

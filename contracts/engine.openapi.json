@@ -177,6 +177,40 @@
         "title": "SsiCatalogueIngest",
         "type": "object"
       },
+      "SsiDailyOhlcIngest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Credential",
+            "type": "object"
+          },
+          "from_date": {
+            "format": "date",
+            "title": "From Date",
+            "type": "string"
+          },
+          "instrument_id": {
+            "title": "Instrument Id",
+            "type": "string"
+          },
+          "to_date": {
+            "format": "date",
+            "title": "To Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "credential",
+          "instrument_id",
+          "from_date",
+          "to_date"
+        ],
+        "title": "SsiDailyOhlcIngest",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -292,6 +326,42 @@
           }
         },
         "summary": "Candles"
+      }
+    },
+    "/internal/v1/market/candles/ssi/hose-equity/daily": {
+      "post": {
+        "operationId": "ingest_ssi_hose_equity_daily_internal_v1_market_candles_ssi_hose_equity_daily_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiDailyOhlcIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hose Equity Daily"
       }
     },
     "/internal/v1/market/catalogues/ssi/hose-equity": {
@@ -430,6 +500,52 @@
           }
         },
         "summary": "Live Status"
+      }
+    },
+    "/internal/v1/market/provider-candles": {
+      "get": {
+        "operationId": "provider_candles_internal_v1_market_provider_candles_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "instrument_id",
+            "required": true,
+            "schema": {
+              "title": "Instrument Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provider Candles"
       }
     },
     "/internal/v1/market/snapshots": {

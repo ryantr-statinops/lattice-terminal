@@ -3,7 +3,10 @@ import urllib.error
 import io
 import json
 from unittest.mock import patch
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
+from zoneinfo import ZoneInfo
+from kestrel_engine.models import Instrument
 from kestrel_engine.providers import (
     ProviderRouter,
     ProviderRequestLimiter,
@@ -91,6 +94,52 @@ class TestProviders(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '10-page limit'):
                 provider.fetch_hose_equity_catalogue(credential={})
         get_json.assert_called_once()
+
+    def test_ssi_daily_ohlc_pages_and_preserves_exact_provider_decimals(self):
+        provider = SsiFastConnectProvider()
+        instrument = Instrument(
+            id='SSI:ISIN:VN000000AAA1', venue='HOSE', board='unknown', native_symbol='AAA',
+            instrument_class='equity', name='Alpha JSC', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        start = date(2022, 1, 1)
+        end = datetime.now(timezone.utc).astimezone(ZoneInfo('Asia/Ho_Chi_Minh')).date() - timedelta(days=1)
+        all_rows = [{
+            'Symbol': 'AAA', 'Market': 'HOSE', 'TradingDate': (start + timedelta(days=index)).strftime('%d/%m/%Y'),
+            'Open': '28600.0000', 'High': '28850.0000', 'Low': '28100.0000',
+            'Close': '28100.0000', 'Volume': '23382100', 'Value': '663258204999.9850',
+        } for index in range(1001)]
+        pages = [
+            {'status': 'Success', 'totalRecord': 1001, 'data': all_rows[:1000]},
+            {'status': 'Success', 'totalRecord': 1001, 'data': all_rows[1000:]},
+        ]
+        with patch.object(provider, 'get_json', side_effect=pages) as get_json:
+            candles = provider.fetch_hose_equity_daily(
+                instrument, start, end, credential={'consumerID': 'id', 'consumerSecret': 'secret'},
+            )
+
+        self.assertEqual(len(candles), 1001)
+        self.assertEqual(candles[0].open, '28600.0000')
+        self.assertEqual(candles[0].volume, '23382100')
+        self.assertEqual(candles[0].price_unit, 'unknown')
+        self.assertEqual(candles[0].currency, 'unknown')
+        self.assertEqual(candles[0].open_time, datetime(2021, 12, 31, 17, tzinfo=timezone.utc))
+        self.assertEqual(get_json.call_count, 2)
+        self.assertEqual(get_json.call_args_list[0].args, ('DailyOhlc', {
+            'symbol': 'AAA', 'fromDate': '01/01/2022', 'toDate': end.strftime('%d/%m/%Y'),
+            'pageIndex': 1, 'pageSize': 1000, 'ascending': 'true',
+        }))
+        self.assertEqual(get_json.call_args_list[1].args[1]['pageIndex'], 2)
+
+    def test_ssi_daily_ohlc_rejects_out_of_scope_instrument_before_network(self):
+        provider = SsiFastConnectProvider()
+        instrument = Instrument(
+            id='SSI:DER:FU1', venue='DER', board='unknown', native_symbol='FU1',
+            instrument_class='derivative', name='Future', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        with patch.object(provider, 'get_json') as get_json:
+            with self.assertRaisesRegex(ValueError, 'only supports HOSE equity'):
+                provider.fetch_hose_equity_daily(instrument, date(2025, 1, 1), date(2025, 1, 2), credential={})
+        get_json.assert_not_called()
 
     def test_read_retry_uses_exponential_backoff_for_transient_errors(self):
         operation = unittest.mock.Mock(side_effect=[
@@ -252,6 +301,17 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(calls[3].args[0].get_header('Authorization'), 'Bearer token-two')
         self.assertEqual(provider.consumer_id, '')
         self.assertEqual(provider.consumer_secret, '')
+
+    def test_ssi_authenticated_read_parses_fractional_numbers_as_decimal(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'id', 'consumerSecret': 'secret'}
+        provider.configure_credentials(credential)
+        provider.access_token = 'token'
+        with patch('kestrel_engine.providers.urllib.request.urlopen', return_value=io.BytesIO(
+            b'{"status":"Success","data":[{"Open":28600.1250}]}'
+        )):
+            payload = provider.get_json('DailyOhlc', credential=credential)
+        self.assertEqual(payload['data'][0]['Open'], Decimal('28600.1250'))
 
     def test_ssi_authenticated_read_reports_failed_refresh_without_secret(self):
         provider = SsiFastConnectProvider()

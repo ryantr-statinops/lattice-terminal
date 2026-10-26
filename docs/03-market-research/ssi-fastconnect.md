@@ -15,7 +15,7 @@ The documented REST base is `https://fc-data.ssi.com.vn/api/v2/Market`. Data cal
 | `GET Securities` | Venue security list | `market` may be HOSE, HNX, UPCOM, or DER. `pageIndex` 1–10; `pageSize` 10, 20, 50, 100, or 1000. | Not wired into normalized catalogue path. |
 | `GET SecuritiesDetails` | Instrument details | Same page bounds. Includes ISIN, symbol, security type and exchange; types listed are stock, covered warrant, futures, ETF, bond, open-end fund and mutual fund. Exchange values include HOSE, HNX, HNXBOND, UPCOM and DER. | Implemented only for HOSE stocks (`ST`/`S`) through local ingestion; remaining classes/venues are not normalized. |
 | `GET IndexList`, `GET IndexComponents` | Index/reference catalogues | Index list names HOSE/HNX; components include index and constituent identifiers. | Not implemented. |
-| `GET DailyOhlc` | Daily OHLCV/value | `symbol`, `fromDate`, `toDate`, `pageIndex` 1–10, and page sizes through 1000. Date format is `dd/mm/yyyy`. Response has `TradingDate`, `Time`, OHLC, volume and value; volume/value are described as normal matched totals. | Documented, not implemented. Price currency/unit, adjustment policy, release time and historical depth still need confirmation. |
+| `GET DailyOhlc` | Daily OHLCV/value | `symbol`, `fromDate`, `toDate`, `pageIndex` 1–10, and page sizes through 1000. Date format is `dd/mm/yyyy`. Response has `TradingDate`, `Time`, OHLC, volume and value; volume/value are described as normal matched totals. | Implemented for HOSE equities through explicit store/display SourceGate checks, a complete paginated read, normalized immutable snapshot and Market route. The current parser preserves OHLC/volume decimals; provider value is not persisted. Price currency/unit, adjustment policy, release time and historical depth still need confirmation. |
 | `GET IntradayOhlc` | Intraday OHLCV | Same date and page limits; optional `resollution`, default 1 minute. | Documented, not implemented. Supported resolution values, history depth and timestamp timezone need confirmation. |
 | `GET DailyIndex` | Daily index observations | `indexId`, date range and pagination; response includes index value, change, ratio, matched activity and market fields. | Not implemented; keep as index/value-series data, not equity candles. |
 | `GET DailyStockPrice` | Daily security prices and activity | Date range and pagination; `market` may include HOSE, HNX, UPCOM, DER and BOND. Response includes `Closepriceadjusted` as well as unadjusted-looking price fields and activity measures. | Not implemented; adjusted and unadjusted semantics need validation against an entitled sample. |
@@ -28,7 +28,7 @@ The Data streaming guide lists message families for quotes (`X-QUOTE`), trades (
 
 `SecuritiesDetails` provides ISIN, symbol and listing/contract fields. The current parser uses ISIN when available and keeps SSI source identity; it limits normalization to HOSE stocks. Alias lifecycle, ticker changes, instrument reuse, exact board mapping and data publication time require account-backed samples before extending the normalizer.
 
-The `DailyOhlc` example contains numeric strings such as `28600` and `23382100`, but the API schema does not state price currency or scale. The endpoint describes volume as normal matched volume and value as normal matched value. The separate daily price response includes a `Closepriceadjusted` field, but the docs do not fully define its adjustment basis or effective timing. Preserve provider-native decimals and unknown semantics until verified; do not mark the bars simulation-ready.
+The `DailyOhlc` example contains numeric strings such as `28600` and `23382100`, but the API schema does not state price currency or scale. The endpoint describes volume as normal matched volume and value as normal matched value. The separate daily price response includes a `Closepriceadjusted` field, but the docs do not fully define its adjustment basis or effective timing. The current adapter preserves provider-native OHLC and volume decimals, leaves currency/units/adjustment/revision unknown, treats `TradingDate` as a Vietnam-local daily period and records the local observation time as availability; it does not persist the response's value field. It excludes the current Vietnam date because publication timing is undocumented. Market only reads the snapshot when SSI is explicitly routed for HOSE daily candles and display rights are approved. The bars remain unavailable for simulation.
 
 ## Account operations and rights
 
@@ -38,10 +38,10 @@ Public documentation does not confirm local retention, display, derived-data, ex
 
 ## Capability state in this repository
 
-- **Implemented, offline-testable:** normalize a HOSE equity catalogue and synchronize it through the local Go vault → Python adapter → SourceGate → immutable Parquet snapshot → Market instrument catalogue path.
+- **Implemented, offline-testable:** normalize a HOSE equity catalogue and synchronize it through the local Go vault → Python adapter → SourceGate → immutable Parquet snapshot → Market instrument catalogue path. The same gated path supports SSI HOSE equity DailyOhlc ingestion, immutable candle snapshots and Market display when the exact dataset route is selected.
 - **Waiting for account/access:** authentication against a real account, provider response validation from an entitled sample, fixed-IP approval and credential-specific capability test.
 - **Waiting for rights:** local storage, display, derived data and research/backtest use. The app must keep the capability blocked until its exact scope is approved.
-- **Not implemented:** daily/intraday/index datasets, non-equity instrument normalization, streaming, historical replay/backfill and all FastConnect Trading account reads.
+- **Not implemented:** intraday/index datasets, non-equity instrument normalization, streaming, durable page resume, historical replay/backfill and all FastConnect Trading account reads.
 - **Production readiness:** not ready. Offline mocks prove parser and gate behavior only; they do not prove SSI access or permission.
 
 ## Evidence

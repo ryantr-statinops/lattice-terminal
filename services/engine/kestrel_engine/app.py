@@ -1,6 +1,6 @@
 import secrets
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from .market import MarketRepository
@@ -46,6 +46,12 @@ class ProviderPing(Record):
 
 class SsiCatalogueIngest(Record):
     credential:dict[str,str]
+
+class SsiDailyOhlcIngest(Record):
+    credential:dict[str,str]
+    instrument_id:str
+    from_date:date
+    to_date:date
 
 def create_app(token: str | None = None, data_root: str | None = None) -> FastAPI:
     app = FastAPI(title="Kestrel Terminal internal engine", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
@@ -129,6 +135,34 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
             temporal_semantics='not_time_series',quality='unknown',payload=instrument.model_dump(mode='json'),
         ) for instrument in instruments]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
+    @app.post('/internal/v1/market/candles/ssi/hose-equity/daily')
+    def ingest_ssi_hose_equity_daily(value:SsiDailyOhlcIngest):
+        capability_id='ssi:market-data:candles.1d:equity:HOSE'
+        endpoint='Market/DailyOhlc'
+        gate.authorize(capability_id,'store',endpoint)
+        if value.from_date>value.to_date:raise ValueError('SSI DailyOhlc date range is invalid')
+        instrument=next((item for item in dataset_publisher.instrument_catalogue('ssi') if item.id==value.instrument_id),None)
+        if instrument is None:raise ValueError('instrument is not present in the authorized provider catalogue')
+        provider=provider_router.providers['ssi']
+        candles=provider.fetch_hose_equity_daily(instrument,value.from_date,value.to_date,credential=value.credential)
+        if not candles:raise ValueError('SSI returned no HOSE daily candles')
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='candles.1d',source_id=candle.source_id,
+            observed_at=candle.available_at,available_at=candle.available_at,revision=candle.revision,
+            schema_version='1',parser_version='ssi-daily-ohlc-1',unit='unknown',
+            currency=None,source_timezone='Asia/Ho_Chi_Minh',temporal_semantics='period_end',
+            adjustment_state='unknown',quality='unknown',payload=candle.model_dump(mode='json'),
+        ) for candle in candles]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
+    @app.get('/internal/v1/market/provider-candles')
+    def provider_candles(provider_id:str,instrument_id:str):
+        route_key='candles.1d:equity:HOSE'
+        capability_id=f'{provider_id}:market-data:{route_key}'
+        if provider_router.policy.datasets.get(route_key)!=capability_id:
+            raise ValueError('provider candle dataset is not selected in routing policy')
+        return dataset_publisher.candle_snapshot(provider_id,instrument_id)
 
     @app.get('/internal/v1/backtest/data')
     def detailed_data():return [TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures').manifest()]
