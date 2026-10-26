@@ -21,8 +21,8 @@ const instruments:Instrument[]=[
  {id:'VN:BOND01',venue:'HNX',native_symbol:'BOND01',instrument_class:'bond',name:'Synthetic Bond',is_synthetic:true},
 ];
 const candles:Candle[]=[
- {open_time:'2026-10-19T02:00:00Z',close_time:'2026-10-19T09:00:00Z',available_at:'2026-10-19T09:00:00Z',open:'100',high:'112',low:'99',close:'110',volume:'1200',is_closed:true},
- {open_time:'2026-10-20T02:00:00Z',close_time:'2026-10-20T09:00:00Z',available_at:'2026-10-20T09:00:00Z',open:'110',high:'115',low:'108',close:'109',volume:'1500',is_closed:true},
+ {open_time:'2026-10-19T02:00:00Z',close_time:'2026-10-19T09:00:00Z',available_at:'2026-10-19T09:00:00Z',open:'100',high:'112',low:'99',close:'110',volume:'1200',currency:'VND',price_unit:'VND/share',volume_unit:'share',is_closed:true},
+ {open_time:'2026-10-20T02:00:00Z',close_time:'2026-10-20T09:00:00Z',available_at:'2026-10-20T09:00:00Z',open:'110',high:'115',low:'108',close:'109',volume:'1500',currency:'VND',price_unit:'VND/share',volume_unit:'share',is_closed:true},
 ];
 const snapshot:Snapshot={snapshot_id:'fixture-market-snapshot',instrument:instruments[0],quality:{state:'complete',gaps:[],adjustment:'unadjusted'},candles};
 let resizeCallback:ResizeObserverCallback|undefined;
@@ -58,6 +58,9 @@ describe('Market ECharts chart',()=>{
   expect(option.dataZoom[0]).toMatchObject({type:'inside',zoomOnMouseWheel:true,moveOnMouseMove:true});
   expect(option.tooltip.axisPointer.type).toBe('cross');
   expect(option.tooltip.formatter([{axisValueLabel:'20/10/2026',value:[110,109,108,115]}])).toContain('High: 115');
+  expect(screen.getByText(/Currency: VND · Prices: VND\/share · Volume: share/)).toBeDefined();
+  expect(screen.getByRole('columnheader',{name:'OPEN · VND/share'})).toBeDefined();
+  expect(screen.getByRole('columnheader',{name:'VOLUME · share'})).toBeDefined();
   resizeCallback?.([{contentRect:{width:640}} as ResizeObserverEntry],{} as ResizeObserver);
   expect(echarts.instance.resize).toHaveBeenCalledWith({width:640});
  });
