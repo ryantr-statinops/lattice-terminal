@@ -39,6 +39,7 @@ const mockRouting: RoutingPolicy = {
   realtime_provider: 'fixture',
   financials_provider: 'tcbs',
   fallback_enabled: true,
+  datasets: {},
 };
 
 const mockCapabilities: ProviderCapability[] = [

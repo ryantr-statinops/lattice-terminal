@@ -38,6 +38,7 @@ export type RoutingPolicy = {
   realtime_provider: string;
   financials_provider: string;
   fallback_enabled: boolean;
+  datasets: Record<string, string>;
 };
 
 const routeCapabilityGroups = {

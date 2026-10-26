@@ -55,17 +55,17 @@ func TestProviderRoutingPersistsAndAppliesPatch(t *testing.T) {
 	}
 
 	update := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPut, "/api/v1/providers/routing", strings.NewReader(`{"historical_provider":"ssi","fallback_enabled":false}`))
+	request := httptest.NewRequest(http.MethodPut, "/api/v1/providers/routing", strings.NewReader(`{"historical_provider":"ssi","fallback_enabled":false,"datasets":{"candles.1d:equity:HOSE":"ssi"}}`))
 	mux.ServeHTTP(update, request)
 	if update.Code != http.StatusOK {
 		t.Fatalf("update response = %d %s", update.Code, update.Body.String())
 	}
-	want := store.RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "fixture", FinancialsProvider: "tcbs", FallbackEnabled: false}
-	if applied != want {
+	want := store.RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "fixture", FinancialsProvider: "tcbs", FallbackEnabled: false, Datasets: map[string]string{"candles.1d:equity:HOSE": "ssi"}}
+	if applied.HistoricalProvider != want.HistoricalProvider || applied.RealtimeProvider != want.RealtimeProvider || applied.FinancialsProvider != want.FinancialsProvider || applied.FallbackEnabled != want.FallbackEnabled || applied.Datasets["candles.1d:equity:HOSE"] != "ssi" {
 		t.Fatalf("engine got %#v, want %#v", applied, want)
 	}
 	stored, err := db.RoutingPolicy()
-	if err != nil || stored != want {
+	if err != nil || stored.HistoricalProvider != want.HistoricalProvider || stored.RealtimeProvider != want.RealtimeProvider || stored.FinancialsProvider != want.FinancialsProvider || stored.FallbackEnabled != want.FallbackEnabled || stored.Datasets["candles.1d:equity:HOSE"] != "ssi" {
 		t.Fatalf("SQLite policy = %#v, want %#v, err=%v", stored, want, err)
 	}
 }

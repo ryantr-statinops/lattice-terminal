@@ -181,10 +181,11 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 		a.routingMu.Lock()
 		defer a.routingMu.Unlock()
 		var patch struct {
-			HistoricalProvider *string `json:"historical_provider"`
-			RealtimeProvider   *string `json:"realtime_provider"`
-			FinancialsProvider *string `json:"financials_provider"`
-			FallbackEnabled    *bool   `json:"fallback_enabled"`
+			HistoricalProvider *string           `json:"historical_provider"`
+			RealtimeProvider   *string           `json:"realtime_provider"`
+			FinancialsProvider *string           `json:"financials_provider"`
+			FallbackEnabled    *bool             `json:"fallback_enabled"`
+			Datasets           map[string]string `json:"datasets"`
 		}
 		if !Read(w, r, &patch) {
 			return
@@ -219,6 +220,9 @@ func (a *API) providerRoutes(m *http.ServeMux) {
 		}
 		if patch.FallbackEnabled != nil {
 			policy.FallbackEnabled, changed = *patch.FallbackEnabled, true
+		}
+		if patch.Datasets != nil {
+			policy.Datasets, changed = patch.Datasets, true
 		}
 		if !changed {
 			JSON(w, http.StatusBadRequest, map[string]string{"error": "routing patch is empty"})

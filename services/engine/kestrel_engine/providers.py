@@ -472,6 +472,7 @@ class RoutingPolicy(BaseModel):
     realtime_provider: str = 'fixture'
     financials_provider: str = 'tcbs'
     fallback_enabled: bool = True
+    datasets: dict[str, str] = Field(default_factory=dict)
 
 
 ROUTING_CAPABILITY_GROUPS = {
