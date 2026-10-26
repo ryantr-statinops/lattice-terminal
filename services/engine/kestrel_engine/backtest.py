@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from types import MappingProxyType
 import numpy as np
-from .execution import MarketCalendar,Order,quote_fill
+from .execution import FeeTaxSchedule,MarketCalendar,Order,quote_fill
 from .stream import Reconciler
 from .tapes import TapeRepository
 
@@ -18,11 +18,14 @@ class HistoricalView:
     positions:MappingProxyType
 
 class Replay:
-    def __init__(self,events,rules,capital,calendar:MarketCalendar|None=None):
-        self.events=events;self.rules=rules.model_copy(deep=True);self.calendar=(calendar or MarketCalendar.from_rule_pack(self.rules)).model_copy(deep=True);self.initial=Decimal(capital)
+    def __init__(self,events,rules,capital,calendar:MarketCalendar|None=None,cost_schedule:FeeTaxSchedule|None=None):
+        self.events=events;self.rules=rules.model_copy(deep=True);self.calendar=(calendar or MarketCalendar.from_rule_pack(self.rules)).model_copy(deep=True);self.cost_schedule=(cost_schedule or FeeTaxSchedule.from_rule_pack(self.rules)).model_copy(deep=True);self.initial=Decimal(capital)
         if (self.calendar.venue,self.calendar.board)!=(self.rules.venue,self.rules.board):raise ValueError('calendar venue/board does not match selected rule pack')
+        if (self.cost_schedule.venue,self.cost_schedule.board,self.cost_schedule.instrument_class)!=(self.rules.venue,self.rules.board,self.rules.instrument_class):raise ValueError('fee/tax schedule scope does not match selected rule pack')
         frozen_calendar=json.dumps(self.calendar.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
         self.calendar_snapshot_id=hashlib.sha256(frozen_calendar.encode()).hexdigest()
+        frozen_costs=json.dumps(self.cost_schedule.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
+        self.cost_schedule_snapshot_id=hashlib.sha256(frozen_costs.encode()).hexdigest()
         if not self.initial.is_finite() or self.initial<=0:raise ValueError('positive decimal capital required')
         self.cash=self.initial;self.orders=[];self.reserved={};self.positions={};self.settled={};self.pending_shares=[];self.pending_cash=[];self.sell_reserved={};self.fills=[];self.curve=[];self.marks={}
     def settle(self,day):
@@ -36,9 +39,10 @@ class Replay:
         from .execution import validate_order
         order=Order(id=f'order-{len(self.orders)+1}-{event.sequence}',instrument_id=event.instrument_id,side=intent['side'],order_type='LO',limit_price=intent['limit_price'],quantity=intent['quantity'],created_at=event.received_at)
         validate_order(order,self.rules,event.event_time.date())
+        self.cost_schedule.check(event.event_time.date())
         q=Decimal(order.quantity)
         if order.side=='buy':
-            budget=Decimal(order.limit_price)*q*(1+Decimal(self.rules.fee_rate))
+            budget=Decimal(order.limit_price)*q*(1+Decimal(self.cost_schedule.fee_rate))
             if budget>self.cash:raise ValueError('insufficient backtest cash')
             self.cash-=budget;self.reserved[order.id]=budget
         else:
@@ -64,7 +68,7 @@ class Replay:
                 order=pending['order']
                 if pending['remaining']<=0:continue
                 available=event.model_copy(update={'bid_size':str(bid_left),'ask_size':str(ask_left)})
-                fill=quote_fill(order,available,self.rules,fresh,str(pending['remaining']),self.calendar)
+                fill=quote_fill(order,available,self.rules,fresh,str(pending['remaining']),self.calendar,self.cost_schedule)
                 if fill is None:continue
                 q=Decimal(fill.quantity);price=Decimal(fill.price);fee=Decimal(fill.fee);tax=Decimal(fill.tax)
                 if order.side=='buy':ask_left-=q
@@ -72,7 +76,7 @@ class Replay:
                 pending['remaining']-=q
                 symbol=fill.instrument_id
                 if fill.side=='buy':
-                    released=Decimal(order.limit_price)*q*(1+Decimal(self.rules.fee_rate));self.reserved[order.id]-=released;self.cash+=released-price*q-fee
+                    released=Decimal(order.limit_price)*q*(1+Decimal(self.cost_schedule.fee_rate));self.reserved[order.id]-=released;self.cash+=released-price*q-fee
                     self.positions[symbol]=self.positions.get(symbol,Decimal(0))+q;self.pending_shares.append((fill.settlement_date,symbol,q))
                 else:
                     self.positions[symbol]-=q;self.settled[symbol]-=q;self.sell_reserved[symbol]-=q;self.pending_cash.append((fill.settlement_date,price*q-fee-tax))
@@ -86,7 +90,7 @@ class Replay:
             self.curve.append((event.event_time.isoformat(),str(self.nav())))
         self.cash+=sum(self.reserved.values());self.reserved.clear()
         values=np.array([float(v) for _,v in self.curve]);peak=np.maximum.accumulate(values);drawdown=(values/peak-1)
-        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'rule_pack':self.rules.id,'calendar_id':self.calendar.id,'calendar_snapshot_id':self.calendar_snapshot_id,'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
+        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'rule_pack':self.rules.id,'calendar_id':self.calendar.id,'calendar_snapshot_id':self.calendar_snapshot_id,'fee_tax_schedule_id':self.cost_schedule.id,'fee_tax_schedule_snapshot_id':self.cost_schedule_snapshot_id,'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
 
 class BacktestContext:
     def __init__(self,base):self._base=base;self.params=base.params;self._report=None

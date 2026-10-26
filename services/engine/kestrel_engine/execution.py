@@ -163,6 +163,81 @@ class CalendarRegistry:
         matches[0].check(day)
         return matches[0]
 
+class FeeTaxSchedule(Record):
+    """Immutable version of transaction costs for a venue and instrument class."""
+
+    model_config = ConfigDict(extra='forbid', frozen=True)
+    id: str
+    venue: str
+    board: str
+    instrument_class: str
+    effective_from: date
+    effective_to: date
+    fee_rate: str
+    sell_tax_rate: str
+    synthetic: bool = False
+    verified: bool = False
+    evidence: tuple[str, ...] = ()
+
+    @field_validator('fee_rate','sell_tax_rate')
+    @classmethod
+    def valid_rate(cls, value):
+        decimal_text(value)
+        if not Decimal(0) <= Decimal(value) <= 1:
+            raise ValueError('fee and tax rates must be between zero and one')
+        return value
+
+    def check(self, day: date) -> None:
+        if not self.effective_from <= day <= self.effective_to:
+            raise ValueError('no effective-dated fee/tax schedule')
+        if not self.synthetic and (not self.verified or not self.evidence):
+            raise ValueError('production fee/tax schedule requires verified evidence')
+
+    @classmethod
+    def from_rule_pack(cls, rules: RulePack) -> 'FeeTaxSchedule':
+        return cls(
+            id=f'{rules.id}:costs', venue=rules.venue, board=rules.board,
+            instrument_class=rules.instrument_class, effective_from=rules.effective_from,
+            effective_to=rules.effective_to, fee_rate=rules.fee_rate,
+            sell_tax_rate=rules.sell_tax_rate, synthetic=rules.synthetic,
+            verified=rules.verified, evidence=tuple(rules.evidence),
+        )
+
+
+class FeeTaxScheduleRegistry:
+    def __init__(self, schedules: Iterable[FeeTaxSchedule] = ()):
+        self._schedules: dict[str, FeeTaxSchedule] = {}
+        for schedule in schedules:
+            self.register(schedule)
+
+    def register(self, schedule: FeeTaxSchedule) -> None:
+        if schedule.id in self._schedules:
+            raise ValueError(f'duplicate fee/tax schedule id: {schedule.id}')
+        for existing in self._schedules.values():
+            same_scope = (
+                existing.venue == schedule.venue
+                and existing.board == schedule.board
+                and existing.instrument_class == schedule.instrument_class
+            )
+            overlaps = schedule.effective_from <= existing.effective_to and existing.effective_from <= schedule.effective_to
+            if same_scope and overlaps:
+                raise ValueError(f'overlapping fee/tax schedule dates: {existing.id} and {schedule.id}')
+        self._schedules[schedule.id] = schedule
+
+    def resolve(self, venue: str, board: str, instrument_class: str, day: date) -> FeeTaxSchedule:
+        matches = [
+            schedule for schedule in self._schedules.values()
+            if schedule.venue == venue and schedule.board == board
+            and schedule.instrument_class == instrument_class
+            and schedule.effective_from <= day <= schedule.effective_to
+        ]
+        if not matches:
+            raise ValueError('no fee/tax schedule for venue, class, and date')
+        if len(matches) > 1:
+            raise ValueError('ambiguous fee/tax schedule')
+        matches[0].check(day)
+        return matches[0]
+
 class FillModel(Record):
     id: str
     venue: str
@@ -263,6 +338,7 @@ class Fill(Record):
     event_time:AwareDatetime
     settlement_date:date
     rule_pack_id:str
+    fee_tax_schedule_id:str|None=None
     simulated:Literal[True]=True
     model:str='displayed-quote-crossing; queue priority not reconstructed'
 
@@ -275,8 +351,12 @@ def validate_order(order:Order,rules:RulePack,day:date,calendar:MarketCalendar|N
     if order.order_type!='LO':raise ValueError('auction/market-order fill capability not yet verified or implemented')
     if Decimal(order.limit_price)%Decimal(rules.tick)!=0 or Decimal(order.quantity)%Decimal(rules.lot)!=0:raise ValueError('tick/lot violation')
 
-def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining:str|None=None,calendar:MarketCalendar|None=None)->Fill|None:
+def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining:str|None=None,calendar:MarketCalendar|None=None,cost_schedule:FeeTaxSchedule|None=None)->Fill|None:
     validate_order(order,rules,event.event_time.date(),calendar)
+    if cost_schedule is not None:
+        cost_schedule.check(event.event_time.date())
+        if (cost_schedule.venue,cost_schedule.board,cost_schedule.instrument_class)!=(rules.venue,rules.board,rules.instrument_class):
+            raise ValueError('fee/tax schedule scope does not match selected rule pack')
     if not fresh or event.instrument_id!=order.instrument_id or event.kind!='quote' or event.session!=rules.session or event.trading_status!='trading':return None
     if event.event_time<=order.created_at:return None
     if rules.synthetic!=event.is_synthetic:raise ValueError('synthetic/production boundary mismatch')
@@ -293,4 +373,6 @@ def quote_fill(order:Order,event:MarketEvent,rules:RulePack,fresh:bool,remaining
     if amount<=0:return None
     gross=p*amount
     settlement_date=calendar.settlement(event.event_time.date(),rules.settlement_days) if calendar is not None else rules.settlement(event.event_time.date())
-    return Fill(order_id=order.id,instrument_id=order.instrument_id,side=order.side,quantity=str(amount),price=str(p),fee=str(gross*Decimal(rules.fee_rate)),tax=str(gross*Decimal(rules.sell_tax_rate) if order.side=='sell' else Decimal(0)),event_id=event.id,event_time=event.event_time,settlement_date=settlement_date,rule_pack_id=rules.id)
+    fee_rate=cost_schedule.fee_rate if cost_schedule is not None else rules.fee_rate
+    sell_tax_rate=cost_schedule.sell_tax_rate if cost_schedule is not None else rules.sell_tax_rate
+    return Fill(order_id=order.id,instrument_id=order.instrument_id,side=order.side,quantity=str(amount),price=str(p),fee=str(gross*Decimal(fee_rate)),tax=str(gross*Decimal(sell_tax_rate) if order.side=='sell' else Decimal(0)),event_id=event.id,event_time=event.event_time,settlement_date=settlement_date,rule_pack_id=rules.id,fee_tax_schedule_id=cost_schedule.id if cost_schedule is not None else None)

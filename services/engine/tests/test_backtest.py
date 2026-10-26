@@ -22,6 +22,8 @@ def test_backtest_history_only_and_conserved_cash():
     assert report['sharpe'] is None
     assert report['calendar_id']==f'{rules.id}:calendar'
     assert len(report['calendar_snapshot_id'])==64
+    assert report['fee_tax_schedule_id']==f'{rules.id}:costs'
+    assert len(report['fee_tax_schedule_snapshot_id'])==64
 
 def test_daily_snapshot_not_accepted_as_detailed_tape():
     repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures')

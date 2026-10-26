@@ -1,6 +1,6 @@
 from datetime import date,datetime,timedelta,timezone
 import pytest
-from kestrel_engine.execution import CalendarRegistry,FillModel,FillModelRegistry,MarketCalendar,Order,RulePack,RulePackRegistry,quote_fill
+from kestrel_engine.execution import CalendarRegistry,FeeTaxSchedule,FeeTaxScheduleRegistry,FillModel,FillModelRegistry,MarketCalendar,Order,RulePack,RulePackRegistry,quote_fill
 from kestrel_engine.stream import MarketEvent
 
 def fixture():
@@ -82,3 +82,19 @@ def test_calendar_registry_resolves_effective_venue_calendar():
         registry.resolve('HNX','REGULAR',date(2026,10,1))
     with pytest.raises(ValueError,match='non-trading'):
         registry.resolve('HOSE','REGULAR',date(2026,10,3))
+
+def test_fee_tax_schedule_is_versioned_by_market_scope_and_date():
+    rule,order,event=fixture()
+    schedule=FeeTaxSchedule(
+        id='synthetic-costs-v1',venue='HOSE',board='REGULAR',instrument_class='equity',
+        effective_from=date(2026,1,1),effective_to=date(2026,12,31),fee_rate='0.01',
+        sell_tax_rate='0.005',synthetic=True,
+    )
+    registry=FeeTaxScheduleRegistry([schedule])
+    selected=registry.resolve('HOSE','REGULAR','equity',date(2026,10,1))
+    fill=quote_fill(order,event,rule,True,cost_schedule=selected)
+    assert fill.fee=='3.96'
+    assert fill.tax=='0'
+    assert fill.fee_tax_schedule_id=='synthetic-costs-v1'
+    with pytest.raises(ValueError,match='no fee/tax schedule'):
+        registry.resolve('HOSE','REGULAR','equity',date(2027,1,1))
