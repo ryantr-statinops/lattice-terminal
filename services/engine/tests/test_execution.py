@@ -1,6 +1,6 @@
 from datetime import date,datetime,timedelta,timezone
 import pytest
-from kestrel_engine.execution import Order,RulePack,quote_fill
+from kestrel_engine.execution import Order,RulePack,RulePackRegistry,quote_fill
 from kestrel_engine.stream import MarketEvent
 
 def fixture():
@@ -26,3 +26,23 @@ def test_rule_pack_cannot_be_applied_to_another_venue_or_board():
     rule,order,event=fixture()
     for identity in ['HNX:REGULAR:equity:SYN','HOSE:ODD:equity:SYN','HOSE:REGULAR:derivative:SYN']:
         with pytest.raises(ValueError,match='venue/board/class'):quote_fill(order.model_copy(update={'instrument_id':identity}),event,rule,True)
+
+def test_rule_pack_registry_resolves_effective_dates_and_rejects_gaps():
+    rule,_,_=fixture()
+    next_rule=rule.model_copy(update={
+        'id':'SYNTHETIC-NEXT',
+        'effective_from':date(2027,1,1),
+        'effective_to':date(2027,12,31),
+    })
+    registry=RulePackRegistry([rule,next_rule])
+    assert registry.resolve('HOSE','REGULAR','equity',date(2026,10,1)).id=='SYNTHETIC-ONLY'
+    assert registry.resolve('HOSE','REGULAR','equity',date(2027,1,1)).id=='SYNTHETIC-NEXT'
+    assert registry.get('SYNTHETIC-ONLY') is rule
+    with pytest.raises(ValueError,match='no effective-dated rule pack'):
+        registry.resolve('HOSE','REGULAR','equity',date(2028,1,1))
+
+def test_rule_pack_registry_rejects_overlapping_rules_for_same_scope():
+    rule,_,_=fixture()
+    overlapping=rule.model_copy(update={'id':'OVERLAPPING'})
+    with pytest.raises(ValueError,match='overlapping rule pack'):
+        RulePackRegistry([rule,overlapping])

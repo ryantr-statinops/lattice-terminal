@@ -1,7 +1,7 @@
 """Detailed quote fill approximation. Never accepts OHLC as executable liquidity."""
 from datetime import date
 from decimal import Decimal,ROUND_FLOOR
-from typing import Literal
+from typing import Iterable,Literal
 from pydantic import AwareDatetime,Field,field_validator
 from .models import Record,decimal_text
 from .stream import MarketEvent
@@ -38,6 +38,48 @@ class RulePack(Record):
         calendar=sorted(set(self.settlement_calendar));index=calendar.index(day)+self.settlement_days
         if index>=len(calendar):raise ValueError('settlement calendar coverage missing')
         return calendar[index]
+
+class RulePackRegistry:
+    """Select one immutable venue rule pack by instrument identity and effective date."""
+
+    def __init__(self, packs: Iterable[RulePack] = ()):
+        self._packs: dict[str, RulePack] = {}
+        for pack in packs:
+            self.register(pack)
+
+    def register(self, pack: RulePack) -> None:
+        if pack.id in self._packs:
+            raise ValueError(f'duplicate rule pack id: {pack.id}')
+        for existing in self._packs.values():
+            same_scope = (
+                existing.venue == pack.venue
+                and existing.board == pack.board
+                and existing.instrument_class == pack.instrument_class
+            )
+            overlaps = pack.effective_from <= existing.effective_to and existing.effective_from <= pack.effective_to
+            if same_scope and overlaps:
+                raise ValueError(f'overlapping rule pack effective dates: {existing.id} and {pack.id}')
+        self._packs[pack.id] = pack
+
+    def get(self, rule_pack_id: str) -> RulePack:
+        try:
+            return self._packs[rule_pack_id]
+        except KeyError as error:
+            raise ValueError(f'rule pack not registered: {rule_pack_id}') from error
+
+    def resolve(self, venue: str, board: str, instrument_class: str, day: date) -> RulePack:
+        matches = [
+            pack for pack in self._packs.values()
+            if pack.venue == venue
+            and pack.board == board
+            and pack.instrument_class == instrument_class
+            and pack.effective_from <= day <= pack.effective_to
+        ]
+        if not matches:
+            raise ValueError('no effective-dated rule pack for venue, board, class, and date')
+        if len(matches) > 1:
+            raise ValueError('ambiguous effective-dated rule pack')
+        return matches[0]
 
 class Order(Record):
     id:str
