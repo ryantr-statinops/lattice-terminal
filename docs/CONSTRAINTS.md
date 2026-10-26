@@ -16,7 +16,7 @@ Research, Backtest and Strategy have distinct contracts/files/history. Train/Tes
 
 ## Sources and simulation
 
-SSI FastConnect Data only; no real orders/Trading, margin, short or leverage. Independent flags: documented/access-tested/rights-confirmed/approved. A separately authorized scoped probe may collect access evidence before production approval; no implicit storage/display/research/export rights. No live SSI transport/calls in this build.
+Multiple Vietnamese broker and datafeed providers, including paid providers, may be integrated for all their documented asset/data classes. Each provider × dataset capability requires independent documentation, entitlement, rights, quality and operational evidence. Broker account reads are read-only and remain separate from local fund/ledger data. No broker order submission, amendment or cancellation routes. Provider checks are explicit user actions; listing status must not make upstream calls. No live source calls before the existing scoped authorization and source-rights gate is satisfied.
 
 Unknown metrics/prices/warm-up remain unavailable, never fake zeros. Detailed synthetic LO quote replay uses fictional effective rules. Real sessions, tick/lot, price limits, auctions, costs, corporate actions and settlement availability need [evidence](07-portfolio/vn-market-rules.md). No OHLC/daily-open fallback.
 
@@ -24,4 +24,4 @@ Unknown metrics/prices/warm-up remain unavailable, never fake zeros. Detailed sy
 
 VND decimal accounting, weighted-average cost; transactional independent Manual/Strategy allocations. Portfolio counts allocation cash once. Backtest capital never touches funds. Stop/reconcile does not liquidate positions or release unsettled obligations. Settled tracking records remain distinct from simulated fills.
 
-News is independent. Model Lab/optimization, factor research, 3D surfaces, derivatives and ETFs are later work. [Remaining gates](13-rebuild/progress.md).
+Ingest and analysis may cover asset classes before simulation support exists. Backtest and paper execution require point-in-time data, effective rules and a matching fill model; unsupported classes remain unavailable for simulation. Strategy can emit signals from live feed and paper replay. Notifications include local inbox, unread badge and toast, with optional Telegram bot delivery to one private chat. Paper replay defaults to local-only delivery. Gmail is out of scope. News is independent. Model Lab/optimization and 3D surfaces remain deferred. [Remaining gates](13-rebuild/progress.md).

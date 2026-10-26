@@ -27,6 +27,12 @@ Accepted rebuild: 2026-10-19. Implementation status reviewed 2026-10-20; this is
 | RT-ADR-029 | Three separate program kinds; sidebar files, no file tabs | Research run / Backtest replay / Strategy callbacks, distinct runs |
 | RT-ADR-030 | Named VND funds and independent allocation ledgers | Decimal/weighted-average; Backtest doesn't touch funds |
 | RT-ADR-031 | Lock/close/switch file keeps jobs running | Stop/restart/restore explicit; no auto-resume |
+| RT-ADR-032 | Multi-provider Vietnamese market data; ingest all supported provider asset classes | Each provider × dataset is gated independently by access, rights, quality and operating evidence; no implicit fallback |
+| RT-ADR-033 | Broker accounts are synchronized read-only and shown apart from local funds | Broker snapshots never create or mutate local fund ledger entries |
+| RT-ADR-034 | No broker order writes; backtest/paper remain local | Simulations require a dataset-specific rule pack and fill model |
+| RT-ADR-035 | Signals may come from Strategy live feed or paper replay | Signal-only mode is distinct from paper order intents |
+| RT-ADR-036 | Local notification inbox, unread badge and toast; optional single-chat Telegram | Replay messages stay local unless Telegram replay delivery is enabled; Gmail excluded |
+| RT-ADR-037 | Each code change has one independently reviewable behavior and lands directly on main | Commit locally; no automatic push |
 
 ## Rationale and review triggers
 

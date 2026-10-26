@@ -10,6 +10,8 @@ The approved [rebuild](../13-rebuild/README.md) and [constraints](../CONSTRAINTS
 6. VND funds/allocations use transactional decimal accounting; no double counting or implicit liquidation.
 7. Tracking settled records and simulated fills remain separate.
 8. Session password is not disk encryption; SSI credentials stay in the OS keyring and are never put in browser state, Git or logs. Compose's temporary secret-file export is plaintext plumbing only; it does not enable SSI access.
-9. No live source calls without scoped authorization/evidence; no real-order routes.
-10. News stays independent; Model Lab/optimization/3D/future classes stay deferred.
-11. Rebuild commits are directly on main, one per milestone, no automatic push or remote rename.
+9. No live source calls without scoped authorization/evidence; broker access is read-only and there are no real-order routes.
+10. Ingest all asset classes offered by selected providers; simulation stays unavailable until that class has approved data, effective rules and a fill model.
+11. Broker account snapshots stay separate from local fund ledgers. News stays independent; Model Lab/optimization/3D remain deferred.
+12. Local notifications include inbox, badge and toast; Telegram is optional and replay delivery defaults to the app only. Gmail is out of scope.
+13. Each code change has one independently reviewable behavior and is made directly on main; no automatic push or remote rename.
