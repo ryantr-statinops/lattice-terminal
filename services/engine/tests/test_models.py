@@ -14,3 +14,27 @@ def test_fixture_contract_and_strict_decimals():
         with pytest.raises(ValueError): decimal_text(value)
     with pytest.raises(ValidationError): Candle.model_validate(raw|{'open_time':'2026-01-01T00:00:00'})
     with pytest.raises(ValidationError): Candle.model_validate(raw|{'high':'1'})
+from kestrel_engine.models import ProviderInstrumentAlias
+
+
+def test_provider_instrument_alias_keeps_provider_identity_separate():
+    alias = ProviderInstrumentAlias(
+        stable_instrument_id='vn-equity:HOSE:HPG',
+        provider_id='provider-a',
+        provider_instrument_id='listing-123',
+        native_symbol='HPG',
+        venue='HOSE',
+    )
+    assert alias.stable_instrument_id == 'vn-equity:HOSE:HPG'
+    assert alias.provider_instrument_id == 'listing-123'
+    assert alias.provider_id == 'provider-a'
+
+
+def test_provider_instrument_alias_rejects_blank_identity():
+    with pytest.raises(ValueError, match='must not be blank'):
+        ProviderInstrumentAlias(
+            stable_instrument_id='vn-equity:HOSE:HPG',
+            provider_id='provider-a',
+            provider_instrument_id='listing-123',
+            native_symbol=' ',
+        )

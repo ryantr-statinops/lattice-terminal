@@ -38,6 +38,21 @@ class Instrument(Record):
     source_id: str = 'SYNTHETIC-FIXTURE'
     is_synthetic: bool = True
 
+class ProviderInstrumentAlias(Record):
+    """Maps one provider's native instrument identifier to a stable local ID."""
+    stable_instrument_id: str
+    provider_id: str
+    provider_instrument_id: str
+    native_symbol: str
+    venue: str | None = None
+
+    @field_validator('stable_instrument_id', 'provider_id', 'provider_instrument_id', 'native_symbol')
+    @classmethod
+    def required_identity(cls, value):
+        if not value.strip():
+            raise ValueError('instrument identity fields must not be blank')
+        return value
+
 class Candle(Record):
     instrument_id: str
     interval: Literal['1d','1m']
