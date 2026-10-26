@@ -1,7 +1,11 @@
 """Per-feed reconciliation state, independent of browser lifetime."""
+from __future__ import annotations
+
 from collections import deque
 from datetime import datetime,timedelta
 from pydantic import AwareDatetime,Field,field_validator
+from threading import RLock
+from typing import Callable,Protocol
 from .models import Record,decimal_text
 
 class MarketEvent(Record):
@@ -53,9 +57,88 @@ class Reconciler:
             self.state='stale';self.reason='no_recent_event';return False
         return self.state=='ready'
 
+class SubscriptionConnection(Protocol):
+    def set_instruments(self, instrument_ids: frozenset[str]) -> None: ...
+    def close(self) -> None: ...
+
+
 class Subscriptions:
-    """Multiplex consumers; unsubscribe cannot tear down another consumer's feed."""
-    def __init__(self):self.consumers={}
-    def set(self,consumer:str,keys:set[tuple[str,str]]):self.consumers[consumer]=set(keys)
-    def remove(self,consumer:str):self.consumers.pop(consumer,None)
-    def required(self):return set().union(*self.consumers.values()) if self.consumers else set()
+    """Share one provider connection across consumers and union their instruments."""
+    def __init__(self, connector: Callable[[str], SubscriptionConnection] | None = None):
+        self.consumers: dict[str, set[tuple[str, str]]] = {}
+        self.connector = connector
+        self._connections: dict[str, SubscriptionConnection] = {}
+        self._lock = RLock()
+
+    @staticmethod
+    def _desired(consumers: dict[str, set[tuple[str, str]]]) -> dict[str, frozenset[str]]:
+        result: dict[str, set[str]] = {}
+        for keys in consumers.values():
+            for feed, instrument_id in keys:
+                result.setdefault(feed, set()).add(instrument_id)
+        return {feed: frozenset(instruments) for feed, instruments in result.items()}
+
+    def set(self, consumer: str, keys: set[tuple[str, str]]) -> None:
+        if not consumer.strip():
+            raise ValueError('subscription consumer is required')
+        normalized = set(keys)
+        if any(not feed.strip() or not instrument_id.strip() for feed, instrument_id in normalized):
+            raise ValueError('subscription feed and instrument are required')
+        with self._lock:
+            candidate = dict(self.consumers)
+            candidate[consumer] = normalized
+            self._apply(candidate)
+
+    def remove(self, consumer: str) -> None:
+        with self._lock:
+            candidate = dict(self.consumers)
+            candidate.pop(consumer, None)
+            self._apply(candidate)
+
+    def required(self) -> set[tuple[str, str]]:
+        with self._lock:
+            return set().union(*self.consumers.values()) if self.consumers else set()
+
+    def close(self) -> None:
+        with self._lock:
+            connections, self._connections = self._connections, {}
+            self.consumers = {}
+            for connection in connections.values():
+                connection.close()
+
+    def _apply(self, candidate: dict[str, set[tuple[str, str]]]) -> None:
+        if self.connector is None:
+            self.consumers = candidate
+            return
+        old_desired = self._desired(self.consumers)
+        new_desired = self._desired(candidate)
+        staged: dict[str, SubscriptionConnection] = {}
+        changed: list[tuple[SubscriptionConnection, frozenset[str]]] = []
+        try:
+            for feed, instruments in sorted(new_desired.items()):
+                connection = self._connections.get(feed)
+                if connection is None:
+                    connection = self.connector(feed)
+                    staged[feed] = connection
+                    connection.set_instruments(instruments)
+                elif instruments != old_desired.get(feed, frozenset()):
+                    changed.append((connection, old_desired[feed]))
+                    connection.set_instruments(instruments)
+        except Exception:
+            for connection, previous in reversed(changed):
+                try:
+                    connection.set_instruments(previous)
+                except Exception:
+                    connection.close()
+                    self._connections = {key: value for key, value in self._connections.items() if value is not connection}
+            for connection in staged.values():
+                connection.close()
+            raise
+
+        active = {feed: self._connections[feed] for feed in new_desired if feed in self._connections}
+        active.update(staged)
+        for feed, connection in self._connections.items():
+            if feed not in new_desired:
+                connection.close()
+        self._connections = active
+        self.consumers = candidate
