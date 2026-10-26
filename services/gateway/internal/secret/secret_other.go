@@ -12,6 +12,18 @@ import (
 const keyringService = "KestrelTerminal/SSI-FC-DATA"
 const keyringAccount = "default"
 
+func getVaultKeyringValue() (string, error) {
+	value, err := keyring.Get(vaultKeyService, vaultKeyAccount)
+	if errors.Is(err, keyring.ErrNotFound) {
+		return "", errVaultMasterKeyMissing
+	}
+	return value, err
+}
+
+func setVaultKeyringValue(value string) error {
+	return keyring.Set(vaultKeyService, vaultKeyAccount, value)
+}
+
 type Credential struct {
 	ConsumerID     string
 	ConsumerSecret string
