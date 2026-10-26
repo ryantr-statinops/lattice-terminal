@@ -7,6 +7,7 @@ from kestrel_engine.providers import (
     SyntheticFixtureProvider,
     SsiFastConnectProvider,
     DnseBrokerProvider,
+    TcbsCommunityProvider,
 )
 
 class TestProviders(unittest.TestCase):
@@ -66,6 +67,15 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(vndirect.state, 'unknown')
         self.assertEqual(tcbs.state, 'unknown')
         self.assertIsNone(vndirect.latency_ms)
+
+    def test_tcbs_does_not_return_vndirect_data_under_tcbs_identity(self):
+        provider = TcbsCommunityProvider()
+        with patch.object(VndirectCommunityProvider, 'fetch_candles', side_effect=AssertionError('fallback called')):
+            with self.assertRaisesRegex(NotImplementedError, 'refusing to return VNDIRECT data'):
+                provider.fetch_candles('HPG', '1d', datetime.now(timezone.utc), datetime.now(timezone.utc))
+        with patch.object(VndirectCommunityProvider, 'fetch_instruments', side_effect=AssertionError('fallback called')):
+            with self.assertRaisesRegex(NotImplementedError, 'refusing to return VNDIRECT instruments'):
+                provider.fetch_instruments()
 
 if __name__ == '__main__':
     unittest.main()

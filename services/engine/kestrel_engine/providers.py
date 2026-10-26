@@ -190,13 +190,14 @@ class TcbsCommunityProvider(BaseMarketProvider):
             )
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
-        # Fallback to VNDirect UDF for bars if TCBS bars require auth
-        vnd = VndirectCommunityProvider()
-        return vnd.fetch_candles(symbol, interval, start, end)
+        raise NotImplementedError(
+            'TCBS candle ingestion is not implemented; refusing to return VNDIRECT data as TCBS'
+        )
 
     def fetch_instruments(self) -> list[Instrument]:
-        vnd = VndirectCommunityProvider()
-        return vnd.fetch_instruments()
+        raise NotImplementedError(
+            'TCBS instrument ingestion is not implemented; refusing to return VNDIRECT instruments as TCBS'
+        )
 
 class DnseBrokerProvider(BaseMarketProvider):
     """Official DNSE OpenAPI broker integration."""
