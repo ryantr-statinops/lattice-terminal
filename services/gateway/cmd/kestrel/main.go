@@ -51,6 +51,7 @@ func main() {
 	prepareSSISecret := flag.Bool("prepare-ssi-compose-secret", false, "write a temporary Compose secret file from the OS keyring")
 	cleanSSISecret := flag.Bool("clean-ssi-compose-secret", false, "remove the temporary Compose secret file")
 	bootstrapVault := flag.Bool("bootstrap-vault", false, "create the encrypted credential vault master key in the OS keyring")
+	migrateSSICredentials := flag.Bool("migrate-ssi-credentials", false, "copy legacy SSI credentials into the encrypted provider vault")
 	backup := flag.String("backup", "", "Offline backup ZIP outside the data directory")
 	restore := flag.String("restore", "", "Restore ZIP into a new -data directory")
 	diagnostics := flag.Bool("diagnostics", false, "Print redacted runtime configuration; no payloads")
@@ -80,7 +81,7 @@ func main() {
 		fmt.Println("Local account configuration is valid")
 		return
 	}
-	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret || *bootstrapVault {
+	if *backup != "" || *restore != "" || *reset || *credentials != "" || *prepareSSISecret || *cleanSSISecret || *bootstrapVault || *migrateSSICredentials {
 		lock, err := net.Listen("tcp", host.ListenAddress())
 		if err != nil {
 			log.Print("Stop Kestrel Terminal before offline maintenance")
@@ -119,6 +120,19 @@ func main() {
 				fmt.Println("Vault master key created in OS keyring")
 			} else {
 				fmt.Println("Vault master key already present in OS keyring")
+			}
+			return
+		}
+		if *migrateSSICredentials {
+			migrated, err := secret.MigrateLegacySSICredentials(*data)
+			if err != nil {
+				log.Print(err)
+				os.Exit(1)
+			}
+			if migrated {
+				fmt.Println("Legacy SSI credentials copied into encrypted provider vault")
+			} else {
+				fmt.Println("Encrypted provider vault already contains SSI market-data credentials")
 			}
 			return
 		}
