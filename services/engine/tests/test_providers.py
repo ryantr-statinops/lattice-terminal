@@ -137,6 +137,46 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(json.loads(request.data), {'consumerID': 'private-id', 'consumerSecret': 'private-secret'})
         self.assertEqual(request.get_method(), 'POST')
 
+    def test_ssi_authenticated_read_refreshes_token_once_after_unauthorized(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'private-id', 'consumerSecret': 'private-secret'}
+        expired = urllib.error.HTTPError('https://fc-data.ssi.com.vn/api/v2/Market/Securities', 401, 'expired', None, None)
+        responses = [
+            io.BytesIO(b'{"status":200,"data":{"accessToken":"token-one"}}'),
+            expired,
+            io.BytesIO(b'{"status":200,"data":{"accessToken":"token-two"}}'),
+            io.BytesIO(b'{"status":"Success","data":[{"Symbol":"AAA"}]}'),
+        ]
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=responses) as open_url:
+            payload = provider.get_json('Securities', {'market': 'HOSE', 'pageIndex': 1}, credential=credential)
+
+        self.assertEqual(payload['data'], [{'Symbol': 'AAA'}])
+        calls = open_url.call_args_list
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(calls[0].args[0].full_url, 'https://fc-data.ssi.com.vn/api/v2/Market/AccessToken')
+        self.assertEqual(calls[1].args[0].get_header('Authorization'), 'Bearer token-one')
+        self.assertEqual(calls[2].args[0].full_url, 'https://fc-data.ssi.com.vn/api/v2/Market/AccessToken')
+        self.assertEqual(calls[3].args[0].get_header('Authorization'), 'Bearer token-two')
+        self.assertEqual(provider.consumer_id, '')
+        self.assertEqual(provider.consumer_secret, '')
+
+    def test_ssi_authenticated_read_reports_failed_refresh_without_secret(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'private-id', 'consumerSecret': 'private-secret'}
+        expired_read = urllib.error.HTTPError('https://fc-data.ssi.com.vn/api/v2/Market/Securities', 401, 'expired', None, None)
+        denied_refresh = urllib.error.HTTPError('https://fc-data.ssi.com.vn/api/v2/Market/AccessToken', 401, 'denied', None, None)
+        responses = [io.BytesIO(b'{"status":200,"data":{"accessToken":"token-one"}}'), expired_read, denied_refresh]
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=responses):
+            with self.assertRaisesRegex(ValueError, 'token refresh failed') as error:
+                provider.get_json('Securities', credential=credential)
+        self.assertNotIn('private-secret', str(error.exception))
+
+    def test_ssi_authenticated_read_rejects_unknown_endpoint_before_network(self):
+        provider = SsiFastConnectProvider()
+        with patch('kestrel_engine.providers.urllib.request.urlopen', side_effect=AssertionError('network called')):
+            with self.assertRaisesRegex(ValueError, 'invalid SSI market-data endpoint'):
+                provider.get_json('https://example.test', credential={'consumerID':'id','consumerSecret':'secret'})
+
     def test_ssi_rejected_credentials_do_not_leak_and_listing_does_not_probe(self):
         provider = SsiFastConnectProvider()
         provider.configure_credentials({'consumerID': 'private-id', 'consumerSecret': 'private-secret'})

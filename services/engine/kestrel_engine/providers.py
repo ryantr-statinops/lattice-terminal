@@ -1,12 +1,14 @@
 """Multi-provider abstractions for market data feeds (VNDIRECT, TCBS, DNSE, SSI, Local, Fixture)."""
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import threading
 import time
 from typing import Any, Callable, Literal
 import urllib.error
+from urllib.parse import urlencode
 import urllib.request
 from pydantic import BaseModel, Field
 
@@ -366,6 +368,7 @@ class SsiFastConnectProvider(BaseMarketProvider):
         self.consumer_secret = ''
         self.configured = False
         self.access_token = ''
+        self._credential_fingerprint = ''
 
     def configure_credentials(self, credential: dict[str, str]) -> None:
         if not isinstance(credential, dict):
@@ -376,6 +379,9 @@ class SsiFastConnectProvider(BaseMarketProvider):
             raise ValueError('SSI market-data credentials require consumerID and consumerSecret')
         self.consumer_id = consumer_id
         self.consumer_secret = consumer_secret
+        self._credential_fingerprint = hashlib.sha256(
+            (consumer_id + '\0' + consumer_secret).encode('utf-8')
+        ).hexdigest()
         self.configured = True
         self.access_token = ''
 
@@ -434,6 +440,53 @@ class SsiFastConnectProvider(BaseMarketProvider):
                 capabilities=self.capabilities, description=self.description, configured=True,
                 error='SSI market-data access-token request failed; verify service access and network settings',
             )
+
+    def get_json(self, endpoint: str, params: dict[str, str | int] | None = None, *, credential: dict[str, str]) -> dict:
+        """Perform an authenticated GET and refresh the SSI token once on HTTP 401."""
+        if endpoint not in {
+            'Securities', 'SecuritiesDetails', 'IndexComponents', 'IndexList',
+            'DailyOhlc', 'IntradayOhlc', 'DailyIndex', 'DailyStockPrice',
+        }:
+            raise ValueError('invalid SSI market-data endpoint')
+        query = urlencode(params or {})
+        url = f'{self.base_url}/{endpoint}' + (f'?{query}' if query else '')
+        consumer_id = credential.get('consumerID') or credential.get('consumer_id')
+        consumer_secret = credential.get('consumerSecret') or credential.get('consumer_secret')
+        if not isinstance(consumer_id, str) or not consumer_id.strip() or not isinstance(consumer_secret, str) or not consumer_secret.strip():
+            raise ValueError('SSI market-data credentials require consumerID and consumerSecret')
+        fingerprint = hashlib.sha256((consumer_id + '\0' + consumer_secret).encode('utf-8')).hexdigest()
+
+        if self._credential_fingerprint != fingerprint or not self.access_token:
+            self.configure_credentials(credential)
+            status = self.ping()
+            if status.state != 'connected':
+                raise ValueError('SSI market-data authentication failed')
+
+        def read() -> dict:
+            request = urllib.request.Request(
+                url,
+                headers={'Authorization': f'Bearer {self.access_token}', 'Accept': 'application/json'},
+                method='GET',
+            )
+            with self._read(lambda: urllib.request.urlopen(request, timeout=10.0)) as response:
+                body = response.read(16 * 1024 * 1024 + 1)
+            if len(body) > 16 * 1024 * 1024:
+                raise ValueError('SSI market-data response exceeds the size limit')
+            payload = json.loads(body.decode('utf-8'))
+            if not isinstance(payload, dict):
+                raise ValueError('SSI market-data response must be an object')
+            return payload
+
+        try:
+            return read()
+        except urllib.error.HTTPError as error:
+            if error.code != 401:
+                raise
+        self.configure_credentials(credential)
+        status = self.ping()
+        if status.state != 'connected':
+            raise ValueError('SSI market-data token refresh failed')
+        return read()
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')
