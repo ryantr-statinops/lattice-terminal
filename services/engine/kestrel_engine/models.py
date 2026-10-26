@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import re
-from typing import Literal
+from typing import Any, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator, model_validator
 
 def decimal_text(value: str) -> str:
@@ -38,6 +38,7 @@ class Instrument(Record):
         'fx', 'crypto', 'commodity', 'macro_series', 'real_estate', 'unknown',
     ] = 'equity'
     name: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
     source_id: str = 'SYNTHETIC-FIXTURE'
     is_synthetic: bool = True
 

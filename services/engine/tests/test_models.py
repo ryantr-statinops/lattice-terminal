@@ -51,3 +51,17 @@ def test_instrument_accepts_additional_asset_classes(instrument_class):
         name='Test instrument',
     )
     assert instrument.instrument_class == instrument_class
+
+
+def test_instrument_preserves_asset_specific_metadata():
+    instrument = Instrument(
+        id='provider:future-123',
+        venue='HNX',
+        board='DERIVATIVES',
+        native_symbol='VN30F2612',
+        instrument_class='derivative',
+        name='VN30 Futures Dec 2026',
+        metadata={'underlying': 'VN30', 'expiry': '2026-12-17', 'multiplier': '100000'},
+    )
+    assert instrument.metadata['underlying'] == 'VN30'
+    assert instrument.metadata['multiplier'] == '100000'
