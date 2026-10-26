@@ -1,4 +1,103 @@
 {
+  "Candle": {
+    "additionalProperties": false,
+    "properties": {
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "close": {
+        "title": "Close",
+        "type": "string"
+      },
+      "close_time": {
+        "format": "date-time",
+        "title": "Close Time",
+        "type": "string"
+      },
+      "high": {
+        "title": "High",
+        "type": "string"
+      },
+      "instrument_id": {
+        "title": "Instrument Id",
+        "type": "string"
+      },
+      "interval": {
+        "enum": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "1d",
+          "1w",
+          "1mo"
+        ],
+        "title": "Interval",
+        "type": "string"
+      },
+      "is_closed": {
+        "title": "Is Closed",
+        "type": "boolean"
+      },
+      "low": {
+        "title": "Low",
+        "type": "string"
+      },
+      "open": {
+        "title": "Open",
+        "type": "string"
+      },
+      "open_time": {
+        "format": "date-time",
+        "title": "Open Time",
+        "type": "string"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "string"
+      },
+      "session": {
+        "title": "Session",
+        "type": "string"
+      },
+      "source_id": {
+        "default": "SYNTHETIC-FIXTURE",
+        "title": "Source Id",
+        "type": "string"
+      },
+      "volume": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Volume"
+      }
+    },
+    "required": [
+      "instrument_id",
+      "interval",
+      "open_time",
+      "close_time",
+      "available_at",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "is_closed",
+      "revision",
+      "session"
+    ],
+    "title": "Candle",
+    "type": "object"
+  },
   "DataQuality": {
     "additionalProperties": false,
     "properties": {
@@ -150,8 +249,14 @@
           },
           "interval": {
             "enum": [
+              "1m",
+              "5m",
+              "15m",
+              "30m",
+              "1h",
               "1d",
-              "1m"
+              "1w",
+              "1mo"
             ],
             "title": "Interval",
             "type": "string"
