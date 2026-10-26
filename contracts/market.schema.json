@@ -1033,5 +1033,88 @@
     ],
     "title": "Trade",
     "type": "object"
+  },
+  "ValueSeriesPoint": {
+    "additionalProperties": false,
+    "properties": {
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Currency"
+      },
+      "geography": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Geography"
+      },
+      "observation_time": {
+        "format": "date-time",
+        "title": "Observation Time",
+        "type": "string"
+      },
+      "published_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Published At"
+      },
+      "revision": {
+        "default": "0",
+        "title": "Revision",
+        "type": "string"
+      },
+      "series_id": {
+        "title": "Series Id",
+        "type": "string"
+      },
+      "source_id": {
+        "title": "Source Id",
+        "type": "string"
+      },
+      "unit": {
+        "title": "Unit",
+        "type": "string"
+      },
+      "value": {
+        "title": "Value",
+        "type": "string"
+      }
+    },
+    "required": [
+      "series_id",
+      "observation_time",
+      "available_at",
+      "value",
+      "unit",
+      "source_id"
+    ],
+    "title": "ValueSeriesPoint",
+    "type": "object"
   }
 }
