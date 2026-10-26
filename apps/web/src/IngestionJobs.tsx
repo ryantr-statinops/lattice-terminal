@@ -13,7 +13,7 @@ function tone(status:IngestionJob['status']):'positive'|'warning'|'negative'|'in
  return 'info';
 }
 
-export function IngestionJobs({canSyncSsiHoseEquity=false}:{canSyncSsiHoseEquity?:boolean}){
+export function IngestionJobs({canSyncSsiHoseEquity=false,canSyncSsiHoseIndices=false}:{canSyncSsiHoseEquity?:boolean;canSyncSsiHoseIndices?:boolean}){
  const client=useQueryClient();
  const [syncing,setSyncing]=useState(false);
  const [syncError,setSyncError]=useState<unknown>(null);
@@ -28,8 +28,17 @@ export function IngestionJobs({canSyncSsiHoseEquity=false}:{canSyncSsiHoseEquity
   }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
   finally{setSyncing(false)}
  };
+ const syncSsiIndices=async()=>{
+  setSyncing(true);setSyncError(null);setSyncMessage('');
+  try{
+   const result=await send<{job:{status:string};snapshot_id:string}>('/ingestion/catalogues/ssi/hose-indices',{});
+   setSyncMessage(`SSI HOSE index catalogue saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
+   await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']})]);
+  }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
+  finally{setSyncing(false)}
+ };
  return <Panel>
-  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
+  <PanelHeader title="INGESTION JOBS" actions={<div style={{display:'flex',gap:8}}>{canSyncSsiHoseEquity&&<Button pending={syncing} onClick={()=>void syncSsiCatalogue()}>Sync SSI HOSE stocks</Button>}{canSyncSsiHoseIndices&&<Button pending={syncing} onClick={()=>void syncSsiIndices()}>Sync SSI HOSE indices</Button>}<Button pending={jobs.isFetching} onClick={()=>void jobs.refetch()}>Refresh jobs</Button></div>}/>
   <div className="panel-content">
    <ErrorState error={jobs.error||syncError} onRetry={()=>{void jobs.refetch();setSyncError(null)}}/>
    {syncMessage&&<InlineNotice tone="positive">{syncMessage}</InlineNotice>}
@@ -41,7 +50,7 @@ export function IngestionJobs({canSyncSsiHoseEquity=false}:{canSyncSsiHoseEquity
     {key:'error',label:'Last error code',render:job=>job.error_code||'—'},
     {key:'updated',label:'Updated',render:job=>new Date(job.updated_at).toLocaleString()},
    ]}/>
-   <p className="muted">Interrupted jobs keep their saved checkpoint. This screen reports progress; it does not start or resume provider requests.</p>
+   <p className="muted">Interrupted jobs keep their saved checkpoint. Manual catalogue sync starts a new job; this screen does not resume an interrupted request.</p>
   </div>
  </Panel>;
 }

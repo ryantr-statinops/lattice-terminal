@@ -53,6 +53,7 @@
     "POST /api/v1/funds/{id}/cash",
     "POST /api/v1/ingestion/candles/ssi/hose-equity/daily",
     "POST /api/v1/ingestion/catalogues/ssi/hose-equity",
+    "POST /api/v1/ingestion/catalogues/ssi/hose-indices",
     "POST /api/v1/portfolio/import/apply",
     "POST /api/v1/portfolio/import/preview",
     "POST /api/v1/portfolio/trade",

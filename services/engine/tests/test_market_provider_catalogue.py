@@ -196,6 +196,53 @@ def test_ssi_hose_daily_ohlc_ingest_publishes_and_reads_market_snapshot(tmp_path
     assert market.json()['candles'][0]['open'] == '10'
 
 
+def test_ssi_hose_index_catalogue_ingest_publishes_visible_index_instrument(tmp_path):
+    capability_id = 'ssi:market-data:instruments.index:index:HOSE'
+    endpoint = 'Market/IndexList'
+    fields = ['id', 'venue', 'board', 'native_symbol', 'instrument_class', 'name', 'currency', 'metadata', 'index_code', 'exchange', 'source_id', 'is_synthetic']
+    (tmp_path / 'source-policy.json').write_text(json.dumps([{
+        'id': capability_id, 'documented': True, 'access_tested': True, 'rights_confirmed': True,
+        'approved': True, 'access_reference': 'access-test', 'rights_reference': 'rights-test',
+        'approval_reference': 'approval-test', 'scope': {
+            'endpoints': [endpoint], 'purposes': ['store', 'display'], 'fields': fields,
+            'request_limit': 10, 'timeout_seconds': 6, 'retention_allowed': True,
+            'export_allowed': False, 'terms_reference': 'terms-test',
+            'entitlement_reference': 'entitlement-test', 'expires_at': '2099-01-01T00:00:00Z',
+        },
+    }]), encoding='utf-8')
+    app = create_app('test-token', str(tmp_path))
+    app.state.provider_router.providers['ssi'].fetch_hose_index_catalogue = lambda *, credential: [Instrument(
+        id='SSI:INDEX:HOSE:VN30', venue='HOSE', board='unknown', native_symbol='VN30',
+        instrument_class='index', name='VN30', metadata={'index_code': 'VN30', 'exchange': 'HOSE'},
+        source_id='SSI-FC-DATA', is_synthetic=False,
+    )]
+
+    with TestClient(app) as client:
+        headers = {'Authorization': 'Bearer test-token'}
+        response = client.post('/internal/v1/market/catalogues/ssi/hose-indices', headers=headers, json={
+            'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'},
+        })
+        catalogue = client.get('/internal/v1/market/instruments?provider_id=ssi', headers=headers)
+
+    assert response.status_code == 200 and response.json()['row_count'] == 1
+    assert catalogue.status_code == 200
+    assert catalogue.json()[0]['id'] == 'SSI:INDEX:HOSE:VN30'
+    assert catalogue.json()[0]['instrument_class'] == 'index'
+    assert catalogue.json()[0]['venue'] == 'HOSE'
+
+
+def test_ssi_hose_index_catalogue_checks_store_rights_before_provider_access(tmp_path):
+    app = create_app('test-token', str(tmp_path))
+    called = []
+    app.state.provider_router.providers['ssi'].fetch_hose_index_catalogue = lambda **kwargs: called.append(True)
+    with TestClient(app) as client:
+        response = client.post('/internal/v1/market/catalogues/ssi/hose-indices', headers={
+            'Authorization': 'Bearer test-token',
+        }, json={'credential': {'consumerID': 'id', 'consumerSecret': 'secret'}})
+    assert response.status_code == 400
+    assert not called
+
+
 def test_ssi_daily_ohlc_checks_store_rights_before_provider_access(tmp_path):
     app = create_app('test-token', str(tmp_path))
     called = []

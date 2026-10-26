@@ -14,7 +14,8 @@ The documented REST base is `https://fc-data.ssi.com.vn/api/v2/Market`. Data cal
 |---|---|---|---|
 | `GET Securities` | Venue security list | `market` may be HOSE, HNX, UPCOM, or DER. `pageIndex` 1–10; `pageSize` 10, 20, 50, 100, or 1000. | Not wired into normalized catalogue path. |
 | `GET SecuritiesDetails` | Instrument details | Same page bounds. Includes ISIN, symbol, security type and exchange; types listed are stock, covered warrant, futures, ETF, bond, open-end fund and mutual fund. Exchange values include HOSE, HNX, HNXBOND, UPCOM and DER. | Implemented only for HOSE stocks (`ST`/`S`) through local ingestion; remaining classes/venues are not normalized. |
-| `GET IndexList`, `GET IndexComponents` | Index/reference catalogues | Index list names HOSE/HNX; components include index and constituent identifiers. | Not implemented. |
+| `GET IndexList` | Index catalogue | Requires `exchange` (`HOSE` or `HNX`), pages 1–10 at up to 1000 rows. Returns `IndexCode`, `IndexName`, and `Exchange`. | Implemented for HOSE with an explicit capability gate, normalized index instruments and immutable local catalogue snapshot; HNX remains separate. |
+| `GET IndexComponents` | Index constituents | Requires an index code and supports pages 1–10 at up to 1000 rows. Returns index metadata and constituent ISIN/symbol pairs. | Not implemented. |
 | `GET DailyOhlc` | Daily OHLCV/value | `symbol`, `fromDate`, `toDate`, `pageIndex` 1–10, and page sizes through 1000. Date format is `dd/mm/yyyy`. Response has `TradingDate`, `Time`, OHLC, volume and value; volume/value are described as normal matched totals. | Implemented for HOSE equities through explicit store/display SourceGate checks, a complete paginated read, normalized immutable snapshot and Market route. The current parser preserves OHLC/volume decimals; provider value is not persisted. Price currency/unit, adjustment policy, release time and historical depth still need confirmation. |
 | `GET IntradayOhlc` | Intraday OHLCV | Same date and page limits; optional `resollution`, default 1 minute. | Documented, not implemented. Supported resolution values, history depth and timestamp timezone need confirmation. |
 | `GET DailyIndex` | Daily index observations | `indexId`, date range and pagination; response includes index value, change, ratio, matched activity and market fields. | Not implemented; keep as index/value-series data, not equity candles. |
@@ -38,10 +39,10 @@ Public documentation does not confirm local retention, display, derived-data, ex
 
 ## Capability state in this repository
 
-- **Implemented, offline-testable:** normalize a HOSE equity catalogue and synchronize it through the local Go vault → Python adapter → SourceGate → immutable Parquet snapshot → Market instrument catalogue path. The same gated path supports SSI HOSE equity DailyOhlc ingestion, immutable candle snapshots and Market display when the exact dataset route is selected.
+- **Implemented, offline-testable:** normalize a HOSE equity catalogue and synchronize it through the local Go vault → Python adapter → SourceGate → immutable Parquet snapshot → Market instrument catalogue path. The same gated path supports a separate SSI HOSE index catalogue and SSI HOSE equity DailyOhlc ingestion; Market displays each only under its implemented catalogue or candle consumer path.
 - **Waiting for account/access:** authentication against a real account, provider response validation from an entitled sample, fixed-IP approval and credential-specific capability test.
 - **Waiting for rights:** local storage, display, derived data and research/backtest use. The app must keep the capability blocked until its exact scope is approved.
-- **Not implemented:** intraday/index datasets, non-equity instrument normalization, streaming, durable page resume, historical replay/backfill and all FastConnect Trading account reads.
+- **Not implemented:** HNX index catalogue, index constituents and daily index observations, intraday data, non-equity security normalization, streaming, durable page resume, historical replay/backfill and all FastConnect Trading account reads.
 - **Production readiness:** not ready. Offline mocks prove parser and gate behavior only; they do not prove SSI access or permission.
 
 ## Evidence

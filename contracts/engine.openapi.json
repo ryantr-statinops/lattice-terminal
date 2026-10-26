@@ -211,6 +211,23 @@
         "title": "SsiDailyOhlcIngest",
         "type": "object"
       },
+      "SsiIndexCatalogueIngest": {
+        "additionalProperties": false,
+        "properties": {
+          "credential": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "SsiIndexCatalogueIngest",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -398,6 +415,42 @@
           }
         },
         "summary": "Ingest Ssi Hose Equity Catalogue"
+      }
+    },
+    "/internal/v1/market/catalogues/ssi/hose-indices": {
+      "post": {
+        "operationId": "ingest_ssi_hose_index_catalogue_internal_v1_market_catalogues_ssi_hose_indices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiIndexCatalogueIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hose Index Catalogue"
       }
     },
     "/internal/v1/market/datasets": {

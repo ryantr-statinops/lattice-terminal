@@ -17,9 +17,39 @@ from kestrel_engine.providers import (
     DnseBrokerProvider,
     TcbsCommunityProvider,
     normalize_ssi_hose_equity_catalogue,
+    normalize_ssi_hose_index_catalogue,
 )
 
 class TestProviders(unittest.TestCase):
+    def test_ssi_hose_index_catalogue_paginates_and_preserves_index_class(self):
+        provider = SsiFastConnectProvider()
+        rows = [
+            {'IndexCode': f'IDX{index:04d}', 'IndexName': f'Index {index}', 'Exchange': 'HOSE'}
+            for index in range(1001)
+        ]
+        pages = [
+            {'status': 'Success', 'totalRecord': 1001, 'data': rows[:1000]},
+            {'status': 'Success', 'totalRecord': 1001, 'data': rows[1000:]},
+        ]
+        with patch.object(provider, 'get_json', side_effect=pages) as get_json:
+            instruments = provider.fetch_hose_index_catalogue(credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+
+        self.assertEqual(len(instruments), 1001)
+        self.assertEqual(instruments[0].id, 'SSI:INDEX:HOSE:IDX0000')
+        self.assertEqual(instruments[0].instrument_class, 'index')
+        self.assertEqual(instruments[0].metadata, {'index_code': 'IDX0000', 'exchange': 'HOSE'})
+        self.assertEqual(get_json.call_count, 2)
+        self.assertEqual(get_json.call_args_list[0].args, ('IndexList', {
+            'exchange': 'HOSE', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args[1]['pageIndex'], 2)
+
+    def test_ssi_hose_index_normalizer_rejects_other_exchange(self):
+        with self.assertRaisesRegex(ValueError, 'another exchange'):
+            normalize_ssi_hose_index_catalogue([{
+                'IndexCode': 'HNX30', 'IndexName': 'HNX 30', 'Exchange': 'HNX',
+            }])
+
     def test_ssi_hose_catalogue_normalizes_only_stock_security_types(self):
         payload = {
             'status': 'Success',
@@ -390,7 +420,7 @@ class TestProviders(unittest.TestCase):
         tcbs_services = {item.service for item in items if item.provider_id == 'tcbs'}
         self.assertEqual(tcbs_services, {'community', 'openapi'})
         ssi_classes = {item.asset_class for item in items if item.provider_id == 'ssi'}
-        self.assertEqual(ssi_classes, {'equity', 'covered_warrant', 'derivative', 'etf', 'bond', 'fund'})
+        self.assertEqual(ssi_classes, {'equity', 'index', 'covered_warrant', 'derivative', 'etf', 'bond', 'fund'})
 
 if __name__ == '__main__':
     unittest.main()

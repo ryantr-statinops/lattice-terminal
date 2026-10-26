@@ -18,7 +18,7 @@ it('shows durable ingestion progress, restart checkpoint and safe error code',as
  expect(await screen.findByText('250 / 1000')).toBeDefined();
  expect(screen.getByText('page 5 · v4')).toBeDefined();
  expect(screen.getByText('process_restarted')).toBeDefined();
- expect(screen.getByText(/does not start or resume provider requests/)).toBeDefined();
+ expect(screen.getByText(/does not resume an interrupted request/)).toBeDefined();
  fireEvent.click(screen.getByRole('button',{name:'Refresh jobs'}));
  await waitFor(()=>expect(request).toHaveBeenCalledTimes(2));
 });
@@ -36,4 +36,13 @@ it('starts the supported SSI catalogue sync and refreshes its job list',async()=
  fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HOSE stocks'}));
  await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hose-equity',{}));
  expect(await screen.findByText('SSI HOSE catalogue saved as snapshot abcdefghijkl.')).toBeDefined();
+});
+
+it('starts the supported SSI HOSE index catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'mnopqrstuvwx1234'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHoseIndices/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HOSE indices'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hose-indices',{}));
+ expect(await screen.findByText('SSI HOSE index catalogue saved as snapshot mnopqrstuvwx.')).toBeDefined();
 });

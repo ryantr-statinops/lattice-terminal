@@ -47,6 +47,9 @@ class ProviderPing(Record):
 class SsiCatalogueIngest(Record):
     credential:dict[str,str]
 
+class SsiIndexCatalogueIngest(Record):
+    credential:dict[str,str]
+
 class SsiDailyOhlcIngest(Record):
     credential:dict[str,str]
     instrument_id:str
@@ -133,6 +136,22 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
             observed_at=observed_at,available_at=observed_at,revision='0',schema_version='1',
             parser_version='ssi-hose-equity-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
             temporal_semantics='not_time_series',quality='unknown',payload=instrument.model_dump(mode='json'),
+        ) for instrument in instruments]
+        return dataset_publisher.publish(capability_id,endpoint,envelopes)
+
+    @app.post('/internal/v1/market/catalogues/ssi/hose-indices')
+    def ingest_ssi_hose_index_catalogue(value:SsiIndexCatalogueIngest):
+        capability_id='ssi:market-data:instruments.index:index:HOSE'
+        endpoint='Market/IndexList'
+        gate.authorize(capability_id,'store',endpoint)
+        instruments=provider_router.providers['ssi'].fetch_hose_index_catalogue(credential=value.credential)
+        observed_at=datetime.now(timezone.utc)
+        envelopes=[DatasetEnvelope(
+            provider_id='ssi',dataset='instruments.index',source_id=instrument.source_id,
+            observed_at=observed_at,available_at=observed_at,revision='unknown',schema_version='1',
+            parser_version='ssi-index-list-hose-1',unit='instrument',source_timezone='Asia/Ho_Chi_Minh',
+            temporal_semantics='not_time_series',adjustment_state='not_applicable',quality='unknown',
+            payload=instrument.model_dump(mode='json'),
         ) for instrument in instruments]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
