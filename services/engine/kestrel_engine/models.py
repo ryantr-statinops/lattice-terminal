@@ -192,6 +192,19 @@ class OrderBookDepth(Record):
             raise ValueError('ask depth must be sorted lowest price first')
         return self
 
+class DatasetEnvelope(Record):
+    provider_id: str
+    dataset: str
+    source_id: str
+    observed_at: AwareDatetime
+    available_at: AwareDatetime
+    published_at: AwareDatetime | None = None
+    revision: str
+    schema_version: str
+    parser_version: str
+    quality: Literal['complete','partial','stale','quarantined','unknown'] = 'unknown'
+    payload: Any
+
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
     gaps: list[str] = []

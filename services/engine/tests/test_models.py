@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from kestrel_engine.models import Candle,Instrument,OrderBookDepth,Quote,Trade,decimal_text
+from kestrel_engine.models import Candle,DatasetEnvelope,Instrument,OrderBookDepth,Quote,Trade,decimal_text
 
 def test_fixture_contract_and_strict_decimals():
     root=Path(__file__).resolve().parents[3]
@@ -120,3 +120,17 @@ def test_order_book_depth_requires_price_ordering_by_side():
             available_at=event, bids=[{'price':'25.05','quantity':'1'}, {'price':'25.10','quantity':'1'}],
             source_id='fixture',
         )
+
+
+def test_dataset_envelope_keeps_provenance_revision_and_publication_time():
+    observed = datetime.fromisoformat('2026-10-26T03:02:00+00:00')
+    envelope = DatasetEnvelope(
+        provider_id='provider-a', dataset='macro.policy-rate', source_id='provider-a',
+        observed_at=observed, available_at=observed,
+        published_at=datetime.fromisoformat('2026-10-26T03:00:00+00:00'),
+        revision='3', schema_version='2', parser_version='1.4.0',
+        quality='complete', payload={'rate':'4.5','unit':'percent'},
+    )
+    assert envelope.revision == '3'
+    assert envelope.published_at < envelope.available_at
+    assert envelope.payload['unit'] == 'percent'
