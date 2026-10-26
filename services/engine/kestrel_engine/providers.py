@@ -3,12 +3,34 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import threading
 import time
 from typing import Any, Literal
 import urllib.request
 from pydantic import BaseModel, Field
 
 from .models import Candle, Instrument
+
+class ProviderRequestLimiter:
+    """Serialize outbound operations and pace requests for one provider."""
+
+    def __init__(self, minimum_interval_seconds: float):
+        if minimum_interval_seconds < 0:
+            raise ValueError('minimum request interval cannot be negative')
+        self.minimum_interval_seconds = minimum_interval_seconds
+        self._last_request_at: float | None = None
+        self._lock = threading.Lock()
+
+    def acquire(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            if self._last_request_at is not None:
+                delay = self.minimum_interval_seconds - (now - self._last_request_at)
+                if delay > 0:
+                    time.sleep(delay)
+                    now = time.monotonic()
+            self._last_request_at = now
+
 
 class ProviderStatus(BaseModel):
     id: str
@@ -376,6 +398,21 @@ class ProviderRouter:
         }
         self.policy = RoutingPolicy()
         self.capabilities = ProviderCapabilityRegistry()
+        # Conservative local pacing, not a claim about upstream quota values.
+        # Replace each value only when that provider's documented limits are verified.
+        self.request_limiters = {
+            provider_id: ProviderRequestLimiter(0 if provider_id == 'fixture' else 1.0)
+            for provider_id in self.providers
+        }
+        self._request_limiters_lock = threading.Lock()
+
+    def _limit_request(self, provider_id: str) -> None:
+        with self._request_limiters_lock:
+            limiter = self.request_limiters.get(provider_id)
+            if limiter is None:
+                limiter = ProviderRequestLimiter(1.0)
+                self.request_limiters[provider_id] = limiter
+        limiter.acquire()
 
     def list_statuses(self) -> list[ProviderStatus]:
         statuses: list[ProviderStatus] = []
@@ -406,6 +443,7 @@ class ProviderRouter:
     def ping(self, provider_id: str) -> ProviderStatus:
         if provider_id not in self.providers:
             raise ValueError(f"Unknown provider: {provider_id}")
+        self._limit_request(provider_id)
         return self.providers[provider_id].ping()
 
     def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
@@ -425,6 +463,7 @@ class ProviderRouter:
         primary = self.providers.get(primary_id)
         if primary:
             try:
+                self._limit_request(primary_id)
                 res = primary.fetch_candles(symbol, interval, start, end)
                 if res:
                     return res
@@ -436,6 +475,7 @@ class ProviderRouter:
                 if pid == primary_id or pid in ('ssi', 'dnse'):
                     continue
                 try:
+                    self._limit_request(pid)
                     res = prov.fetch_candles(symbol, interval, start, end)
                     if res:
                         return res

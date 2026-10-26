@@ -3,6 +3,7 @@ from unittest.mock import patch
 from datetime import datetime, timezone
 from kestrel_engine.providers import (
     ProviderRouter,
+    ProviderRequestLimiter,
     VndirectCommunityProvider,
     SyntheticFixtureProvider,
     SsiFastConnectProvider,
@@ -11,6 +12,22 @@ from kestrel_engine.providers import (
 )
 
 class TestProviders(unittest.TestCase):
+    def test_provider_request_limiter_paces_requests_per_provider(self):
+        limiter = ProviderRequestLimiter(0.5)
+        clock_values = iter([100.0, 100.1, 100.5])
+        with patch('kestrel_engine.providers.time.monotonic', side_effect=lambda: next(clock_values)):
+            with patch('kestrel_engine.providers.time.sleep') as sleep:
+                limiter.acquire()
+                limiter.acquire()
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 0.4)
+
+    def test_provider_router_keeps_separate_request_limiters(self):
+        router = ProviderRouter()
+        self.assertIsNot(router.request_limiters['vndirect'], router.request_limiters['tcbs'])
+        self.assertEqual(router.request_limiters['fixture'].minimum_interval_seconds, 0)
+        self.assertEqual(router.request_limiters['vndirect'].minimum_interval_seconds, 1.0)
+
     def test_provider_router_registration_and_statuses(self):
         router = ProviderRouter()
         self.assertIn('vndirect', router.providers)
