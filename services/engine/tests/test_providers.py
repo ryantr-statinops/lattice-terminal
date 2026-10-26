@@ -48,6 +48,25 @@ class TestProviders(unittest.TestCase):
                 'data': [{'SecType': 'ST', 'Symbol': 'ABC', 'Exchange': 'HNX'}],
             })
 
+    def test_ssi_hose_catalogue_page_uses_documented_endpoint_and_paging(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        payload = {'status': 'Success', 'data': [{'SecType': 'ST', 'Symbol': 'AAA', 'Exchange': 'HOSE'}]}
+        with patch.object(provider, 'get_json', return_value=payload) as get_json:
+            instruments = provider.fetch_hose_equity_catalogue_page(2, credential=credential)
+
+        get_json.assert_called_once_with(
+            'SecuritiesDetails', {'market': 'HOSE', 'pageIndex': 2, 'pageSize': 1000}, credential=credential,
+        )
+        self.assertEqual([item.native_symbol for item in instruments], ['AAA'])
+
+    def test_ssi_hose_catalogue_page_rejects_undocumented_page_range(self):
+        provider = SsiFastConnectProvider()
+        with patch.object(provider, 'get_json') as get_json:
+            with self.assertRaisesRegex(ValueError, 'between 1 and 10'):
+                provider.fetch_hose_equity_catalogue_page(11, credential={})
+        get_json.assert_not_called()
+
     def test_read_retry_uses_exponential_backoff_for_transient_errors(self):
         operation = unittest.mock.Mock(side_effect=[
             urllib.error.URLError('temporary network failure'),

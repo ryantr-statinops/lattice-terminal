@@ -575,6 +575,16 @@ class SsiFastConnectProvider(BaseMarketProvider):
             raise ValueError('SSI market-data token refresh failed')
         return read()
 
+    def fetch_hose_equity_catalogue_page(self, page_index: int, *, credential: dict[str, str]) -> list[Instrument]:
+        if isinstance(page_index, bool) or page_index < 1 or page_index > 10:
+            raise ValueError('SSI SecuritiesDetails page index must be between 1 and 10')
+        payload = self.get_json(
+            'SecuritiesDetails',
+            {'market': 'HOSE', 'pageIndex': page_index, 'pageSize': 1000},
+            credential=credential,
+        )
+        return normalize_ssi_hose_equity_catalogue(payload)
+
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')
 
