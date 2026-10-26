@@ -1,5 +1,5 @@
 from datetime import datetime,timedelta,timezone
-from kestrel_engine.stream import MarketEvent,Reconciler,Subscriptions
+from kestrel_engine.stream import MarketEvent,ReconciledLiveFeeds,Reconciler,Subscriptions
 
 def event(seq=1):
     now=datetime(2026,10,1,2,tzinfo=timezone.utc)
@@ -61,3 +61,45 @@ def test_subscription_manager_rolls_back_consumer_state_when_provider_update_fai
 
     assert manager.required()=={('ssi-stream','AAA')}
     assert connection.current==frozenset({'AAA'})
+
+def test_live_events_reach_consumers_only_after_reconciliation():
+    class Connection:
+        def set_instruments(self,instruments):self.instruments=instruments
+        def set_event_handler(self,handler):self.on_event=handler
+        def close(self):pass
+
+    connections={}
+    def connect(feed):
+        connections[feed]=Connection()
+        return connections[feed]
+
+    runtime=ReconciledLiveFeeds(connect,max_age=timedelta(seconds=5))
+    received=[]
+    runtime.set('strategy',{('ssi-quote','SYN'),('ssi-quote','OTHER')},received.append)
+    connection=connections['ssi-quote']
+    value=event().model_copy(update={'feed':'ssi-quote','is_synthetic':False})
+
+    assert not connection.on_event(value)
+    runtime.reconcile('ssi-quote',value.event_time,0)
+    assert connection.on_event(value)
+    assert not connection.on_event(value)
+    assert received==[value]
+    assert runtime.status('ssi-quote')=={'feed':'ssi-quote','state':'ready','reason':'reconciled','sequence':1}
+
+    assert not connection.on_event(value.model_copy(update={'id':'gap','sequence':3}))
+    assert runtime.status('ssi-quote')['state']=='gap'
+    runtime.disconnect('ssi-quote')
+    assert runtime.status('ssi-quote')['state']=='reconnecting'
+    runtime.close()
+
+def test_live_runtime_requires_provider_event_delivery_contract():
+    class Connection:
+        def set_instruments(self,instruments):pass
+        def close(self):pass
+
+    runtime=ReconciledLiveFeeds(lambda _:Connection())
+    import pytest
+    with pytest.raises(TypeError,match='must support event delivery'):
+        runtime.set('manual',{('provider-feed','SYN')},lambda _:None)
+    assert runtime.subscriptions.required()==set()
+    assert 'manual' not in runtime._consumers

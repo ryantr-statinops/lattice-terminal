@@ -64,9 +64,12 @@ class SubscriptionConnection(Protocol):
 
 class Subscriptions:
     """Share one provider connection across consumers and union their instruments."""
-    def __init__(self, connector: Callable[[str], SubscriptionConnection] | None = None):
+    def __init__(self, connector: Callable[[str], SubscriptionConnection] | None = None, *,
+                 event_handler: Callable[[MarketEvent], None] | None = None, require_event_handler: bool = False):
         self.consumers: dict[str, set[tuple[str, str]]] = {}
         self.connector = connector
+        self.event_handler = event_handler
+        self.require_event_handler = require_event_handler
         self._connections: dict[str, SubscriptionConnection] = {}
         self._lock = RLock()
 
@@ -120,6 +123,12 @@ class Subscriptions:
                 if connection is None:
                     connection = self.connector(feed)
                     staged[feed] = connection
+                    bind_event_handler = getattr(connection, 'set_event_handler', None)
+                    if self.event_handler is not None:
+                        if not callable(bind_event_handler) and self.require_event_handler:
+                            raise TypeError('live provider connection must support event delivery')
+                        if callable(bind_event_handler):
+                            bind_event_handler(self.event_handler)
                     connection.set_instruments(instruments)
                 elif instruments != old_desired.get(feed, frozenset()):
                     changed.append((connection, old_desired[feed]))
@@ -142,3 +151,75 @@ class Subscriptions:
                 connection.close()
         self._connections = active
         self.consumers = candidate
+
+
+class ReconciledLiveFeeds:
+    """Route provider events to subscribed consumers only after feed reconciliation."""
+    def __init__(self, connector: Callable[[str], SubscriptionConnection] | None = None,
+                 max_age: timedelta = timedelta(seconds=5)):
+        if max_age <= timedelta(0):
+            raise ValueError('live feed maximum age must be positive')
+        self.max_age = max_age
+        self._reconcilers: dict[str, Reconciler] = {}
+        self._consumers: dict[str, tuple[set[tuple[str, str]], Callable[[MarketEvent], None]]] = {}
+        self._lock = RLock()
+        self.subscriptions = Subscriptions(connector, event_handler=self.publish, require_event_handler=True)
+
+    def set(self, consumer: str, keys: set[tuple[str, str]], handler: Callable[[MarketEvent], None]) -> None:
+        if not callable(handler):
+            raise ValueError('live event handler is required')
+        normalized = set(keys)
+        with self._lock:
+            previous = self._consumers.get(consumer)
+            self._consumers[consumer] = (normalized, handler)
+            try:
+                self.subscriptions.set(consumer, normalized)
+            except Exception:
+                if previous is None:
+                    self._consumers.pop(consumer, None)
+                else:
+                    self._consumers[consumer] = previous
+                raise
+
+    def remove(self, consumer: str) -> None:
+        with self._lock:
+            self.subscriptions.remove(consumer)
+            self._consumers.pop(consumer, None)
+
+    def reconcile(self, feed: str, cutoff: datetime, sequence: int) -> None:
+        if not feed.strip() or sequence < 0:
+            raise ValueError('feed and non-negative sequence are required')
+        with self._lock:
+            self._reconcilers.setdefault(feed, Reconciler(self.max_age)).reconcile(cutoff, sequence)
+
+    def disconnect(self, feed: str) -> None:
+        with self._lock:
+            reconciler = self._reconcilers.get(feed)
+            if reconciler is not None:
+                reconciler.disconnect()
+
+    def publish(self, event: MarketEvent) -> bool:
+        with self._lock:
+            reconciler = self._reconcilers.get(event.feed)
+            if reconciler is None or not reconciler.apply(event):
+                return False
+            handlers = [
+                handler for keys, handler in self._consumers.values()
+                if (event.feed, event.instrument_id) in keys
+            ]
+        for handler in handlers:
+            handler(event)
+        return True
+
+    def status(self, feed: str) -> dict[str, object]:
+        with self._lock:
+            reconciler = self._reconcilers.get(feed)
+            if reconciler is None:
+                return {'feed': feed, 'state': 'unavailable', 'reason': 'not_reconciled', 'sequence': None}
+            return {'feed': feed, 'state': reconciler.state, 'reason': reconciler.reason, 'sequence': reconciler.sequence}
+
+    def close(self) -> None:
+        with self._lock:
+            self._consumers.clear()
+            self._reconcilers.clear()
+            self.subscriptions.close()
