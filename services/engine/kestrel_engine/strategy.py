@@ -1,4 +1,5 @@
 """Live-style callback contract; cannot run Backtest programs."""
+import hashlib
 import time
 from datetime import timedelta
 from decimal import Decimal
@@ -7,10 +8,31 @@ from .paper import PaperSession
 from .sources import SourceBlocked
 from .stream import Reconciler
 from .tapes import TapeRepository
+from .models import StrategySignal
 
 class StrategyContext:
-    def __init__(self,base,session):self.params=base.params;self._base=base;self._session=session
+    def __init__(self,base,session,strategy_id,source='replay'):
+        self.params=base.params;self._base=base;self._session=session;self.strategy_id=strategy_id;self.source=source;self._current_event=None
     def log(self,message):self._base.log(message)
+    def _set_event(self,event):self._current_event=event
+    def signal(self,*,action:str,reason:str,logical_key:str,instrument_id:str|None=None,price_context:dict[str,str]|None=None,correlation_id:str|None=None,custom_action:str|None=None,expires_in_seconds:int=300):
+        if self._current_event is None:raise ValueError('context.signal requires an active market event')
+        if isinstance(expires_in_seconds,bool) or not isinstance(expires_in_seconds,int) or not 1<=expires_in_seconds<=300:
+            raise ValueError('signal expiry must be between 1 and 300 seconds')
+        event=self._current_event
+        selected_instrument=instrument_id or event.instrument_id
+        identity='\0'.join([self._base.run_id,event.id,selected_instrument,action,logical_key])
+        signal_id=hashlib.sha256(identity.encode()).hexdigest()
+        context=price_context if price_context is not None else {key:getattr(event,key) for key in ('bid','ask','price') if getattr(event,key) is not None}
+        signal=StrategySignal(
+            id=signal_id,run_id=self._base.run_id,strategy_id=self.strategy_id,
+            instrument_id=selected_instrument,action=action,custom_action=custom_action,
+            event_time=event.event_time,price_context=context,reason=reason,source=self.source,
+            logical_key=logical_key,correlation_id=correlation_id,
+            expires_at=event.event_time+timedelta(seconds=expires_in_seconds),
+        )
+        self._base.emit('signal',signal.model_dump(mode='json'))
+        return signal
     @property
     def portfolio(self):return {'cash':str(self._session.cash),'positions':{k:str(v) for k,v in self._session.positions.items()}}
 
@@ -24,11 +46,12 @@ def execute_program(program,base):
     if not events:raise ValueError('fixture tape exhausted; existing positions remain held until eligible future data is available')
     session=PaperSession(params['allocation_cash'],rules,base.emit)
     session.positions={key:Decimal(value) for key,value in params.get('allocation_positions',{}).items()}
-    context=StrategyContext(base,session);state=Reconciler(timedelta(seconds=5));state.reconcile(events[0].event_time,after)
+    context=StrategyContext(base,session,str(params.get('strategy_id') or base.run_id),'replay');state=Reconciler(timedelta(seconds=5));state.reconcile(events[0].event_time,after)
     try:
         if callable(program.get('on_start')):program['on_start'](context)
         for event in events:
             if not state.apply(event):raise ValueError('paper source requires reconciliation')
+            context._set_event(event)
             session.quote(event,True)
             intents=program['on_event'](context,event.model_copy(deep=True)) or []
             if not isinstance(intents,list):raise ValueError('on_event must return a list of LO intents')
