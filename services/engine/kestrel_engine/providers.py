@@ -585,6 +585,34 @@ class SsiFastConnectProvider(BaseMarketProvider):
         )
         return normalize_ssi_hose_equity_catalogue(payload)
 
+    def fetch_hose_equity_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        first_page = self.get_json(
+            'SecuritiesDetails',
+            {'market': 'HOSE', 'pageIndex': 1, 'pageSize': 1000},
+            credential=credential,
+        )
+        total_raw = first_page.get('totalRecord')
+        if isinstance(total_raw, bool) or not isinstance(total_raw, (int, str)):
+            raise ValueError('SSI SecuritiesDetails response has an invalid totalRecord')
+        try:
+            total_records = int(total_raw)
+        except (TypeError, ValueError) as error:
+            raise ValueError('SSI SecuritiesDetails response has an invalid totalRecord') from error
+        if total_records < 0 or total_records > 10000:
+            raise ValueError('SSI HOSE catalogue exceeds the documented 10-page limit')
+        page_count = max(1, (total_records + 999) // 1000)
+        instruments = normalize_ssi_hose_equity_catalogue(first_page)
+        for page_index in range(2, page_count + 1):
+            instruments.extend(self.fetch_hose_equity_catalogue_page(page_index, credential=credential))
+
+        unique: dict[str, Instrument] = {}
+        for instrument in instruments:
+            previous = unique.get(instrument.id)
+            if previous is not None and previous != instrument:
+                raise ValueError('SSI HOSE catalogue has conflicting stock identities across pages')
+            unique[instrument.id] = instrument
+        return sorted(unique.values(), key=lambda value: (value.native_symbol, value.id))
+
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')
 

@@ -67,6 +67,31 @@ class TestProviders(unittest.TestCase):
                 provider.fetch_hose_equity_catalogue_page(11, credential={})
         get_json.assert_not_called()
 
+    def test_ssi_hose_catalogue_reads_each_documented_page(self):
+        provider = SsiFastConnectProvider()
+        credential = {'consumerID': 'test-id', 'consumerSecret': 'test-secret'}
+        first = {'status': 'Success', 'totalRecord': 1001, 'data': [{'SecType': 'ST', 'Symbol': 'AAA', 'Exchange': 'HOSE'}]}
+        second = {'status': 'Success', 'data': [{'SecType': 'ST', 'Symbol': 'BBB', 'Exchange': 'HOSE'}]}
+        with patch.object(provider, 'get_json', side_effect=[first, second]) as get_json:
+            instruments = provider.fetch_hose_equity_catalogue(credential=credential)
+
+        self.assertEqual([item.native_symbol for item in instruments], ['AAA', 'BBB'])
+        self.assertEqual(get_json.call_count, 2)
+        self.assertEqual(get_json.call_args_list[0].args, ('SecuritiesDetails', {
+            'market': 'HOSE', 'pageIndex': 1, 'pageSize': 1000,
+        }))
+        self.assertEqual(get_json.call_args_list[1].args, ('SecuritiesDetails', {
+            'market': 'HOSE', 'pageIndex': 2, 'pageSize': 1000,
+        }))
+
+    def test_ssi_hose_catalogue_refuses_to_exceed_ten_pages(self):
+        provider = SsiFastConnectProvider()
+        first = {'status': 'Success', 'totalRecord': 10001, 'data': []}
+        with patch.object(provider, 'get_json', return_value=first) as get_json:
+            with self.assertRaisesRegex(ValueError, '10-page limit'):
+                provider.fetch_hose_equity_catalogue(credential={})
+        get_json.assert_called_once()
+
     def test_read_retry_uses_exponential_backoff_for_transient_errors(self):
         operation = unittest.mock.Mock(side_effect=[
             urllib.error.URLError('temporary network failure'),
