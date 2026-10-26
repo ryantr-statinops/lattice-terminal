@@ -36,7 +36,7 @@ class Instrument(Record):
     instrument_class: Literal[
         'equity', 'index', 'covered_warrant', 'derivative', 'bond', 'fund', 'etf',
         'fx', 'crypto', 'commodity', 'macro_series', 'real_estate', 'unknown',
-    ] = 'equity'
+    ] = 'unknown'
     name: str
     currency: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)

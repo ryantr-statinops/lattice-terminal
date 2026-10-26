@@ -198,6 +198,7 @@ class VndirectCommunityProvider(BaseMarketProvider):
                 venue=venue,
                 board='MAIN',
                 native_symbol=sym,
+                instrument_class='equity',
                 name=name,
                 source_id='VNDIRECT-COMMUNITY',
                 is_synthetic=False,
