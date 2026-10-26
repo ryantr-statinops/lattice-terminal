@@ -101,6 +101,25 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(updated.realtime_provider, 'dnse')
         self.assertEqual(updated.financials_provider, 'tcbs')
 
+    def test_dataset_routing_requires_an_exact_implemented_capability(self):
+        router = ProviderRouter()
+        capability_id = 'vndirect:dchart-community:candles.1d:equity:HOSE'
+        route = {'candles.1d:equity:HOSE': capability_id}
+        updated = router.update_policy({'datasets': route})
+        self.assertEqual(updated.datasets, route)
+
+        with self.assertRaisesRegex(ValueError, 'does not match'):
+            router.update_policy({'datasets': {'candles.1d:equity:HNX': capability_id}})
+        with self.assertRaisesRegex(ValueError, 'no implemented adapter'):
+            router.update_policy({'datasets': {
+                'instruments.details:equity:unknown': 'ssi:market-data:instruments.details:equity:unknown',
+            }})
+        with self.assertRaisesRegex(ValueError, 'unknown dataset capability'):
+            router.update_policy({'datasets': {'candles.1d:equity:HOSE': 'ssi:missing'}})
+        with self.assertRaisesRegex(ValueError, 'dataset:asset_class:venue'):
+            router.update_policy({'datasets': {'candles.1d': capability_id}})
+        self.assertEqual(router.policy.datasets, route)
+
     def test_fixture_provider_lifecycle(self):
         p = SyntheticFixtureProvider()
         status = p.ping()

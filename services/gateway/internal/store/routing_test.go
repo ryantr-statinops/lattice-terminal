@@ -16,7 +16,7 @@ func TestRoutingPolicyPersistsAcrossStoreRestart(t *testing.T) {
 	if err != nil || initial.HistoricalProvider != "vndirect" || initial.RealtimeProvider != "fixture" || initial.FinancialsProvider != "tcbs" || !initial.FallbackEnabled || len(initial.Datasets) != 0 {
 		t.Fatalf("default routing policy = %#v, %v", initial, err)
 	}
-	want := RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "dnse", FinancialsProvider: "fiingroup", FallbackEnabled: false, Datasets: map[string]string{"candles.1d:equity:HOSE": "ssi", "quotes.equity.HOSE": "dnse"}}
+	want := RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "dnse", FinancialsProvider: "fiingroup", FallbackEnabled: false, Datasets: map[string]string{"candles.1d:equity:HOSE": "ssi:market-data:candles.1d:equity:HOSE", "quotes.equity:equity:HOSE": "dnse:market-data:quotes:equity:HOSE"}}
 	if err = db.SetRoutingPolicy(want); err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestRoutingPolicyPersistsAcrossStoreRestart(t *testing.T) {
 	}
 	defer db.Close()
 	got, err := db.RoutingPolicy()
-	if err != nil || got.HistoricalProvider != want.HistoricalProvider || got.RealtimeProvider != want.RealtimeProvider || got.FinancialsProvider != want.FinancialsProvider || got.FallbackEnabled != want.FallbackEnabled || got.Datasets["candles.1d:equity:HOSE"] != "ssi" || got.Datasets["quotes.equity.HOSE"] != "dnse" {
+	if err != nil || got.HistoricalProvider != want.HistoricalProvider || got.RealtimeProvider != want.RealtimeProvider || got.FinancialsProvider != want.FinancialsProvider || got.FallbackEnabled != want.FallbackEnabled || got.Datasets["candles.1d:equity:HOSE"] != want.Datasets["candles.1d:equity:HOSE"] || got.Datasets["quotes.equity:equity:HOSE"] != want.Datasets["quotes.equity:equity:HOSE"] {
 		t.Fatalf("restored routing policy = %#v, want %#v, err=%v", got, want, err)
 	}
 }

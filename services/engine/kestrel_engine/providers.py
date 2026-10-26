@@ -145,6 +145,9 @@ class ProviderCapabilityRegistry:
     def list(self) -> list[ProviderCapability]:
         return list(self._items)
 
+    def get(self, capability_id: str) -> ProviderCapability | None:
+        return next((item for item in self._items if item.capability_id == capability_id), None)
+
     def source_ids(self) -> list:
         exact = [item.capability_id for item in self._items]
         legacy = [f'{item.provider_id}:{item.dataset}' for item in self._items]
@@ -627,6 +630,18 @@ class ProviderRouter:
 
     def update_policy(self, patch: dict[str, Any]) -> RoutingPolicy:
         candidate = RoutingPolicy.model_validate(self.policy.model_dump() | patch)
+        for route_key, capability_id in candidate.datasets.items():
+            parts = route_key.rsplit(':', 2)
+            if len(parts) != 3 or any(not part.strip() for part in parts):
+                raise ValueError('dataset route key must be dataset:asset_class:venue')
+            dataset, asset_class, venue = parts
+            capability = self.capabilities.get(capability_id)
+            if capability is None:
+                raise ValueError(f'unknown dataset capability: {capability_id}')
+            if (capability.dataset, capability.asset_class, capability.venue) != (dataset, asset_class, venue):
+                raise ValueError('dataset route key does not match its selected capability')
+            if not capability.implemented:
+                raise ValueError(f'dataset capability has no implemented adapter: {capability_id}')
         for field, required_capabilities in ROUTING_CAPABILITY_GROUPS.items():
             provider_id = getattr(candidate, field)
             provider = self.providers.get(provider_id)

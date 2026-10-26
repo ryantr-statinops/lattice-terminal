@@ -55,13 +55,14 @@ func TestProviderRoutingPersistsAndAppliesPatch(t *testing.T) {
 	}
 
 	update := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPut, "/api/v1/providers/routing", strings.NewReader(`{"historical_provider":"ssi","fallback_enabled":false,"datasets":{"candles.1d:equity:HOSE":"ssi"}}`))
+	capabilityID := "vndirect:dchart-community:candles.1d:equity:HOSE"
+	request := httptest.NewRequest(http.MethodPut, "/api/v1/providers/routing", strings.NewReader(`{"historical_provider":"ssi","fallback_enabled":false,"datasets":{"candles.1d:equity:HOSE":"vndirect:dchart-community:candles.1d:equity:HOSE"}}`))
 	mux.ServeHTTP(update, request)
 	if update.Code != http.StatusOK {
 		t.Fatalf("update response = %d %s", update.Code, update.Body.String())
 	}
-	want := store.RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "fixture", FinancialsProvider: "tcbs", FallbackEnabled: false, Datasets: map[string]string{"candles.1d:equity:HOSE": "ssi"}}
-	if applied.HistoricalProvider != want.HistoricalProvider || applied.RealtimeProvider != want.RealtimeProvider || applied.FinancialsProvider != want.FinancialsProvider || applied.FallbackEnabled != want.FallbackEnabled || applied.Datasets["candles.1d:equity:HOSE"] != "ssi" {
+	want := store.RoutingPolicy{HistoricalProvider: "ssi", RealtimeProvider: "fixture", FinancialsProvider: "tcbs", FallbackEnabled: false, Datasets: map[string]string{"candles.1d:equity:HOSE": capabilityID}}
+	if applied.HistoricalProvider != want.HistoricalProvider || applied.RealtimeProvider != want.RealtimeProvider || applied.FinancialsProvider != want.FinancialsProvider || applied.FallbackEnabled != want.FallbackEnabled || applied.Datasets["candles.1d:equity:HOSE"] != capabilityID {
 		t.Fatalf("engine got %#v, want %#v", applied, want)
 	}
 	stored, err := db.RoutingPolicy()
