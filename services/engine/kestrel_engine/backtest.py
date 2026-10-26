@@ -18,19 +18,21 @@ class HistoricalView:
     positions:MappingProxyType
 
 class Replay:
-    def __init__(self,events,rules,capital,calendar:MarketCalendar|None=None,cost_schedule:FeeTaxSchedule|None=None,fill_models=()):
-        self.events=events;self.rules=rules.model_copy(deep=True);self.calendar=(calendar or MarketCalendar.from_rule_pack(self.rules)).model_copy(deep=True);self.cost_schedule=(cost_schedule or FeeTaxSchedule.from_rule_pack(self.rules)).model_copy(deep=True);self.fill_models=FillModelRegistry(fill_models);self.initial=Decimal(capital)
+    def __init__(self,events,rules,capital,calendar:MarketCalendar|None=None,cost_schedule:FeeTaxSchedule|None=None,fill_models=(),data_snapshot_id:str|None=None):
+        self.events=events;self.rules=rules.model_copy(deep=True);self.calendar=(calendar or MarketCalendar.from_rule_pack(self.rules)).model_copy(deep=True);self.cost_schedule=(cost_schedule or FeeTaxSchedule.from_rule_pack(self.rules)).model_copy(deep=True);self.fill_models=FillModelRegistry(fill_models);self.data_snapshot_id=data_snapshot_id;self.initial=Decimal(capital)
         if (self.calendar.venue,self.calendar.board)!=(self.rules.venue,self.rules.board):raise ValueError('calendar venue/board does not match selected rule pack')
         if (self.cost_schedule.venue,self.cost_schedule.board,self.cost_schedule.instrument_class)!=(self.rules.venue,self.rules.board,self.rules.instrument_class):raise ValueError('fee/tax schedule scope does not match selected rule pack')
         frozen_calendar=json.dumps(self.calendar.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
         self.calendar_snapshot_id=hashlib.sha256(frozen_calendar.encode()).hexdigest()
         frozen_costs=json.dumps(self.cost_schedule.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
         self.cost_schedule_snapshot_id=hashlib.sha256(frozen_costs.encode()).hexdigest()
+        frozen_rules=json.dumps(self.rules.model_dump(mode='json'),sort_keys=True,separators=(',',':'))
+        self.rule_pack_snapshot_id=hashlib.sha256(frozen_rules.encode()).hexdigest()
         if not self.initial.is_finite() or self.initial<=0:raise ValueError('positive decimal capital required')
         self.cash=self.initial;self.orders=[];self.reserved={};self.positions={};self.settled={};self.pending_shares=[];self.pending_cash=[];self.sell_reserved={};self.fills=[];self.curve=[];self.marks={}
     def _simulation_coverage(self):
         if 'LO' not in self.rules.order_types:raise ValueError('simulation blocked: selected rules do not cover LO orders')
-        quote_count=0;model_ids=set()
+        quote_count=0;models={}
         for event in self.events:
             day=event.event_time.date()
             self.rules.check(day);self.calendar.check(day);self.cost_schedule.check(day)
@@ -43,9 +45,9 @@ class Replay:
             if len(parts)<4 or parts[:3]!=[self.rules.venue,self.rules.board,self.rules.instrument_class]:
                 raise ValueError('simulation blocked: quote data does not match rule venue, board, and asset class')
             model=self.fill_models.resolve(self.rules.venue,self.rules.board,self.rules.instrument_class,'LO',self.rules.session,day)
-            model_ids.add(model.id)
+            models[model.id]=model
         if quote_count==0:raise ValueError('simulation blocked: detailed quote events are unavailable')
-        return sorted(model_ids)
+        return models
     def settle(self,day):
         for entry in self.pending_shares[:]:
             when,symbol,quantity=entry
@@ -73,7 +75,9 @@ class Replay:
         return self.cash+sum(self.reserved.values())+sum(v for _,v in self.pending_cash)+sum(quantity*self.marks[symbol] for symbol,quantity in self.positions.items() if quantity)
     def run(self,decide):
         if not self.events:raise ValueError('no detailed events in selected period')
-        fill_model_ids=self._simulation_coverage()
+        selected_models=self._simulation_coverage();fill_model_ids=sorted(selected_models)
+        frozen_models=json.dumps([selected_models[key].model_dump(mode='json') for key in fill_model_ids],sort_keys=True,separators=(',',':'))
+        fill_model_snapshot_id=hashlib.sha256(frozen_models.encode()).hexdigest()
         state=Reconciler(timedelta(seconds=5));state.reconcile(self.events[0].event_time,self.events[0].sequence-1)
         visible=[]
         for event in self.events:
@@ -109,7 +113,7 @@ class Replay:
             self.curve.append((event.event_time.isoformat(),str(self.nav())))
         self.cash+=sum(self.reserved.values());self.reserved.clear()
         values=np.array([float(v) for _,v in self.curve]);peak=np.maximum.accumulate(values);drawdown=(values/peak-1)
-        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'rule_pack':self.rules.id,'calendar_id':self.calendar.id,'calendar_snapshot_id':self.calendar_snapshot_id,'fee_tax_schedule_id':self.cost_schedule.id,'fee_tax_schedule_snapshot_id':self.cost_schedule_snapshot_id,'fill_model_ids':fill_model_ids,'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
+        return {'mode':'synthetic-detailed-replay','simulated':True,'capital':str(self.initial),'final_nav':str(self.nav()),'net_profit':str(self.nav()-self.initial),'max_drawdown':float(drawdown.min()),'simulated_fill_count':len(self.fills),'sharpe':None,'sharpe_reason':'risk-free/annualization convention not configured','positions':{k:str(v) for k,v in self.positions.items()},'unsettled_cash':str(sum(v for _,v in self.pending_cash)),'curve':self.curve,'fills':self.fills,'data_snapshot_id':self.data_snapshot_id,'rule_pack':self.rules.id,'rule_pack_snapshot_id':self.rule_pack_snapshot_id,'calendar_id':self.calendar.id,'calendar_snapshot_id':self.calendar_snapshot_id,'fee_tax_schedule_id':self.cost_schedule.id,'fee_tax_schedule_snapshot_id':self.cost_schedule_snapshot_id,'fill_model_ids':fill_model_ids,'fill_model_snapshot_id':fill_model_snapshot_id,'fill_assumptions':{'execution':'displayed quote crossing','liquidity':'bounded by observed bid/ask size and shared across orders per event','queue_position':'not reconstructed','latency':'not modeled'},'fill_model':'displayed-quote-crossing; historical queue not reconstructed'}
 
 class BacktestContext:
     def __init__(self,base):self._base=base;self.params=base.params;self._report=None
@@ -131,8 +135,9 @@ class BacktestContext:
         repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures')
         events,rules=repo.load(params['event_snapshot'])
         events=[v for v in events if a<=v.event_time<=b]
-        report=Replay(events,rules,params['capital'],fill_models=repo.fill_models(params['event_snapshot'])).run(decide)
-        report.update({'stage':stage,'event_snapshot':params['event_snapshot'],'train_run_id':params.get('train_run_id')})
+        manifest=repo.manifest()
+        report=Replay(events,rules,params['capital'],fill_models=repo.fill_models(params['event_snapshot']),data_snapshot_id=manifest['snapshot_id']).run(decide)
+        report.update({'stage':stage,'event_snapshot':manifest['snapshot_id'],'data_source_id':manifest['source_id'],'data_granularity':manifest['granularity'],'data_event_count':manifest['event_count'],'data_start':manifest['start'],'data_end':manifest['end'],'train_run_id':params.get('train_run_id'),'code_snapshot_id':getattr(self._base,'code_snapshot_id',None),'engine_sha256':getattr(self._base,'engine_sha256',None),'dependency_lock_sha256':getattr(self._base,'dependency_lock_sha256',None)})
         self._report=report
         return report
 

@@ -20,7 +20,7 @@ def encode(value):
 
 class Context:
     def __init__(self,config,manifest,sink):
-        self.params=manifest['params'];self.data_root=Path(config['data_root']);self.run_id=config['id'];self._sink=sink;self._count=0
+        self.params=manifest['params'];self.data_root=Path(config['data_root']);self.run_id=config['id'];self.code_snapshot_id=config['snapshot'];self.engine_sha256=manifest['engine_sha256'];self.dependency_lock_sha256=hashlib.sha256(manifest['dependency_lock'].encode()).hexdigest();self._sink=sink;self._count=0
     def emit(self,kind,payload):
         self._count+=1
         if self._count>5000:raise RuntimeError('run output limit exceeded')
