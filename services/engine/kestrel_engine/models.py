@@ -1,5 +1,5 @@
 """Versioned domain records. Money never crosses a boundary as a float."""
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import re
 from typing import Any, Literal
@@ -204,6 +204,29 @@ class DatasetEnvelope(Record):
     parser_version: str
     quality: Literal['complete','partial','stale','quarantined','unknown'] = 'unknown'
     payload: Any
+
+class CorporateAction(Record):
+    instrument_id: str
+    action_id: str
+    action_type: str
+    announced_at: AwareDatetime
+    ex_date: date | None = None
+    record_date: date | None = None
+    payment_date: date | None = None
+    ratio: str | None = None
+    cash_amount: str | None = None
+    currency: str | None = None
+    source_id: str
+    revision: str = '0'
+
+    @field_validator('ratio', 'cash_amount')
+    @classmethod
+    def valid_action_amounts(cls, value):
+        if value is not None:
+            decimal_text(value)
+            if Decimal(value) < 0:
+                raise ValueError('corporate action amounts must not be negative')
+        return value
 
 class DataQuality(Record):
     state: Literal['fixture','complete','partial','stale','unavailable']
