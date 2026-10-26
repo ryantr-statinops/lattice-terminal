@@ -137,6 +137,7 @@ class ProviderCapabilityRegistry:
         for dataset, asset_class, venue, implemented, evidence in (
             ('instruments.details', 'equity', 'HOSE', True, 'SSI SecuritiesDetails documents stock security type and exchange fields; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('instruments.index', 'index', 'HOSE', True, 'SSI IndexList documents HOSE index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
+            ('instruments.index', 'index', 'HNX', True, 'SSI IndexList documents HNX index codes and names; parser and local catalogue path implemented, access and rights remain unverified.'),
             ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
@@ -248,30 +249,38 @@ def normalize_ssi_hose_equity_catalogue(payload: dict[str, Any]) -> list[Instrum
     return sorted(instruments.values(), key=lambda value: (value.native_symbol, value.id))
 
 
-def normalize_ssi_hose_index_catalogue(rows: list[dict[str, Any]]) -> list[Instrument]:
-    """Normalize one SSI HOSE IndexList page without treating indexes as equities."""
+def normalize_ssi_index_catalogue(rows: list[dict[str, Any]], exchange: str) -> list[Instrument]:
+    """Normalize an SSI IndexList page without treating indexes as equities."""
+    exchange = exchange.strip().upper()
+    if exchange not in {'HOSE', 'HNX'}:
+        raise ValueError('SSI IndexList adapter supports only HOSE and HNX indexes')
     instruments: dict[str, Instrument] = {}
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError('SSI IndexList row must be an object')
-        exchange = str(row.get('Exchange') or '').strip().upper()
-        if exchange != 'HOSE':
-            raise ValueError('SSI HOSE IndexList contained an index from another exchange')
+        row_exchange = str(row.get('Exchange') or '').strip().upper()
+        if row_exchange != exchange:
+            raise ValueError(f'SSI {exchange} IndexList contained an index from another exchange')
         code = str(row.get('IndexCode') or '').strip().upper()
         name = str(row.get('IndexName') or '').strip()
         if not code or not name:
-            raise ValueError('SSI HOSE IndexList index code and name are required')
+            raise ValueError(f'SSI {exchange} IndexList index code and name are required')
         instrument = Instrument(
-            id=f'SSI:INDEX:HOSE:{code}', venue='HOSE', board='unknown',
+            id=f'SSI:INDEX:{exchange}:{code}', venue=exchange, board='unknown',
             native_symbol=code, instrument_class='index', name=name,
-            metadata={'index_code': code, 'exchange': exchange},
+            metadata={'index_code': code, 'exchange': row_exchange},
             source_id='SSI-FC-DATA', is_synthetic=False,
         )
         previous = instruments.get(instrument.id)
         if previous is not None and previous != instrument:
-            raise ValueError('SSI HOSE IndexList contains conflicting index identities')
+            raise ValueError(f'SSI {exchange} IndexList contains conflicting index identities')
         instruments[instrument.id] = instrument
     return sorted(instruments.values(), key=lambda value: (value.native_symbol, value.id))
+
+
+def normalize_ssi_hose_index_catalogue(rows: list[dict[str, Any]]) -> list[Instrument]:
+    """Normalize the SSI HOSE index catalogue."""
+    return normalize_ssi_index_catalogue(rows, 'HOSE')
 
 
 def normalize_ssi_hose_equity_daily_rows(
@@ -735,6 +744,42 @@ class SsiFastConnectProvider(BaseMarketProvider):
         instruments = normalize_ssi_hose_index_catalogue(rows)
         if not instruments:
             raise ValueError('SSI returned no HOSE indexes')
+        return instruments
+
+    def fetch_hnx_index_catalogue(self, *, credential: dict[str, str]) -> list[Instrument]:
+        def checked_page(page_index: int) -> tuple[int, list[dict[str, Any]]]:
+            payload = self.get_json('IndexList', {
+                'exchange': 'HNX', 'pageIndex': page_index, 'pageSize': 1000,
+            }, credential=credential)
+            status = str(payload.get('status', '')).strip().casefold()
+            if status not in {'success', '200'}:
+                raise ValueError('SSI IndexList returned an unsuccessful response')
+            total_raw = payload.get('totalRecord')
+            if isinstance(total_raw, bool) or not isinstance(total_raw, (int, str)):
+                raise ValueError('SSI IndexList response has an invalid totalRecord')
+            try:
+                total = int(total_raw)
+            except (TypeError, ValueError) as error:
+                raise ValueError('SSI IndexList response has an invalid totalRecord') from error
+            rows = payload.get('data')
+            if total < 0 or not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('SSI IndexList response has invalid data')
+            return total, rows
+
+        total_records, rows = checked_page(1)
+        if total_records > 10000:
+            raise ValueError('SSI HNX IndexList exceeds the documented 10-page limit')
+        page_count = max(1, (total_records + 999) // 1000)
+        for page_index in range(2, page_count + 1):
+            page_total, page_rows = checked_page(page_index)
+            if page_total != total_records:
+                raise ValueError('SSI IndexList totalRecord changed during pagination')
+            rows.extend(page_rows)
+        if len(rows) != total_records:
+            raise ValueError('SSI IndexList page set is incomplete')
+        instruments = normalize_ssi_index_catalogue(rows, 'HNX')
+        if not instruments:
+            raise ValueError('SSI returned no HNX indexes')
         return instruments
 
     def fetch_hose_equity_daily(

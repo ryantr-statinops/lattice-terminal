@@ -381,6 +381,42 @@
         "summary": "Ingest Ssi Hose Equity Daily"
       }
     },
+    "/internal/v1/market/catalogues/ssi/hnx-indices": {
+      "post": {
+        "operationId": "ingest_ssi_hnx_index_catalogue_internal_v1_market_catalogues_ssi_hnx_indices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsiIndexCatalogueIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Ssi Hnx Index Catalogue"
+      }
+    },
     "/internal/v1/market/catalogues/ssi/hose-equity": {
       "post": {
         "operationId": "ingest_ssi_hose_equity_catalogue_internal_v1_market_catalogues_ssi_hose_equity_post",

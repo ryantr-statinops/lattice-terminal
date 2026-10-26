@@ -130,6 +130,21 @@ describe('Market ECharts chart',()=>{
   expect(screen.queryByRole('img',{name:'Candlestick chart; data table below'})).toBeNull();
  });
 
+ it('shows HNX index identities with their actual venue',async()=>{
+  const providerIndex:Instrument={id:'SSI:INDEX:HNX:HNX30',venue:'HNX',board:'unknown',native_symbol:'HNX30',instrument_class:'index',name:'HNX 30',metadata:{index_code:'HNX30',exchange:'HNX'},is_synthetic:false};
+  const fetcher=vi.fn(async(input:RequestInfo|URL)=>{
+   const url=String(input);
+   const value=url.includes('/market/datasets')?[{provider_id:'ssi',dataset:'instruments.index',snapshot_id:'hnx-indices-1'}]:url.includes('/instruments?provider_id=ssi')?[providerIndex]:url.includes('/providers/routing')?{datasets:{}}:url.includes('/instruments')?instruments:snapshot;
+   return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
+  });
+  vi.stubGlobal('fetch',fetcher);
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Market/></QueryClientProvider>);
+  await screen.findByRole('option',{name:'SSI'});
+  fireEvent.change(await screen.findByLabelText('Instrument source'),{target:{value:'ssi'}});
+  expect(await screen.findByRole('option',{name:'HNX30 · HNX'})).toBeDefined();
+  expect(await screen.findByText('Index catalogue entry is available for browsing. Daily index observations are not implemented yet.')).toBeDefined();
+ });
+
  it('syncs SSI daily candles for the selected HOSE instrument and displays the stored snapshot',async()=>{
   const providerInstrument:Instrument={id:'SSI:ISIN-AAA',venue:'HOSE',board:'unknown',native_symbol:'AAA',instrument_class:'equity',name:'Provider AAA',currency:'unknown',is_synthetic:false};
   const providerSnapshot:Snapshot={...snapshot,snapshot_id:'ssi-daily-snapshot',instrument:providerInstrument,quality:{state:'partial',gaps:[],adjustment:'unknown',calendar:'provider availability and exchange calendar unverified'},candles:candles.map(candle=>({...candle,currency:'unknown',price_unit:'unknown',volume_unit:'unknown',source_id:'SSI-FC-DATA'}))};

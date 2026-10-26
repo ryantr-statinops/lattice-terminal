@@ -46,3 +46,12 @@ it('starts the supported SSI HOSE index catalogue sync',async()=>{
  await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hose-indices',{}));
  expect(await screen.findByText('SSI HOSE index catalogue saved as snapshot mnopqrstuvwx.')).toBeDefined();
 });
+
+it('starts the supported SSI HNX index catalogue sync',async()=>{
+ vi.mocked(request).mockResolvedValue([]);
+ vi.mocked(send).mockResolvedValue({job:{status:'completed'},snapshot_id:'hnhnhnhnhnhn1234'});
+ render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><IngestionJobs canSyncSsiHnxIndices/></QueryClientProvider>);
+ fireEvent.click(await screen.findByRole('button',{name:'Sync SSI HNX indices'}));
+ await waitFor(()=>expect(send).toHaveBeenCalledWith('/ingestion/catalogues/ssi/hnx-indices',{}));
+ expect(await screen.findByText('SSI HNX index catalogue saved as snapshot hnhnhnhnhnhn.')).toBeDefined();
+});

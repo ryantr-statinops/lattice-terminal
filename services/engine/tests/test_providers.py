@@ -16,6 +16,7 @@ from kestrel_engine.providers import (
     SsiFastConnectProvider,
     DnseBrokerProvider,
     TcbsCommunityProvider,
+    normalize_ssi_index_catalogue,
     normalize_ssi_hose_equity_catalogue,
     normalize_ssi_hose_index_catalogue,
 )
@@ -49,6 +50,28 @@ class TestProviders(unittest.TestCase):
             normalize_ssi_hose_index_catalogue([{
                 'IndexCode': 'HNX30', 'IndexName': 'HNX 30', 'Exchange': 'HNX',
             }])
+
+    def test_ssi_hnx_index_catalogue_keeps_hnx_scope_and_index_identity(self):
+        provider = SsiFastConnectProvider()
+        rows = [
+            {'IndexCode': f'HNXIDX{index:04d}', 'IndexName': f'HNX Index {index}', 'Exchange': 'HNX'}
+            for index in range(1001)
+        ]
+        pages = [
+            {'status': 'Success', 'totalRecord': 1001, 'data': rows[:1000]},
+            {'status': 'Success', 'totalRecord': 1001, 'data': rows[1000:]},
+        ]
+        with patch.object(provider, 'get_json', side_effect=pages) as get_json:
+            instruments = provider.fetch_hnx_index_catalogue(credential={'consumerID': 'id', 'consumerSecret': 'secret'})
+        self.assertEqual(len(instruments), 1001)
+        self.assertEqual(get_json.call_args_list[0].args, ('IndexList', {'exchange': 'HNX', 'pageIndex': 1, 'pageSize': 1000}))
+        self.assertEqual(get_json.call_args_list[1].args[1]['pageIndex'], 2)
+        self.assertEqual(instruments[0].id, 'SSI:INDEX:HNX:HNXIDX0000')
+        self.assertEqual(instruments[0].venue, 'HNX')
+        self.assertEqual(instruments[0].instrument_class, 'index')
+        self.assertEqual(instruments[0].metadata, {'index_code': 'HNXIDX0000', 'exchange': 'HNX'})
+        with self.assertRaisesRegex(ValueError, 'another exchange'):
+            normalize_ssi_index_catalogue([{'IndexCode': 'VN30', 'IndexName': 'VN30', 'Exchange': 'HOSE'}], 'HNX')
 
     def test_ssi_hose_catalogue_normalizes_only_stock_security_types(self):
         payload = {

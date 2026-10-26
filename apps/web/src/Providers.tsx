@@ -236,6 +236,7 @@ export function Providers() {
       <IngestionJobs
         canSyncSsiHoseEquity={providers.data?.some(provider => provider.id === 'ssi' && provider.configured) === true && (capabilities.data ?? []).some(capability => capability.capability_id === 'ssi:market-data:instruments.details:equity:HOSE' && capability.implemented)}
         canSyncSsiHoseIndices={providers.data?.some(provider => provider.id === 'ssi' && provider.configured) === true && (capabilities.data ?? []).some(capability => capability.capability_id === 'ssi:market-data:instruments.index:index:HOSE' && capability.implemented)}
+        canSyncSsiHnxIndices={providers.data?.some(provider => provider.id === 'ssi' && provider.configured) === true && (capabilities.data ?? []).some(capability => capability.capability_id === 'ssi:market-data:instruments.index:index:HNX' && capability.implemented)}
       />
 
       {routing.data && (
