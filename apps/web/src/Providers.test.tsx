@@ -153,3 +153,36 @@ it('shows configuration, access rights, and connection health separately', async
   expect(ssiCard?.textContent).toContain('Rights: unknown');
   expect(screen.getByText('Rights: unverified')).toBeDefined();
 });
+
+it('refreshes provider configuration after credentials are saved', async () => {
+  let configured = false;
+  vi.mocked(request).mockImplementation(async path => {
+    if (path === '/providers') return mockProviders.map(provider => provider.id === 'ssi' ? {...provider, configured} : provider);
+    if (path === '/providers/capabilities') return mockCapabilities;
+    if (path === '/providers/routing') return mockRouting;
+    return null;
+  });
+  vi.mocked(send).mockImplementation(async path => {
+    if (path === '/providers/ssi/credentials') configured = true;
+    return undefined;
+  });
+
+  render(
+    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
+      <Providers />
+    </QueryClientProvider>
+  );
+
+  const ssiCard = (await screen.findByText('Blocked by policy')).closest('.panel') as HTMLElement;
+  expect(ssiCard.textContent).toContain('Configuration: not configured');
+  fireEvent.click(screen.getAllByRole('button', {name: 'Configure credentials'})[1]);
+  fireEvent.change(screen.getByLabelText('Provider service key'), {target: {value: 'market-data'}});
+  fireEvent.change(screen.getByLabelText('Credential field 1'), {target: {value: 'consumerID'}});
+  fireEvent.change(screen.getByLabelText('Credential value 1'), {target: {value: 'private-value'}});
+  fireEvent.click(screen.getByRole('button', {name: 'Save credentials'}));
+
+  await waitFor(() => expect(ssiCard.textContent).toContain('Configuration: configured'));
+  expect(send).toHaveBeenCalledWith('/providers/ssi/credentials', expect.objectContaining({
+    service: 'market-data', credential: {consumerID: 'private-value'},
+  }), 'PUT');
+});

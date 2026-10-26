@@ -203,7 +203,7 @@ export function Providers() {
                       </Button>
                     </div>
                   </div>
-                  {credentialEditor===p.id&&<ProviderCredentialEditor providerId={p.id} onCancel={()=>setCredentialEditor(null)} onSaved={()=>{setCredentialEditor(null);setSavedCredentialProvider(p.id)}}/>}
+                  {credentialEditor===p.id&&<ProviderCredentialEditor providerId={p.id} onCancel={()=>setCredentialEditor(null)} onSaved={()=>{setCredentialEditor(null);setSavedCredentialProvider(p.id);void client.invalidateQueries({queryKey:['providers']})}}/>}
                   {savedCredentialProvider===p.id&&<p role="status" className="muted">Credentials saved to the encrypted vault; provider access is unverified.</p>}
                 </div>
               </Panel>
