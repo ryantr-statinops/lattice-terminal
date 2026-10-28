@@ -368,41 +368,47 @@ func TestSSIHoseCatalogueSyncRejectsMissingVaultCredentialBeforeStartingJob(t *t
 	}
 }
 
-func TestSSIHoseDailyCandleSyncUsesVaultAndPersistsOneDatasetJob(t *testing.T) {
-	db, err := store.Open(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	var received map[string]any
-	engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/market/candles/ssi/hose-equity/daily" {
-			t.Fatalf("unexpected SSI daily candle request: %s %s", r.Method, r.URL.Path)
-		}
-		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
-			t.Fatal(err)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"snapshot_id": strings.Repeat("b", 64), "row_count": 3})
-	}))
-	defer engine.Close()
-	credentials := &credentialWriterStub{credential: `{"consumerID":"local-id","consumerSecret":"daily-secret"}`}
-	mux := http.NewServeMux()
-	(&API{
-		Store: db, Credentials: credentials,
-		Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}},
-	}).Routes(mux)
-	response := httptest.NewRecorder()
-	body := `{"instrument_id":"SSI:ISIN:VN000000AAA1","from_date":"2025-01-02","to_date":"2025-03-31"}`
-	mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/v1/ingestion/candles/ssi/hose-equity/daily", strings.NewReader(body)))
-	if response.Code != http.StatusCreated || strings.Contains(response.Body.String(), "daily-secret") {
-		t.Fatalf("SSI daily candle response = %d %s", response.Code, response.Body.String())
-	}
-	if received["instrument_id"] != "SSI:ISIN:VN000000AAA1" || received["from_date"] != "2025-01-02" || received["to_date"] != "2025-03-31" || received["credential"].(map[string]any)["consumerSecret"] != "daily-secret" {
-		t.Fatalf("SSI daily candle engine input = %#v", received)
-	}
-	jobs, err := db.IngestionJobs()
-	if err != nil || len(jobs) != 1 || jobs[0].Status != "completed" || jobs[0].CapabilityID != "ssi:market-data:candles.1d:equity:HOSE" || jobs[0].ProcessedRecords != 3 {
-		t.Fatalf("SSI daily candle job = %#v, %v", jobs, err)
+func TestSSIVenueDailyCandleSyncUsesVaultAndPersistsOneDatasetJob(t *testing.T) {
+	for _, venue := range []string{"HOSE", "HNX"} {
+		t.Run(venue, func(t *testing.T) {
+			db, err := store.Open(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+			var received map[string]any
+			engine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				wantPath := "/internal/v1/market/candles/ssi/" + strings.ToLower(venue) + "-equity/daily"
+				if r.Method != http.MethodPost || r.URL.Path != wantPath {
+					t.Fatalf("unexpected SSI daily candle request: %s %s", r.Method, r.URL.Path)
+				}
+				if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+					t.Fatal(err)
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"snapshot_id": strings.Repeat("b", 64), "row_count": 3})
+			}))
+			defer engine.Close()
+			credentials := &credentialWriterStub{credential: `{"consumerID":"local-id","consumerSecret":"daily-secret"}`}
+			mux := http.NewServeMux()
+			(&API{
+				Store: db, Credentials: credentials,
+				Engine: &Runner{Engine: &host.Engine{URL: engine.URL, Token: "engine-token"}},
+			}).Routes(mux)
+			response := httptest.NewRecorder()
+			body := `{"instrument_id":"SSI:ISIN:VN000000AAA1","from_date":"2025-01-02","to_date":"2025-03-31"}`
+			path := "/api/v1/ingestion/candles/ssi/" + strings.ToLower(venue) + "-equity/daily"
+			mux.ServeHTTP(response, httptest.NewRequest(http.MethodPost, path, strings.NewReader(body)))
+			if response.Code != http.StatusCreated || strings.Contains(response.Body.String(), "daily-secret") {
+				t.Fatalf("SSI daily candle response = %d %s", response.Code, response.Body.String())
+			}
+			if received["instrument_id"] != "SSI:ISIN:VN000000AAA1" || received["from_date"] != "2025-01-02" || received["to_date"] != "2025-03-31" || received["credential"].(map[string]any)["consumerSecret"] != "daily-secret" {
+				t.Fatalf("SSI daily candle engine input = %#v", received)
+			}
+			jobs, err := db.IngestionJobs()
+			if err != nil || len(jobs) != 1 || jobs[0].Status != "completed" || jobs[0].CapabilityID != "ssi:market-data:candles.1d:equity:"+venue || jobs[0].ProcessedRecords != 3 {
+				t.Fatalf("SSI daily candle job = %#v, %v", jobs, err)
+			}
+		})
 	}
 }
 

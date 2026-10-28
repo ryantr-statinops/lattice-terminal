@@ -53,6 +53,7 @@
     "POST /api/v1/funds/transfer",
     "POST /api/v1/funds/{id}/allocations",
     "POST /api/v1/funds/{id}/cash",
+    "POST /api/v1/ingestion/candles/ssi/hnx-equity/daily",
     "POST /api/v1/ingestion/candles/ssi/hose-equity/daily",
     "POST /api/v1/ingestion/catalogues/ssi/der-futures",
     "POST /api/v1/ingestion/catalogues/ssi/hnx-equity",
