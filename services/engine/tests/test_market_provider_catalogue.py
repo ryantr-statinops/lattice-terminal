@@ -444,9 +444,10 @@ def test_ssi_hnxbond_bond_checks_store_rights_before_provider_access(tmp_path):
     assert not called
 
 
-def test_ssi_hose_daily_ohlc_ingest_publishes_and_reads_market_snapshot(tmp_path):
-    catalogue_capability = 'ssi:market-data:instruments.details:equity:HOSE'
-    daily_capability = 'ssi:market-data:candles.1d:equity:HOSE'
+@pytest.mark.parametrize('venue', ['HOSE', 'HNX'])
+def test_ssi_daily_ohlc_ingest_publishes_and_reads_market_snapshot(tmp_path, venue):
+    catalogue_capability = f'ssi:market-data:instruments.details:equity:{venue}'
+    daily_capability = f'ssi:market-data:candles.1d:equity:{venue}'
     expires = '2099-01-01T00:00:00Z'
     def evidence(capability_id, endpoint, fields, purposes):
         return {
@@ -473,27 +474,27 @@ def test_ssi_hose_daily_ohlc_ingest_publishes_and_reads_market_snapshot(tmp_path
         observed_at=now, available_at=now, revision='1', schema_version='1', parser_version='ssi-details-1',
         unit='instrument', source_timezone='Asia/Ho_Chi_Minh', temporal_semantics='not_time_series',
         quality='complete', payload={
-            'id': 'SSI:VN000000AAA1', 'venue': 'HOSE', 'board': 'unknown',
+            'id': 'SSI:VN000000AAA1', 'venue': venue, 'board': 'unknown',
             'native_symbol': 'AAA', 'instrument_class': 'equity', 'name': 'Example JSC',
             'currency': 'unknown', 'metadata': {}, 'source_id': 'SSI-FC-DATA', 'is_synthetic': False,
         },
     )])
     app = create_app('test-token', str(tmp_path))
-    app.state.provider_router.update_policy({'datasets': {'candles.1d:equity:HOSE': daily_capability}})
-    app.state.provider_router.providers['ssi'].fetch_hose_equity_daily = lambda instrument, start, end, *, credential: [Candle(
+    app.state.provider_router.update_policy({'datasets': {f'candles.1d:equity:{venue}': daily_capability}})
+    setattr(app.state.provider_router.providers['ssi'], f'fetch_{venue.casefold()}_equity_daily', lambda instrument, start, end, *, credential: [Candle(
         instrument_id=instrument.id, interval='1d', open_time='2025-01-02T00:00:00+07:00',
         close_time='2025-01-03T00:00:00+07:00', available_at=now, open='10', high='12', low='9',
         close='11', volume='100', currency='unknown', price_unit='unknown', volume_unit='unknown',
         is_closed=True, revision='0', session='daily', source_id='SSI-FC-DATA',
-    )]
+    )])
 
     with TestClient(app) as client:
         headers = {'Authorization': 'Bearer test-token'}
-        response = client.post('/internal/v1/market/candles/ssi/hose-equity/daily', headers=headers, json={
+        response = client.post(f'/internal/v1/market/candles/ssi/{venue.casefold()}-equity/daily', headers=headers, json={
             'credential': {'consumerID': 'local-id', 'consumerSecret': 'local-secret'},
             'instrument_id': 'SSI:VN000000AAA1', 'from_date': '2025-01-02', 'to_date': '2025-01-02',
         })
-        market = client.get('/internal/v1/market/provider-candles?provider_id=ssi&instrument_id=SSI%3AVN000000AAA1', headers=headers)
+        market = client.get(f'/internal/v1/market/provider-candles?provider_id=ssi&instrument_id=SSI%3AVN000000AAA1&venue={venue}', headers=headers)
 
     assert response.status_code == 200 and response.json()['row_count'] == 1
     assert market.status_code == 200
@@ -791,7 +792,7 @@ def test_ssi_daily_ohlc_checks_store_rights_before_provider_access(tmp_path):
 def test_provider_daily_candle_read_requires_explicit_routing_policy(tmp_path):
     with TestClient(create_app('test-token', str(tmp_path))) as client:
         response = client.get(
-            '/internal/v1/market/provider-candles?provider_id=ssi&instrument_id=SSI%3AVN000000AAA1',
+            '/internal/v1/market/provider-candles?provider_id=ssi&instrument_id=SSI%3AVN000000AAA1&venue=HOSE',
             headers={'Authorization': 'Bearer test-token'},
         )
     assert response.status_code == 400

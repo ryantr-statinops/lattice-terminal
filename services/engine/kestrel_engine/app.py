@@ -310,17 +310,17 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def ingest_ssi_hnx_daily_index(value:SsiDailyIndexIngest):
         return _ingest_ssi_daily_index(value,'HNX')
 
-    @app.post('/internal/v1/market/candles/ssi/hose-equity/daily')
-    def ingest_ssi_hose_equity_daily(value:SsiDailyOhlcIngest):
-        capability_id='ssi:market-data:candles.1d:equity:HOSE'
+    def _ingest_ssi_equity_daily(value:SsiDailyOhlcIngest,venue:str):
+        capability_id=f'ssi:market-data:candles.1d:equity:{venue}'
         endpoint='Market/DailyOhlc'
         gate.authorize(capability_id,'store',endpoint)
         if value.from_date>value.to_date:raise ValueError('SSI DailyOhlc date range is invalid')
         instrument=next((item for item in dataset_publisher.instrument_catalogue('ssi') if item.id==value.instrument_id),None)
         if instrument is None:raise ValueError('instrument is not present in the authorized provider catalogue')
         provider=provider_router.providers['ssi']
-        candles=provider.fetch_hose_equity_daily(instrument,value.from_date,value.to_date,credential=value.credential)
-        if not candles:raise ValueError('SSI returned no HOSE daily candles')
+        fetch=getattr(provider,f'fetch_{venue.casefold()}_equity_daily')
+        candles=fetch(instrument,value.from_date,value.to_date,credential=value.credential)
+        if not candles:raise ValueError(f'SSI returned no {venue} daily candles')
         envelopes=[DatasetEnvelope(
             provider_id='ssi',dataset='candles.1d',source_id=candle.source_id,
             observed_at=candle.available_at,available_at=candle.available_at,revision=candle.revision,
@@ -330,12 +330,25 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
         ) for candle in candles]
         return dataset_publisher.publish(capability_id,endpoint,envelopes)
 
+    @app.post('/internal/v1/market/candles/ssi/hose-equity/daily')
+    def ingest_ssi_hose_equity_daily(value:SsiDailyOhlcIngest):
+        return _ingest_ssi_equity_daily(value,'HOSE')
+
+    @app.post('/internal/v1/market/candles/ssi/hnx-equity/daily')
+    def ingest_ssi_hnx_equity_daily(value:SsiDailyOhlcIngest):
+        return _ingest_ssi_equity_daily(value,'HNX')
+
     @app.get('/internal/v1/market/provider-candles')
-    def provider_candles(provider_id:str,instrument_id:str):
-        route_key='candles.1d:equity:HOSE'
+    def provider_candles(provider_id:str,instrument_id:str,venue:str):
+        venue=venue.strip().upper()
+        if venue not in {'HOSE','HNX'}:raise ValueError('provider daily candles support only HOSE and HNX venues')
+        route_key=f'candles.1d:equity:{venue}'
         capability_id=f'{provider_id}:market-data:{route_key}'
         if provider_router.policy.datasets.get(route_key)!=capability_id:
             raise ValueError('provider candle dataset is not selected in routing policy')
+        instrument=next((item for item in dataset_publisher.instrument_catalogue(provider_id) if item.id==instrument_id),None)
+        if instrument is None or instrument.instrument_class!='equity' or instrument.venue!=venue:
+            raise ValueError('instrument is not present in the selected provider candle venue catalogue')
         return dataset_publisher.candle_snapshot(provider_id,instrument_id)
 
     @app.get('/internal/v1/market/provider-index-constituents')
