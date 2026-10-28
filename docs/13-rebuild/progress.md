@@ -1,12 +1,12 @@
-# Rebuild progress / Trạng thái — 2026-10-20
+# Rebuild progress / Trạng thái — 2026-10-28
 
-**Fixture development build; production NOT ready.** Hai phần cuối Portfolio và recovery/local acceptance đã được triển khai. Các capability SSI thật và mô phỏng thị trường thật còn thiếu cả evidence lẫn implementation; không coi đủ commit là đủ production.
+**Fixture-first local development; chưa sẵn sàng production.** Nền tảng local, Portfolio, recovery và một số luồng SSI đã có implementation offline. SSI chưa được kiểm chứng bằng tài khoản thật hoặc rights evidence; dữ liệu SSI hiện chỉ hiển thị/phân tích ở phạm vi được route, chưa đủ điều kiện mô phỏng.
 
 Dockerfile, regular/dev/SSI Compose configurations, a multi-architecture CI build and Linux lifecycle smoke script are now present on `main`. They provide the intended local packaging path; container build and lifecycle acceptance still depend on the Docker-enabled CI runner and have not been run in this checkout.
 
 ## Git / Milestones
 
-Directly on main, no push, original history and tag `archive/pre-kestrel-rebuild-2026-10-19` preserved. The 22-part commit sequence is retained. Final recovery commit is identified by its subject because embedding its own hash would change it.
+The original history and tag `archive/pre-kestrel-rebuild-2026-10-19` are preserved. The 22-part base rebuild remains in history; provider and product work continues as smaller commits directly on `main`. The final recovery commit is identified by its subject because embedding its own hash would change it.
 
 1. `a79b1d4 docs: brand Kestrel Terminal and record rebuild decisions`
 2. `226f856 chore: replace prototype with Kestrel runtime foundation`
@@ -31,7 +31,7 @@ Directly on main, no push, original history and tag `archive/pre-kestrel-rebuild
 21. `583f8c2 feat: value portfolios and import settled tracking trades atomically`
 22. `feat: add offline recovery and verify fixture release boundaries` (this milestone).
 
-## Checks recorded locally
+## Checks recorded for the base rebuild
 
 - Part 21: Go store/API tests, frontend typecheck/lint/build passed; transaction-consistent Portfolio, no allocation double-counting, missing-price NAV/P&L, settled tracking CSV atomicity/idempotence/chronology/formula-safe IDs.
 - Go regression: all packages passed. Includes finance concurrency/idempotence, frozen Train/Test/engine hash, Host/Origin/auth/session expiry, workspace path safety, snapshot immutability, restart, backup/restore/path/checksum/reconciliation tests.
@@ -42,7 +42,17 @@ Directly on main, no push, original history and tag `archive/pre-kestrel-rebuild
 - Generated gateway response schemas / 38 routes and internal OpenAPI/market schemas checked. External request OpenAPI/TS SDK generation remains incomplete.
 - Markdown relative paths/headings: **65 files passed**. Legacy prohibited market terms absent from docs. No real credentials or SSI calls used.
 - npm audit (including dev dependencies): **0 advisories**. pip-audit 2.10.1: **no known vulnerabilities** among auditable installed Python packages; local editable project skipped. Patched Monaco's DOMPurify to 3.4.17 and Starlette to 1.9.0. These are point-in-time audit results, not a vulnerability-free guarantee.
-- At the time of this review, clean Windows setup and smoke passed using the former setup script; the current supported procedure is Compose-first with optional direct terminal commands documented in the root README. Remote GitHub CI has not executed for unpushed commits.
+- At the time of the base rebuild review, clean Windows setup and smoke passed using the former setup script; the current supported procedure is Compose-first with optional direct terminal commands documented in the root README. Those are historical results, not a fresh Compose acceptance for the provider work below.
+
+## Provider and signal updates — 2026-10-28
+
+SSI REST integrations are implemented and tested offline for HOSE/HNX/UPCoM equity catalogues; HOSE covered-warrant, DER futures, HOSE ETF and HNXBOND bond catalogues; HOSE/HNX index catalogues and daily index observations; observed HOSE index constituents; and HOSE/HNX equity daily candles. The HNX candle path now covers adapter normalization, immutable Parquet publication, engine reads, Gateway ingestion jobs and Market UI routing. The separate commits are on `main` and pushed through `1b37146`.
+
+These paths remain behind exact SourceGate scopes. No SSI account call was made; access, entitlement, local retention/display rights and provider payloads from an entitled account remain unverified. Daily candle currency, price/volume scale, adjustment basis and publication timing remain unknown. Market supports the routed SSI catalogue and selected daily datasets; Quant still uses fixtures. Provider data does not enable Backtest or Paper simulation.
+
+Strategy supports `signal_only`, `context.signal(...)`, signal run events and signal history rendering for fixture replay. It does not yet receive a connected SSI live feed. Paper simulation remains on synthetic fixture data. Persistent notification inbox and Telegram are intentionally outside the current implementation scope.
+
+Recent local checks for the SSI work passed: Python provider and ingestion/catalogue tests (89 total), Gateway API tests, Market component tests (14), web typecheck/lint/build, engine OpenAPI drift check and Gateway route manifest check. The web production build still reports existing large-chunk warnings. Docker Compose lifecycle acceptance and real-provider checks have not been run for these changes.
 
 ## Delivered recovery boundaries
 
@@ -53,7 +63,7 @@ Interrupted allocations require explicit reconciliation; open remainder is cance
 ## Still missing / blocked before real-data V1
 
 1. SSI account-specific entitlement, access, rights, field/history/quota and approval evidence. No probe is authorized by these commits.
-2. SSI access and rights remain unverified. SourceGate-protected `SecuritiesDetails` (HOSE/HNX/UPCOM equities, plus offline-tested HOSE covered-warrant, DER futures, HOSE ETF and HNXBOND bond paths), `IndexList` (HOSE/HNX), `DailyOhlc` (HOSE/HNX equities), `IndexComponents` (observed HOSE membership snapshots) and `DailyIndex` (HOSE/HNX observations) paths authenticate through the local vault, paginate, normalize and publish immutable Parquet snapshots. Market reads provider datasets only under explicit venue/class routing policies; index, covered-warrant, derivative, ETF and bond instruments retain their own asset-class identities. Non-equity class/venue mappings await entitled response samples, and these catalogues do not enable simulation. These paths are offline-tested only, and no account-backed call has been made. Daily bar/index publication timing, quantity/value units, currency, retention rights and simulation eligibility remain unverified. Other instrument classes/venues, historical constituent membership, durable page checkpoints, intraday data, streaming transport/reconnect/backfill and rights-approved retention still need implementation or evidence.
+2. SSI access and rights remain unverified. SourceGate-protected `SecuritiesDetails` (HOSE/HNX/UPCOM equities, plus HOSE covered-warrant, DER futures, HOSE ETF and HNXBOND bond catalogues), `IndexList` (HOSE/HNX), `DailyOhlc` (HOSE/HNX equities), `IndexComponents` (observed HOSE membership snapshots) and `DailyIndex` (HOSE/HNX observations) paths authenticate through the local vault, paginate, normalize and publish immutable Parquet snapshots. Market reads routed catalogues and the supported SSI daily datasets; Quant remains fixture-only. Non-equity class/venue mappings await entitled response samples. These paths are offline-tested only, and no account-backed call has been made. Daily bar/index publication timing, quantity/value units, currency, retention rights and simulation eligibility remain unverified. UPCoM daily candles, other instrument datasets, historical constituent membership, durable per-provider page resume, intraday data, streaming transport/reconnect/backfill and rights-approved retention still need implementation or evidence.
 3. Approved detailed historical data plus venue/board/class/effective-date rule packs, calendars, costs, auctions/price limits and corporate actions.
 4. Real settlement availability-time accounting/recovery. Current Go paper ledger supports **fictional immediate synthetic settlement only**, and rejects other settlement dates.
 5. Production fill realism and globally shared exchange liquidity across allocations. Current allocations replay independent synthetic clocks and do not reconstruct queues or missing fills.
@@ -68,8 +78,8 @@ News remains independent. Model Lab/AI training/optimization, factor research, 3
 
 ## Handoff / Bàn giao
 
-Tracked working tree is clean after the final commit. Build/test caches and the isolated local validation clone remain ignored under .cache. Test services are stopped; no user default profile/credentials were used. No push performed.
+As of 2026-10-28, `main` and `origin/main` both point to `1b37146`; the tracked working tree is clean. No real provider credentials or account data were used. Test services are stopped.
 
 ## Terminal UI redesign — 2026-10-20
 
-Owner-approved terminal styling, offline monospace fonts, Appearance, shared controls/dialogs and workspace interaction polish are implemented locally on main. No push. See the [UI review report](../10-ui-ux/terminal-review.md) for the current frontend checks, screenshots and commit-by-commit review record. Earlier checks above are historical rebuild evidence, not results rerun for this UI change.
+Owner-approved terminal styling, offline monospace fonts, Appearance, shared controls/dialogs and workspace interaction polish are implemented on main. See the [UI review report](../10-ui-ux/terminal-review.md) for the frontend checks, screenshots and commit-by-commit review record. The base rebuild checks above are historical and separate from the later provider checks recorded in this file.
