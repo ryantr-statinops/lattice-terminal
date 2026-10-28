@@ -18,6 +18,7 @@ from kestrel_engine.providers import (
     TcbsCommunityProvider,
     normalize_ssi_index_catalogue,
     normalize_ssi_hose_equity_catalogue,
+    normalize_ssi_hnx_equity_daily_rows,
     normalize_ssi_hnx_equity_catalogue,
     normalize_ssi_upcom_equity_catalogue,
     normalize_ssi_hose_covered_warrant_catalogue,
@@ -498,6 +499,51 @@ class TestProviders(unittest.TestCase):
             'pageIndex': 1, 'pageSize': 1000, 'ascending': 'true',
         }))
         self.assertEqual(get_json.call_args_list[1].args[1]['pageIndex'], 2)
+
+    def test_ssi_hnx_daily_ohlc_preserves_venue_and_rejects_hose_rows(self):
+        instrument = Instrument(
+            id='SSI:ISIN:VN000000HNX1', venue='HNX', board='unknown', native_symbol='HNXA',
+            instrument_class='equity', name='HNX Example JSC', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        row = {
+            'Symbol': 'HNXA', 'Market': 'HNX', 'TradingDate': '02/01/2025',
+            'Open': '12.2500', 'High': '13.0000', 'Low': '12.0000',
+            'Close': '12.7500', 'Volume': '2500', 'Value': '31875.0000',
+        }
+        candles = normalize_ssi_hnx_equity_daily_rows(
+            [row], instrument, date(2025, 1, 2), date(2025, 1, 2), datetime(2025, 1, 3, tzinfo=timezone.utc),
+        )
+        self.assertEqual(len(candles), 1)
+        self.assertEqual(candles[0].instrument_id, instrument.id)
+        self.assertEqual(candles[0].open, '12.2500')
+        self.assertEqual(candles[0].price_unit, 'unknown')
+
+        with self.assertRaisesRegex(ValueError, 'does not match the requested HNX instrument'):
+            normalize_ssi_hnx_equity_daily_rows(
+                [row | {'Market': 'HOSE'}], instrument, date(2025, 1, 2), date(2025, 1, 2),
+                datetime(2025, 1, 3, tzinfo=timezone.utc),
+            )
+
+    def test_ssi_hnx_daily_ohlc_uses_daily_ohlc_endpoint(self):
+        provider = SsiFastConnectProvider()
+        instrument = Instrument(
+            id='SSI:ISIN:VN000000HNX1', venue='HNX', board='unknown', native_symbol='HNXA',
+            instrument_class='equity', name='HNX Example JSC', source_id='SSI-FC-DATA', is_synthetic=False,
+        )
+        with patch.object(provider, 'get_json', return_value={
+            'status': 'Success', 'totalRecord': 1, 'data': [{
+                'Symbol': 'HNXA', 'Market': 'HNX', 'TradingDate': '02/01/2025',
+                'Open': '12.25', 'High': '13', 'Low': '12', 'Close': '12.75', 'Volume': '2500',
+            }],
+        }) as get_json:
+            candles = provider.fetch_hnx_equity_daily(
+                instrument, date(2025, 1, 2), date(2025, 1, 2),
+                credential={'consumerID': 'id', 'consumerSecret': 'secret'},
+            )
+        self.assertEqual(candles[0].instrument_id, instrument.id)
+        self.assertEqual(get_json.call_args.args[0], 'DailyOhlc')
+        self.assertEqual(get_json.call_args.args[1]['symbol'], 'HNXA')
+
 
     def test_ssi_hnx_catalogue_reads_each_documented_page(self):
         provider = SsiFastConnectProvider()

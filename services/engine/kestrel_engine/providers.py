@@ -148,6 +148,7 @@ class ProviderCapabilityRegistry:
             ('indices.daily', 'index', 'HOSE', True, 'SSI DailyIndex documents HOSE daily index values and market aggregates; units, provider publication time and local-use rights remain unverified.'),
             ('indices.daily', 'index', 'HNX', True, 'SSI DailyIndex documents HNX daily index values and market aggregates; units, provider publication time and local-use rights remain unverified.'),
             ('candles.1d', 'equity', 'HOSE', True, 'SSI DailyOhlc documents paginated daily OHLCV; price units, publication timing, adjustments, account access and local-use rights remain unverified.'),
+            ('candles.1d', 'equity', 'HNX', True, 'SSI DailyOhlc documents paginated daily OHLCV; HNX units, publication timing, adjustments, account access and local-use rights remain unverified.'),
             ('instruments.details', 'covered_warrant', 'unknown', False, 'SSI SecuritiesDetails documents CW security type; exact venue mapping requires account inventory.'),
             ('instruments.details', 'derivative', 'unknown', False, 'SSI SecuritiesDetails documents FU security type; contract lifecycle mapping requires account inventory.'),
             ('instruments.details', 'etf', 'unknown', False, 'SSI SecuritiesDetails documents EF security type; exact venue coverage requires account inventory.'),
@@ -525,13 +526,14 @@ def normalize_ssi_hnx_daily_index_rows(
     return _normalize_ssi_daily_index_rows(rows, index, 'HNX', start, end, observed_at)
 
 
-def normalize_ssi_hose_equity_daily_rows(
+def normalize_ssi_equity_daily_rows(
     rows: list[dict[str, Any]], instrument: Instrument, start: date, end: date,
-    available_at: datetime,
+    available_at: datetime, venue: str,
 ) -> list[Candle]:
     """Normalize SSI DailyOhlc while preserving provider-native price decimals."""
-    if instrument.instrument_class != 'equity' or instrument.venue != 'HOSE':
-        raise ValueError('SSI DailyOhlc adapter only supports HOSE equity instruments')
+    expected_venue = venue.strip().upper()
+    if expected_venue not in {'HOSE', 'HNX'} or instrument.instrument_class != 'equity' or instrument.venue != expected_venue:
+        raise ValueError(f'SSI DailyOhlc adapter only supports {expected_venue} equity instruments')
     if start > end:
         raise ValueError('SSI DailyOhlc date range is invalid')
     if available_at.tzinfo is None or available_at.utcoffset() is None:
@@ -551,9 +553,9 @@ def normalize_ssi_hose_equity_daily_rows(
         if not isinstance(row, dict):
             raise ValueError('SSI DailyOhlc row must be an object')
         symbol = str(row.get('Symbol') or '').strip().upper()
-        venue = str(row.get('Market') or '').strip().upper()
-        if symbol != instrument.native_symbol.upper() or venue != 'HOSE':
-            raise ValueError('SSI DailyOhlc row does not match the requested HOSE instrument')
+        row_venue = str(row.get('Market') or '').strip().upper()
+        if symbol != instrument.native_symbol.upper() or row_venue != expected_venue:
+            raise ValueError(f'SSI DailyOhlc row does not match the requested {expected_venue} instrument')
         raw_date = row.get('TradingDate')
         if not isinstance(raw_date, str):
             raise ValueError('SSI DailyOhlc TradingDate must use dd/mm/yyyy')
@@ -581,6 +583,20 @@ def normalize_ssi_hose_equity_daily_rows(
             raise ValueError('SSI DailyOhlc contains conflicting rows for one trading date')
         candles[trading_date] = candle
     return sorted(candles.values(), key=lambda value: value.open_time)
+
+
+def normalize_ssi_hose_equity_daily_rows(
+    rows: list[dict[str, Any]], instrument: Instrument, start: date, end: date,
+    available_at: datetime,
+) -> list[Candle]:
+    return normalize_ssi_equity_daily_rows(rows, instrument, start, end, available_at, 'HOSE')
+
+
+def normalize_ssi_hnx_equity_daily_rows(
+    rows: list[dict[str, Any]], instrument: Instrument, start: date, end: date,
+    available_at: datetime,
+) -> list[Candle]:
+    return normalize_ssi_equity_daily_rows(rows, instrument, start, end, available_at, 'HNX')
 
 class VndirectCommunityProvider(BaseMarketProvider):
     """Free public TradingView UDF provider hosted by VNDIRECT (dchart-api)."""
@@ -1187,11 +1203,12 @@ class SsiFastConnectProvider(BaseMarketProvider):
     ) -> list[DailyIndexObservation]:
         return self._fetch_daily_index(index, 'HNX', start, end, credential=credential)
 
-    def fetch_hose_equity_daily(
-        self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],
+    def _fetch_equity_daily(
+        self, instrument: Instrument, venue: str, start: date, end: date, *, credential: dict[str, str],
     ) -> list[Candle]:
-        if instrument.instrument_class != 'equity' or instrument.venue != 'HOSE':
-            raise ValueError('SSI DailyOhlc adapter only supports HOSE equity instruments')
+        venue = venue.strip().upper()
+        if venue not in {'HOSE', 'HNX'} or instrument.instrument_class != 'equity' or instrument.venue != venue:
+            raise ValueError(f'SSI DailyOhlc adapter only supports {venue} equity instruments')
         if start > end:
             raise ValueError('SSI DailyOhlc date range is invalid')
         if end >= datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).date():
@@ -1233,7 +1250,17 @@ class SsiFastConnectProvider(BaseMarketProvider):
         if len(rows) != total_records:
             raise ValueError('SSI DailyOhlc page set is incomplete')
         observed_at = datetime.now(timezone.utc)
-        return normalize_ssi_hose_equity_daily_rows(rows, instrument, start, end, observed_at)
+        return normalize_ssi_equity_daily_rows(rows, instrument, start, end, observed_at, venue)
+
+    def fetch_hose_equity_daily(
+        self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[Candle]:
+        return self._fetch_equity_daily(instrument, 'HOSE', start, end, credential=credential)
+
+    def fetch_hnx_equity_daily(
+        self, instrument: Instrument, start: date, end: date, *, credential: dict[str, str],
+    ) -> list[Candle]:
+        return self._fetch_equity_daily(instrument, 'HNX', start, end, credential=credential)
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         raise ValueError('SSI source capability blocked by policy')
