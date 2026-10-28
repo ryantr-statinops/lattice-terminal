@@ -204,18 +204,18 @@ describe('Market ECharts chart',()=>{
   expect(JSON.parse(String(requestCall?.[1]?.body))).toMatchObject({index_instrument_id:providerIndex.id});
  });
 
- it('syncs SSI daily candles for the selected HOSE instrument and displays the stored snapshot',async()=>{
-  const providerInstrument:Instrument={id:'SSI:ISIN-AAA',venue:'HOSE',board:'unknown',native_symbol:'AAA',instrument_class:'equity',name:'Provider AAA',currency:'unknown',is_synthetic:false};
+ it.each(['HOSE','HNX'] as const)('syncs SSI daily candles for the selected %s instrument and displays the stored snapshot',async venue=>{
+  const providerInstrument:Instrument={id:'SSI:ISIN-AAA',venue,board:'unknown',native_symbol:'AAA',instrument_class:'equity',name:'Provider AAA',currency:'unknown',is_synthetic:false};
   const providerSnapshot:Snapshot={...snapshot,snapshot_id:'ssi-daily-snapshot',instrument:providerInstrument,quality:{state:'partial',gaps:[],adjustment:'unknown',calendar:'provider availability and exchange calendar unverified'},candles:candles.map(candle=>({...candle,currency:'unknown',price_unit:'unknown',volume_unit:'unknown',source_id:'SSI-FC-DATA'}))};
   let synced=false;
   const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
    const url=String(input);
    let value:unknown=[];
    if(url.includes('/market/datasets'))value=synced?[{provider_id:'ssi',dataset:'instruments.details',snapshot_id:'catalogue-1'},{provider_id:'ssi',dataset:'candles.1d',snapshot_id:'daily-1'}]:[{provider_id:'ssi',dataset:'instruments.details',snapshot_id:'catalogue-1'}];
-   else if(url.includes('/providers/routing'))value={datasets:{'candles.1d:equity:HOSE':'ssi:market-data:candles.1d:equity:HOSE'}};
+   else if(url.includes('/providers/routing'))value={datasets:{[`candles.1d:equity:${venue}`]:`ssi:market-data:candles.1d:equity:${venue}`}};
    else if(url.includes('/instruments?provider_id=ssi'))value=[providerInstrument];
    else if(url.includes('/market/provider-candles'))value=providerSnapshot;
-   else if(url.includes('/ingestion/candles/ssi/hose-equity/daily')&&init?.method==='POST'){synced=true;value={job:{status:'completed'},snapshot_id:'abcdef0123456789'};}
+   else if(url.includes(`/ingestion/candles/ssi/${venue.toLowerCase()}-equity/daily`)&&init?.method==='POST'){synced=true;value={job:{status:'completed'},snapshot_id:'abcdef0123456789'};}
    else if(url.includes('/instruments'))value=instruments;
    else value=snapshot;
    return new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
@@ -228,12 +228,13 @@ describe('Market ECharts chart',()=>{
   fireEvent.click(sync);
   await screen.findByText('SSI daily candles saved as snapshot abcdef012345.');
   await screen.findByRole('img',{name:'Candlestick chart; data table below'});
-  const requestCall=fetcher.mock.calls.find(([url,init])=>String(url).includes('/ingestion/candles/ssi/hose-equity/daily')&&init?.method==='POST');
+  const requestCall=fetcher.mock.calls.find(([url,init])=>String(url).includes(`/ingestion/candles/ssi/${venue.toLowerCase()}-equity/daily`)&&init?.method==='POST');
   expect(requestCall).toBeDefined();
   const requestBody=JSON.parse(String(requestCall?.[1]?.body));
   expect(requestBody).toMatchObject({instrument_id:'SSI:ISIN-AAA'});
   expect(requestBody.from_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(requestBody.to_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(fetcher.mock.calls.some(([url])=>String(url).includes(`/market/provider-candles?provider_id=ssi&instrument_id=SSI%3AISIN-AAA&venue=${venue}`))).toBe(true);
   expect(screen.getByText(/not enabled for simulation/)).toBeDefined();
  });
 

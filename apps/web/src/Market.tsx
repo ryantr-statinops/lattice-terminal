@@ -32,12 +32,13 @@ export function Market(){
  const id=filteredInstruments.some(instrument=>instrument.id===selected)?selected:filteredInstruments[0]?.id||'';
  const instrument=filteredInstruments.find(value=>value.id===id);
  const hasFixtureCandles=catalogueProvider==='fixture';
- const candleRoute='candles.1d:equity:HOSE';
+ const candleVenue=instrument?.instrument_class==='equity'&&(instrument.venue==='HOSE'||instrument.venue==='HNX')?instrument.venue:'unknown';
+ const candleRoute=`candles.1d:equity:${candleVenue}`;
  const hasProviderCandleRoute=routing.data?.datasets?.[candleRoute]===`${catalogueProvider}:market-data:${candleRoute}`;
  const hasProviderSnapshot=(datasets.data??[]).some(value=>value.provider_id===catalogueProvider&&value.dataset==='candles.1d');
- const hasProviderCandles=catalogueProvider==='ssi'&&hasProviderCandleRoute&&hasProviderSnapshot;
+ const hasProviderCandles=catalogueProvider==='ssi'&&candleVenue!=='unknown'&&hasProviderCandleRoute&&hasProviderSnapshot;
  const hasCandleSource=hasFixtureCandles||hasProviderCandles;
- const data=useQuery({queryKey:['candles',catalogueProvider,id],queryFn:()=>hasFixtureCandles?request<Snapshot>('/engine/market/candles?instrument_id='+encodeURIComponent(id)):request<Snapshot>(`/engine/market/provider-candles?provider_id=${encodeURIComponent(catalogueProvider)}&instrument_id=${encodeURIComponent(id)}`),enabled:!!id&&hasCandleSource});
+ const data=useQuery({queryKey:['candles',catalogueProvider,id,candleVenue],queryFn:()=>hasFixtureCandles?request<Snapshot>('/engine/market/candles?instrument_id='+encodeURIComponent(id)):request<Snapshot>(`/engine/market/provider-candles?provider_id=${encodeURIComponent(catalogueProvider)}&instrument_id=${encodeURIComponent(id)}&venue=${encodeURIComponent(candleVenue)}`),enabled:!!id&&hasCandleSource});
  const isSsiHoseIndex=catalogueProvider==='ssi'&&instrument?.instrument_class==='index'&&instrument.venue==='HOSE';
  const isSsiIndex=catalogueProvider==='ssi'&&instrument?.instrument_class==='index'&&(instrument.venue==='HOSE'||instrument.venue==='HNX');
  const constituentRoute='indices.constituents:index:HOSE';
@@ -50,10 +51,10 @@ export function Market(){
  const hasProviderDailyIndexSnapshot=(datasets.data??[]).some(value=>value.provider_id==='ssi'&&value.dataset==='indices.daily');
  const dailyIndex=useQuery({queryKey:['daily-index','ssi',id],queryFn:()=>request<IndexDailySnapshot>(`/engine/market/provider-index-daily?provider_id=ssi&venue=${encodeURIComponent(dailyIndexVenue)}&index_instrument_id=${encodeURIComponent(id)}`),enabled:!!id&&isSsiIndex&&hasProviderDailyIndexRoute&&hasProviderDailyIndexSnapshot});
  const syncDaily=async()=>{
-  if(!instrument||instrument.instrument_class!=='equity'||instrument.venue!=='HOSE')return;
+  if(!instrument||instrument.instrument_class!=='equity'||(instrument.venue!=='HOSE'&&instrument.venue!=='HNX'))return;
   setSyncing(true);setSyncError(null);setSyncNotice('');
   try{
-   const result=await send<{snapshot_id:string}>('/ingestion/candles/ssi/hose-equity/daily',{instrument_id:instrument.id,from_date:dailyStart,to_date:dailyEnd});
+   const result=await send<{snapshot_id:string}>(`/ingestion/candles/ssi/${instrument.venue.toLowerCase()}-equity/daily`,{instrument_id:instrument.id,from_date:dailyStart,to_date:dailyEnd});
    setSyncNotice(`SSI daily candles saved as snapshot ${result.snapshot_id.slice(0,12)}.`);
    await Promise.all([client.invalidateQueries({queryKey:['ingestion-jobs']}),client.invalidateQueries({queryKey:['market-provider-datasets']}),client.invalidateQueries({queryKey:['candles','ssi',instrument.id]})]);
   }catch(error){setSyncError(error);void client.invalidateQueries({queryKey:['ingestion-jobs']})}
@@ -121,12 +122,12 @@ export function Market(){
     {!hasProviderDailyIndexSnapshot&&<p className="muted">No SSI {dailyIndexVenue} daily index snapshot is saved. Sync requires approval for exact SSI access and storage rights.</p>}
     {hasProviderDailyIndexSnapshot&&hasProviderDailyIndexRoute&&!dailyIndex.data&&<p className="muted">No daily index observations have been saved for this index yet.</p>}
    </>}
-   {catalogueProvider==='ssi'&&instrument.instrument_class==='equity'&&instrument.venue==='HOSE'&&<>
+   {catalogueProvider==='ssi'&&instrument.instrument_class==='equity'&&(instrument.venue==='HOSE'||instrument.venue==='HNX')&&<>
      <div className="form-grid"><Field label="From date"><TextInput type="date" value={dailyStart} max={localDate(new Date())} onChange={event=>setDailyStart(event.target.value)}/></Field><Field label="Through date"><TextInput type="date" value={dailyEnd} max={localDate(new Date())} onChange={event=>setDailyEnd(event.target.value)}/></Field></div>
     <Button disabled={!validDailyRange} pending={syncing} onClick={()=>void syncDaily()}>Sync SSI daily candles</Button>
     {syncNotice&&<InlineNotice tone="positive">{syncNotice}</InlineNotice>}
     {!hasProviderSnapshot&&<p className="muted">No daily candle snapshot is saved. Sync requires approval for exact SSI access and storage rights.</p>}
-    {hasProviderSnapshot&&!hasProviderCandleRoute&&<p className="muted">A daily snapshot exists, but Market reads it only when SSI is selected for the HOSE daily candle route in Provider settings.</p>}
+    {hasProviderSnapshot&&!hasProviderCandleRoute&&<p className="muted">A daily snapshot exists, but Market reads it only when SSI is selected for the {instrument.venue} daily candle route in Provider settings.</p>}
     {hasProviderSnapshot&&hasProviderCandleRoute&&!snapshot&&<p className="muted">No daily candle snapshot exists for this instrument yet.</p>}
    </>}
   </div>
