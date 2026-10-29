@@ -64,6 +64,15 @@ class ProviderRequestLimiter:
             self._last_request_at = now
 
 
+class ProviderProbe(BaseModel):
+    transport: Literal['reachable', 'unreachable']
+    data: Literal['available', 'no_data', 'invalid', 'not_checked']
+    symbol: str
+    resolution: str
+    sample_count: int | None = None
+    first_bar_at: str | None = None
+    last_bar_at: str | None = None
+
 class ProviderStatus(BaseModel):
     id: str
     name: str
@@ -74,6 +83,7 @@ class ProviderStatus(BaseModel):
     description: str = ''
     error: str | None = None
     configured: bool = True
+    probe: ProviderProbe | None = None
 
 class ProviderCapability(BaseModel):
     capability_id: str
@@ -610,22 +620,47 @@ class VndirectCommunityProvider(BaseMarketProvider):
         self.base_url = base_url.rstrip('/')
 
     def ping(self) -> ProviderStatus:
-        url = f'{self.base_url}/dchart/history?resolution=D&symbol=VNINDEX&from=1704067200&to=1704153600'
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(days=30)
+        symbol = 'VN:VNINDEX'
+        url = f'{self.base_url}/dchart/history?{urlencode({"resolution":"D","symbol":symbol,"from":int(start.timestamp()),"to":int(now.timestamp())})}'
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kestrel/1.0'})
         t0 = time.perf_counter()
         try:
             with self._read(lambda: urllib.request.urlopen(req, timeout=4.0)) as resp:
-                _ = resp.read(256)
+                payload = json.loads(resp.read(1024 * 1024 + 1).decode('utf-8'))
                 latency = round((time.perf_counter() - t0) * 1000, 1)
+                data, count, first, last = self._probe_payload(payload)
                 return ProviderStatus(
                     id=self.id,
                     name=self.name,
                     category=self.category,
-                    state='connected',
+                    state='connected' if data == 'available' else 'unknown',
                     latency_ms=latency,
                     capabilities=self.capabilities,
                     description=self.description,
+                    probe=ProviderProbe(
+                        transport='reachable',data=data,symbol=symbol,resolution='D',
+                        sample_count=count,first_bar_at=first,last_bar_at=last,
+                    ),
+                    error='VNDIRECT endpoint returned no bars in the probe window' if data == 'no_data' else ('VNDIRECT returned an invalid UDF payload' if data == 'invalid' else None),
                 )
+        except urllib.error.HTTPError as err:
+            latency = round((time.perf_counter() - t0) * 1000, 1)
+            return ProviderStatus(
+                id=self.id,name=self.name,category=self.category,state='unknown',latency_ms=latency,
+                capabilities=self.capabilities,description=self.description,
+                probe=ProviderProbe(transport='reachable',data='invalid',symbol=symbol,resolution='D'),
+                error=f'VNDIRECT endpoint responded with HTTP {err.code}',
+            )
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+            latency = round((time.perf_counter() - t0) * 1000, 1)
+            return ProviderStatus(
+                id=self.id,name=self.name,category=self.category,state='unknown',latency_ms=latency,
+                capabilities=self.capabilities,description=self.description,
+                probe=ProviderProbe(transport='reachable',data='invalid',symbol=symbol,resolution='D'),
+                error='VNDIRECT endpoint returned an invalid UDF payload',
+            )
         except Exception as err:
             return ProviderStatus(
                 id=self.id,
@@ -636,7 +671,42 @@ class VndirectCommunityProvider(BaseMarketProvider):
                 capabilities=self.capabilities,
                 description=self.description,
                 error=str(err),
+                probe=ProviderProbe(transport='unreachable',data='not_checked',symbol=symbol,resolution='D'),
             )
+
+    @staticmethod
+    def _probe_payload(payload: Any) -> tuple[str, int | None, str | None, str | None]:
+        if not isinstance(payload, dict):
+            return 'invalid', None, None, None
+        status = payload.get('s')
+        if status == 'no_data':
+            return 'no_data', 0, None, None
+        if status != 'ok':
+            return 'invalid', None, None, None
+        columns = [payload.get(name) for name in ('t', 'o', 'h', 'l', 'c', 'v')]
+        if any(not isinstance(column, list) for column in columns):
+            return 'invalid', None, None, None
+        count = len(columns[0])
+        if count == 0:
+            return 'invalid', None, None, None
+        if any(len(column) != count for column in columns):
+            return 'invalid', None, None, None
+        times = columns[0]
+        if any(not isinstance(value, int) or isinstance(value, bool) for value in times):
+            return 'invalid', None, None, None
+        if times != sorted(set(times)):
+            return 'invalid', None, None, None
+        try:
+            for column in columns[1:]:
+                for value in column:
+                    number = Decimal(str(value))
+                    if not number.is_finite():
+                        return 'invalid', None, None, None
+        except Exception:
+            return 'invalid', None, None, None
+        first = datetime.fromtimestamp(times[0], timezone.utc).isoformat()
+        last = datetime.fromtimestamp(times[-1], timezone.utc).isoformat()
+        return 'available', count, first, last
 
     def fetch_candles(self, symbol: str, interval: str, start: datetime, end: datetime) -> list[Candle]:
         resolutions = {'1m': '1', '1d': 'D'}

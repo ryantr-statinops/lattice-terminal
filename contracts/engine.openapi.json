@@ -131,6 +131,167 @@
         "title": "ProviderPing",
         "type": "object"
       },
+      "ProviderProbe": {
+        "properties": {
+          "data": {
+            "enum": [
+              "available",
+              "no_data",
+              "invalid",
+              "not_checked"
+            ],
+            "title": "Data",
+            "type": "string"
+          },
+          "first_bar_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Bar At"
+          },
+          "last_bar_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Bar At"
+          },
+          "resolution": {
+            "title": "Resolution",
+            "type": "string"
+          },
+          "sample_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Count"
+          },
+          "symbol": {
+            "title": "Symbol",
+            "type": "string"
+          },
+          "transport": {
+            "enum": [
+              "reachable",
+              "unreachable"
+            ],
+            "title": "Transport",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transport",
+          "data",
+          "symbol",
+          "resolution"
+        ],
+        "title": "ProviderProbe",
+        "type": "object"
+      },
+      "ProviderStatus": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "category": {
+            "enum": [
+              "community",
+              "broker_api",
+              "local",
+              "synthetic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "configured": {
+            "default": true,
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "probe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderProbe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "connected",
+              "offline",
+              "blocked",
+              "fixture",
+              "unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "state"
+        ],
+        "title": "ProviderStatus",
+        "type": "object"
+      },
       "RunRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1406,7 +1567,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStatus"
+                }
               }
             },
             "description": "Successful Response"

@@ -7,7 +7,7 @@ from .market import MarketRepository
 from .datasets import AtomicDatasetPublisher
 from .quant import INDICATORS,calculate
 from .sources import SourceGate
-from .providers import ProviderRouter
+from .providers import ProviderRouter, ProviderStatus
 from .programs import inspect_source
 from .runner import RunManager
 from .models import DatasetEnvelope, Record
@@ -102,7 +102,7 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def list_provider_capabilities():
         return provider_router.capabilities.list()
 
-    @app.post("/internal/v1/providers/{id}/ping")
+    @app.post("/internal/v1/providers/{id}/ping",response_model=ProviderStatus)
     def ping_provider(id: str, value:ProviderPing|None=None):
         if value is None:return provider_router.ping(id)
         return provider_router.ping(id,value.service,value.credential)
