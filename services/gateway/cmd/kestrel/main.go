@@ -242,7 +242,10 @@ func run(root, data string, dev bool) error {
 		return err
 	}
 	defer db.Close()
-	vault, _ := secret.OpenVault(data)
+	var credentials api.CredentialWriter
+	if vault, vaultErr := secret.OpenVault(data); vaultErr == nil {
+		credentials = vault
+	}
 	bridge := &api.Runner{Engine: engine, Store: db, Context: ctx}
 	routingPolicy, err := db.RoutingPolicy()
 	if err != nil {
@@ -252,7 +255,7 @@ func run(root, data string, dev bool) error {
 		return fmt.Errorf("could not restore provider routing: %w", err)
 	}
 	defer func() { cancel(); bridge.Wait() }()
-	application := &api.API{Store: db, Credentials: vault, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
+	application := &api.API{Store: db, Credentials: credentials, Workspace: workspace.Workspace{Root: data, Repository: root}, Valid: manager.Valid, StartRun: bridge.Start, StopRun: bridge.Stop, Inspect: bridge.Inspect, Terminal: terminal.NewManager(root)}
 	application.Engine = bridge
 	bridge.OnEvent = application.PaperEvent
 	bridge.OnFinish = application.FinishPaper
