@@ -90,8 +90,9 @@ it('renders provider cards and handles ping test probe', async () => {
 
   vi.mocked(send).mockResolvedValue({
     id: 'vndirect',
-    state: 'connected',
+    state: 'unknown',
     latency_ms: 25.0,
+    probe: {transport:'reachable',data:'no_data',symbol:'VN:VNINDEX',resolution:'D',sample_count:0},
   });
 
   render(
@@ -111,6 +112,23 @@ it('renders provider cards and handles ping test probe', async () => {
   await waitFor(() => {
     expect(send).toHaveBeenCalledWith('/providers/vndirect/ping', {});
   });
+  expect(await screen.findByText(/Probe transport: reachable · Data: no_data · VN:VNINDEX \(D\)/)).toBeDefined();
+});
+
+it('shows the sampled VNDIRECT date range only when UDF bars are valid', async () => {
+  vi.mocked(request).mockImplementation(async path => {
+    if (path === '/providers') return mockProviders;
+    if (path === '/providers/capabilities') return mockCapabilities;
+    if (path === '/providers/routing') return mockRouting;
+    return null;
+  });
+  vi.mocked(send).mockResolvedValue({id:'vndirect',state:'connected',latency_ms:30,probe:{
+    transport:'reachable',data:'available',symbol:'VN:VNINDEX',resolution:'D',sample_count:2,
+    first_bar_at:'2026-10-26T00:00:00+00:00',last_bar_at:'2026-10-27T00:00:00+00:00',
+  }});
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><Providers/></QueryClientProvider>);
+  fireEvent.click((await screen.findAllByRole('button',{name:'Ping Test'}))[0]);
+  expect(await screen.findByText(/2 bars · 2026-10-26T00:00:00\+00:00 – 2026-10-27T00:00:00\+00:00/)).toBeDefined();
 });
 
 it('limits routing choices to providers declaring matching capabilities', async () => {

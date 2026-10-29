@@ -19,6 +19,15 @@ export type ProviderStatus = {
   description: string;
   error?: string | null;
   configured: boolean;
+  probe?: {
+    transport: 'reachable' | 'unreachable';
+    data: 'available' | 'no_data' | 'invalid' | 'not_checked';
+    symbol: string;
+    resolution: string;
+    sample_count?: number | null;
+    first_bar_at?: string | null;
+    last_bar_at?: string | null;
+  } | null;
 };
 
 export type ProviderCapability = {
@@ -66,7 +75,7 @@ export function Providers() {
   const [credentialEditor, setCredentialEditor] = useState<string | null>(null);
   const [savedCredentialProvider, setSavedCredentialProvider] = useState<string | null>(null);
   const [routingError, setRoutingError] = useState<unknown>(null);
-  const [localPings, setLocalPings] = useState<Record<string, {latency_ms: number | null; state: string; error?: string}>>({});
+  const [localPings, setLocalPings] = useState<Record<string, {latency_ms: number | null; state: string; error?: string; probe?: ProviderStatus['probe']}>>({});
 
   const providers = useQuery({
     queryKey: ['providers'],
@@ -89,7 +98,7 @@ export function Providers() {
       const res = await send<ProviderStatus>(`/providers/${encodeURIComponent(id)}/ping`, {});
       setLocalPings(prev => ({
         ...prev,
-        [id]: {latency_ms: res.latency_ms, state: res.state, error: res.error ?? undefined},
+        [id]: {latency_ms: res.latency_ms, state: res.state, error: res.error ?? undefined, probe: res.probe},
       }));
       await client.invalidateQueries({queryKey: ['providers']});
     } catch (err) {
@@ -189,6 +198,10 @@ export function Providers() {
                   <div aria-label={`${p.name} configuration and access status`} style={{display: 'grid', gap: 4, fontSize: 11}}>
                     <span>Configuration: {p.configured ? 'configured' : 'not configured'}</span>
                     <span>Connection check: {activeState}</span>
+                    {currentPing?.probe && <div role="status">
+                      Probe transport: {currentPing.probe.transport} · Data: {currentPing.probe.data} · {currentPing.probe.symbol} ({currentPing.probe.resolution})
+                      {currentPing.probe.data==='available'&&<div>{currentPing.probe.sample_count} bars · {currentPing.probe.first_bar_at} – {currentPing.probe.last_bar_at}</div>}
+                    </div>}
                     {capabilities.data
                       ?.filter(capability => capability.provider_id === p.id)
                       .map(capability => (
