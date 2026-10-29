@@ -423,8 +423,8 @@ def create_app(token: str | None = None, data_root: str | None = None) -> FastAP
     def indicator_list(): return INDICATORS
 
     @app.get('/internal/v1/quant/calculate')
-    def quant(instrument_id:str,indicator:str='sma',period:int=14,benchmark_id:str|None=None,annualization:int|None=None):
-        snapshot=market.latest_fixture(instrument_id)
+    def quant(instrument_id:str,indicator:str='sma',period:int=14,benchmark_id:str|None=None,annualization:int|None=None,snapshot_id:str|None=None):
+        snapshot=market.load_for_instrument(snapshot_id,instrument_id) if snapshot_id else market.latest_fixture(instrument_id)
         benchmark=market.latest_fixture(benchmark_id).candles if benchmark_id else None
         if snapshot.quality.gaps: raise ValueError('resolve snapshot gaps before computing continuous indicators')
         return calculate(indicator,snapshot.candles,period,benchmark,annualization)|{'snapshot_id':snapshot.snapshot_id,'quality':snapshot.quality.model_dump()}

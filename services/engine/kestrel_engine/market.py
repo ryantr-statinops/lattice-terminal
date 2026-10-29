@@ -107,3 +107,8 @@ class MarketRepository:
         for manifest in self.manifests():
             if manifest['instrument']['id']==instrument_id: return self.load(manifest['snapshot_id'])
         raise ValueError('instrument not found')
+
+    def load_for_instrument(self,snapshot_id:str,instrument_id:str):
+        snapshot=self.load(snapshot_id)
+        if snapshot.instrument.id!=instrument_id: raise ValueError('snapshot does not belong to the selected instrument')
+        return snapshot
