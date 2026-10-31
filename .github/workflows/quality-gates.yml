@@ -16,6 +16,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:web
+      - run: npm run test:dev-ai
       - run: npm run build
       - run: npm run check
   engine:
@@ -27,7 +28,7 @@ jobs:
           version: 0.11.28
           python-version: '3.12'
       - run: uv sync --project services/engine --frozen
-      - run: uv run --project services/engine pytest
+      - run: uv run --project services/engine pytest -c services/engine/pyproject.toml test/engine
       - run: uv run --project services/engine python scripts/export-engine-contracts.py --check
       - run: uv tool run --from pip-audit==2.10.1 pip-audit --path services/engine/.venv/Lib/site-packages --skip-editable --progress-spinner off
   gateway:

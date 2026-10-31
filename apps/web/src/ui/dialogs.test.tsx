@@ -1,7 +1,0 @@
-// @vitest-environment jsdom
-import {afterEach,beforeEach,expect,it,vi} from 'vitest';
-import {cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
-import {useActionDialog} from './dialogs';
-beforeEach(()=>{HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')}});
-afterEach(()=>{cleanup();vi.restoreAllMocks()});
-it('retains input after failure, traps focus and prevents duplicate submissions',async()=>{let reject!:(error:Error)=>void;const submit=vi.fn(()=>new Promise((_,r)=>{reject=r}));function Host(){const d=useActionDialog();return <><button onClick={()=>d.show({title:'Deposit',fields:[{key:'amount',label:'Amount',amount:true}],onSubmit:submit})}>Mở</button>{d.element}</>}render(<Host/>);fireEvent.click(screen.getByText('Mở'));const field=screen.getByLabelText('Amount');expect(document.activeElement).toBe(field);fireEvent.change(field,{target:{value:'100'}});fireEvent.click(screen.getByText('Confirm'));expect(screen.getByText('Cancel').hasAttribute('disabled')).toBe(true);expect(submit).toHaveBeenCalledOnce();reject(Error('API unavailable'));await screen.findByRole('alert');expect((field as HTMLInputElement).value).toBe('100');const last=screen.getByText('Confirm');last.focus();fireEvent.keyDown(last,{key:'Tab'});expect(document.activeElement).toBe(field);fireEvent.click(screen.getByText('Cancel'));await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull())});

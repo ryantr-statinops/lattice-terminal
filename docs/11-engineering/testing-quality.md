@@ -3,9 +3,9 @@
 **Tóm tắt:** Chỉ ghi nhận kết quả đã chạy. Test fixture không chứng minh quyền SSI, tính đúng của luật thật hoặc kết quả CI trên remote.
 
 
-- npm run typecheck / lint / test:web / build.
+- npm run typecheck / lint / test:web / test:dev-ai / build.
 - go -C services/gateway test ./...
-- uv run --project services/engine pytest
+- uv run --project services/engine pytest -c services/engine/pyproject.toml test/engine
 - node scripts/check-docs.mjs: relative Markdown paths/headings.
 - node scripts/contracts.mjs: Go response DTO/route drift.
 - uv run --project services/engine python scripts/export-engine-contracts.py --check

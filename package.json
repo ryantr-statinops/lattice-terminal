@@ -4,10 +4,10 @@
     "test:web": "vitest run",
     "check": "node scripts/check.mjs",
     "build": "npm run build --workspace=@kestrel-terminal/web",
-    "lint": "eslint apps/web/src",
+    "lint": "eslint apps/web/src test/web",
     "typecheck": "npm run typecheck --workspace=@kestrel-terminal/web",
     "dev:ai": "node scripts/dev-ai.mjs",
-    "test:dev-ai": "node --test scripts/dev-ai.test.mjs"
+    "test:dev-ai": "node --test test/scripts/dev-ai.test.mjs"
   },
   "devDependencies": {
     "@testing-library/react": "16.3.3",

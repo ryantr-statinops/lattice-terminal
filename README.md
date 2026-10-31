@@ -98,9 +98,10 @@ Contributor checks:
 npm run typecheck
 npm run lint
 npm run test:web
+npm run test:dev-ai
 npm run build
 go -C services/gateway test ./...
-uv run --project services/engine pytest
+uv run --project services/engine pytest -c services/engine/pyproject.toml test/engine
 node scripts/check-docs.mjs
 node scripts/contracts.mjs
 uv run --project services/engine python scripts/export-engine-contracts.py --check

@@ -130,7 +130,7 @@ export function TerminalDrawer({open, onToggle, cwd = ''}: Props) {
           <div style={{display: 'flex', gap: 4, alignItems: 'center'}}>
             <Button onClick={() => runCommand('git status')} title="Check git status">git status</Button>
             <Button onClick={() => runCommand('npm run test:web')} title="Run web test suite">npm test</Button>
-            <Button onClick={() => runCommand('uv run --project services/engine pytest')} title="Run engine pytest">pytest</Button>
+            <Button onClick={() => runCommand('uv run --project services/engine pytest -c services/engine/pyproject.toml test/engine')} title="Run engine pytest">pytest</Button>
             <Button onClick={() => runCommand('cls')} title="Clear terminal screen">Clear</Button>
             <Button onClick={onToggle} title="Close terminal drawer">×</Button>
           </div>
