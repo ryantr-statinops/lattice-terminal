@@ -3,7 +3,7 @@ import pytest
 import math
 import statistics
 from kestrel_engine.models import Candle
-from kestrel_engine.quant import calculate
+from kestrel_engine.analytics.quant import calculate
 
 def bars(repository_paths):return [Candle.model_validate(v) for v in json.loads((repository_paths['fixtures']/'SYN01.json').read_text())['candles']]
 

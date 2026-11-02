@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from .market_data.repository import MarketRepository
 from .market_data.datasets import AtomicDatasetPublisher
-from .quant import INDICATORS,calculate
+from .analytics.quant import INDICATORS,calculate
 from .market_data.sources import SourceGate
 from .providers import ProviderRouter, ProviderStatus
 from .programs import inspect_source
