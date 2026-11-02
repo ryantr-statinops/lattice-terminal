@@ -3,7 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import pytest
 from kestrel_engine.strategy import execute_program
-from kestrel_engine.tapes import TapeRepository
+from kestrel_engine.execution.tapes import TapeRepository
 
 def test_strategy_contract_emits_paper_events_and_is_not_backtest(monkeypatch, repository_paths):
     repo=TapeRepository(repository_paths['fixtures']);output=[]

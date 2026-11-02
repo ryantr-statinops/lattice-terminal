@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 from .stream import MarketEvent
-from .execution import FillModel,RulePack
+from .rules import FillModel,RulePack
 
 class TapeRepository:
     def __init__(self,fixtures:Path):self.path=fixtures/'detailed-events.json'

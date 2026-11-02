@@ -1,7 +1,7 @@
 from pathlib import Path
 from decimal import Decimal
 import pytest
-from kestrel_engine.tapes import TapeRepository
+from kestrel_engine.execution.tapes import TapeRepository
 from kestrel_engine.backtest import Replay
 
 def test_backtest_history_only_and_conserved_cash(repository_paths):

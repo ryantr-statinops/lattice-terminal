@@ -6,8 +6,8 @@ from decimal import Decimal
 from pathlib import Path
 from .paper import PaperSession
 from .market_data.sources import SourceBlocked
-from .stream import Reconciler
-from .tapes import TapeRepository
+from .execution.stream import Reconciler
+from .execution.tapes import TapeRepository
 from .models import StrategySignal
 
 class StrategyContext:

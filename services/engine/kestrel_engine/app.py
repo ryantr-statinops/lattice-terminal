@@ -11,8 +11,8 @@ from .providers import ProviderRouter, ProviderStatus
 from .programs import inspect_source
 from .runner import RunManager
 from .models import DatasetEnvelope, Record
-from .tapes import TapeRepository
-from .execution import Order,validate_order,quote_fill
+from .execution.tapes import TapeRepository
+from .execution.rules import Order,validate_order,quote_fill
 from decimal import Decimal
 from typing import Any
 

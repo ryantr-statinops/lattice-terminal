@@ -1,5 +1,5 @@
 from pathlib import Path
-from kestrel_engine.tapes import TapeRepository
+from kestrel_engine.execution.tapes import TapeRepository
 from kestrel_engine.paper import PaperSession
 
 def test_paper_callbacks_reserve_then_fill_future_quote(repository_paths):

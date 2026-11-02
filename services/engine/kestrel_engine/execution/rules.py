@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal,ROUND_FLOOR
 from typing import Iterable,Literal
 from pydantic import AwareDatetime,ConfigDict,Field,field_validator
-from .models import Record,decimal_text
+from ..models import Record,decimal_text
 from .stream import MarketEvent
 
 class RulePack(Record):

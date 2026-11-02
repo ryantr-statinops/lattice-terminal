@@ -1,6 +1,6 @@
 """Paper callback engine; independent of the Backtest program API."""
 from decimal import Decimal
-from .execution import Order,quote_fill,validate_order
+from .execution.rules import Order,quote_fill,validate_order
 
 class PaperSession:
     def __init__(self,capital,rules,emit):

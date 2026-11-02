@@ -6,7 +6,7 @@ from datetime import datetime,timedelta
 from pydantic import AwareDatetime,Field,field_validator
 from threading import RLock
 from typing import Callable,Protocol
-from .models import Record,decimal_text
+from ..models import Record,decimal_text
 
 class MarketEvent(Record):
     id:str
