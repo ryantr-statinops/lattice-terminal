@@ -7,7 +7,7 @@ from .market_data.repository import MarketRepository
 from .market_data.datasets import AtomicDatasetPublisher
 from .market_data.sources import SourceGate
 from .providers import ProviderRouter
-from .runner import RunManager
+from .runtime.runner import RunManager
 from .api.context import EngineServices
 from .api.routes.analytics import build_analytics_router
 from .api.routes.market_data import build_market_router

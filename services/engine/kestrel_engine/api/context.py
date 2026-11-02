@@ -5,7 +5,7 @@ from ..market_data.datasets import AtomicDatasetPublisher
 from ..market_data.repository import MarketRepository
 from ..market_data.sources import SourceGate
 from ..providers import ProviderRouter
-from ..runner import RunManager
+from ..runtime.runner import RunManager
 
 @dataclass(frozen=True)
 class EngineServices:

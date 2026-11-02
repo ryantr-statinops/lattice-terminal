@@ -2,7 +2,7 @@ import hashlib
 import json
 import time
 from pathlib import Path
-from kestrel_engine.runner import RunManager
+from kestrel_engine.runtime.runner import RunManager
 from kestrel_engine.version import engine_hash
 
 def snapshot(root,source,identity='a'*64):
