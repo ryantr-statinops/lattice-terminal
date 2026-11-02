@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zoneinfo import ZoneInfo
 from ..models import Candle, DailyIndexObservation, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
 
-from .base import BaseMarketProvider, ProviderStatus
+from .base import BaseMarketProvider, ProviderProbe, ProviderStatus
 
 class VndirectCommunityProvider(BaseMarketProvider):
     """Free public TradingView UDF provider hosted by VNDIRECT (dchart-api)."""
