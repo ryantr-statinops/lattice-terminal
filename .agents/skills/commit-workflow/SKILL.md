@@ -7,6 +7,39 @@ description: Apply the user's small-commit workflow when planning or executing r
 
 Apply this skill automatically to repository implementation plans and work that changes repository files. If it is unclear whether a request includes repository changes, ask before creating a commit plan. Keep advice-only plans free of invented commits.
 
+## Workflow at a glance
+
+```mermaid
+flowchart TD
+    A[Repository request] --> B{Repository changes?}
+    B -- No --> C[Advice only; skip commit plan]
+    B -- Unclear --> D[Clarify scope]
+    D --> B
+    B -- Yes --> E[Plan waves, phases, tasks, commits]
+    E --> F[Ask branch, phase destination, test boundary]
+    F --> G[Reconfirm choices before execution]
+    G --> H[Execute task; stage explicit paths and review]
+    H --> I[Create planned commit or commit series]
+    I --> J[At task end: build; run tests at selected boundary]
+    J --> K{More tasks in phase?}
+    K -- Yes --> H
+    K -- No --> L{Phase destination?}
+    L -- Local --> M[Keep phase commits local]
+    L -- Remote --> N[Push approved phase]
+    N --> O{Remote CI available?}
+    O -- No --> P[Record CI as unavailable]
+    O -- Yes --> Q[Monitor CI; continue independent phases]
+    Q --> R{CI failed?}
+    R -- Yes --> S[Stop and report; no automatic fix]
+    S --> V
+    R -- No --> T[Continue; wait for final CI before report]
+    M --> U{More phases?}
+    P --> U
+    T --> U
+    U -- Yes --> G
+    U -- No --> V[Report commits, checks, state, and blockers]
+```
+
 ## Plan repository work
 
 - Organize substantial work as **Wave → Phase → Task → Commit**. Omit empty levels for small work.
