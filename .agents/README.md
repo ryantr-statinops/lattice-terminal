@@ -22,5 +22,6 @@ This directory contains versioned instructions and workflows for agents working 
 ## Current contents
 
 - `skills/repo-orientation/`: repository map and first-read workflow.
+- `skills/commit-workflow/`: plan reviewable implementation tasks, commits, checks, and remote delivery. Copied from [Orbit-System-Manager](https://github.com/ryantr-statinops/Orbit-System-Manager/tree/main/.agents/skills/commit-workflow).
 
 See [`../tools/agent/README.md`](../tools/agent/README.md) for guidance on scripts and MCP server code. MCP client configuration is managed separately from server source; this repository currently has a root `.mcp.json` for existing development integrations.
