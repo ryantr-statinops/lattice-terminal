@@ -12,7 +12,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from ..models import Candle, DailyIndexObservation, DataQuality, DatasetEnvelope, IndexConstituentSet, Instrument, MarketSnapshot
-from ..sources import SourceGate
+from .sources import SourceGate
 
 STORAGE_SCHEMA_VERSION = '1'
 DATASET_SCHEMA = pa.schema([

@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from kestrel_engine.archive import RightsAwareRawArchive
-from kestrel_engine.quarantine import RecordQuarantine
-from kestrel_engine.sources import SourceGate
+from kestrel_engine.market_data.archive import RightsAwareRawArchive
+from kestrel_engine.market_data.quarantine import RecordQuarantine
+from kestrel_engine.market_data.sources import SourceGate
 
 CAPABILITY = 'ssi:market-data:instruments.equity:HOSE'
 

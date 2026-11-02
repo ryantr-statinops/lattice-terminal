@@ -1,7 +1,7 @@
 import json
 from datetime import datetime,timedelta,timezone
 import pytest
-from kestrel_engine.sources import SourceGate,SourceBlocked
+from kestrel_engine.market_data.sources import SourceGate,SourceBlocked
 
 def test_probe_before_production_does_not_imply_retention(tmp_path):
     gate=SourceGate(tmp_path)

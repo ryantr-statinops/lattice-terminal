@@ -2,7 +2,7 @@
 from datetime import datetime,timezone
 from pathlib import Path
 from pydantic import AwareDatetime,Field
-from .models import Record
+from ..models import Record
 
 LEGACY_CAPABILITIES=['SSI-FC-DATA-REST','SSI-FC-DATA-STREAM']
 class SourceBlocked(ValueError):pass

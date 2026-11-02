@@ -8,7 +8,7 @@ from kestrel_engine.app import create_app
 from kestrel_engine.market_data.datasets import AtomicDatasetPublisher
 from kestrel_engine.models import Candle, DailyIndexObservation, DatasetEnvelope, IndexConstituentSet, Instrument, ProviderIndexConstituent
 from kestrel_engine.providers import ProviderCapabilityRegistry
-from kestrel_engine.sources import SourceBlocked, SourceGate
+from kestrel_engine.market_data.sources import SourceBlocked, SourceGate
 
 
 def test_market_reads_provider_catalogue_without_falling_back_to_fixtures(tmp_path):

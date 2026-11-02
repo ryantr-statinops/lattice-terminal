@@ -6,7 +6,7 @@ import pytest
 
 from kestrel_engine.market_data.datasets import AtomicDatasetPublisher
 from kestrel_engine.models import DatasetEnvelope
-from kestrel_engine.sources import SourceBlocked, SourceGate
+from kestrel_engine.market_data.sources import SourceBlocked, SourceGate
 
 CAPABILITY = 'ssi:market-data:instruments.equity:HOSE'
 

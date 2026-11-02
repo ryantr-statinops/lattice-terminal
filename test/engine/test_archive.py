@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from kestrel_engine.archive import RightsAwareRawArchive
-from kestrel_engine.sources import SourceBlocked, SourceGate
+from kestrel_engine.market_data.archive import RightsAwareRawArchive
+from kestrel_engine.market_data.sources import SourceBlocked, SourceGate
 
 
 def approved_gate(root: Path, *, retention=True, expires=None):
