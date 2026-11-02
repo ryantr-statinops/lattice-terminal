@@ -14,7 +14,7 @@ import urllib.request
 from pydantic import BaseModel, Field
 
 from zoneinfo import ZoneInfo
-from .models import Candle, DailyIndexObservation, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
+from ..models import Candle, DailyIndexObservation, IndexConstituentSet, Instrument, ProviderIndexConstituent, decimal_text
 
 def _is_retryable_read_error(error: Exception) -> bool:
     if isinstance(error, urllib.error.HTTPError):
