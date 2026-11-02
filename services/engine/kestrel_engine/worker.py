@@ -45,7 +45,7 @@ class Context:
         if len(x)!=len(y) or len(x)>5000:raise ValueError('chart dimensions invalid')
         self.emit('chart',{'name':str(name),'x':list(x),'y':list(y)})
     def snapshot(self,key):
-        from .market import MarketRepository
+        from .market_data.repository import MarketRepository
         return MarketRepository(self.data_root,Path(__file__).resolve().parents[3]/'data/fixtures').load(key)
 
 class Writer:

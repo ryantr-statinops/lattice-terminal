@@ -3,7 +3,7 @@ import hashlib
 from pathlib import Path
 import pyarrow.parquet as pq
 import pytest
-from kestrel_engine.market import MarketRepository,SCHEMA_V1
+from kestrel_engine.market_data.repository import MarketRepository,SCHEMA_V1
 
 
 def test_replay_hash_decimal_precision_and_corruption(tmp_path, repository_paths):

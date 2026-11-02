@@ -10,7 +10,7 @@ from threading import RLock
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
-from .models import Candle,DataQuality,Instrument,MarketSnapshot
+from ..models import Candle,DataQuality,Instrument,MarketSnapshot
 from .revisions import deduplicate_revisions
 
 SCHEMA_V1=pa.schema([

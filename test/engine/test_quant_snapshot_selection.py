@@ -1,6 +1,6 @@
 
 import pytest
-from kestrel_engine.market import MarketRepository
+from kestrel_engine.market_data.repository import MarketRepository
 
 
 

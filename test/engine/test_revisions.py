@@ -1,6 +1,6 @@
 import pytest
 
-from kestrel_engine.revisions import deduplicate_revisions
+from kestrel_engine.market_data.revisions import deduplicate_revisions
 
 
 def test_revision_dedup_drops_only_identical_repeats_and_keeps_all_revisions():

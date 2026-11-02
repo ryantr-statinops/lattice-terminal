@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from kestrel_engine.datasets import AtomicDatasetPublisher
+from kestrel_engine.market_data.datasets import AtomicDatasetPublisher
 from kestrel_engine.models import DatasetEnvelope
 from kestrel_engine.sources import SourceBlocked, SourceGate
 

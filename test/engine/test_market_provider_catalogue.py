@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from kestrel_engine.app import create_app
-from kestrel_engine.datasets import AtomicDatasetPublisher
+from kestrel_engine.market_data.datasets import AtomicDatasetPublisher
 from kestrel_engine.models import Candle, DailyIndexObservation, DatasetEnvelope, IndexConstituentSet, Instrument, ProviderIndexConstituent
 from kestrel_engine.providers import ProviderCapabilityRegistry
 from kestrel_engine.sources import SourceBlocked, SourceGate
