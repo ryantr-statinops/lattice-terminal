@@ -4,11 +4,11 @@ import time
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
-from .paper import PaperSession
-from .market_data.sources import SourceBlocked
-from .execution.stream import Reconciler
-from .execution.tapes import TapeRepository
-from .models import StrategySignal
+from ..paper.session import PaperSession
+from ..market_data.sources import SourceBlocked
+from ..execution.stream import Reconciler
+from ..execution.tapes import TapeRepository
+from ..models import StrategySignal
 
 class StrategyContext:
     def __init__(self,base,session,strategy_id,source='replay',mode='paper'):

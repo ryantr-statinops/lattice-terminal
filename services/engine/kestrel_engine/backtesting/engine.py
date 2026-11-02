@@ -7,9 +7,9 @@ import json
 from pathlib import Path
 from types import MappingProxyType
 import numpy as np
-from .execution.rules import FeeTaxSchedule,FillModelRegistry,MarketCalendar,Order,quote_fill
-from .execution.stream import Reconciler
-from .execution.tapes import TapeRepository
+from ..execution.rules import FeeTaxSchedule,FillModelRegistry,MarketCalendar,Order,quote_fill
+from ..execution.stream import Reconciler
+from ..execution.tapes import TapeRepository
 
 @dataclass(frozen=True)
 class HistoricalView:
@@ -56,7 +56,7 @@ class Replay:
             when,value=entry
             if when<=day:self.cash+=value;self.pending_cash.remove(entry)
     def place(self,event,intent):
-        from .execution.rules import validate_order
+        from ..execution.rules import validate_order
         order=Order(id=f'order-{len(self.orders)+1}-{event.sequence}',instrument_id=event.instrument_id,side=intent['side'],order_type='LO',limit_price=intent['limit_price'],quantity=intent['quantity'],created_at=event.received_at)
         validate_order(order,self.rules,event.event_time.date())
         self.cost_schedule.check(event.event_time.date())

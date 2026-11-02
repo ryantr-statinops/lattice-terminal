@@ -2,7 +2,7 @@ from pathlib import Path
 from decimal import Decimal
 import pytest
 from kestrel_engine.execution.tapes import TapeRepository
-from kestrel_engine.backtest import Replay
+from kestrel_engine.backtesting.engine import Replay
 
 def test_backtest_history_only_and_conserved_cash(repository_paths):
     repo=TapeRepository(repository_paths['fixtures']);events,rules=repo.load(repo.manifest()['snapshot_id'])
@@ -46,7 +46,7 @@ def test_replay_blocks_when_quote_liquidity_is_incomplete(repository_paths):
         Replay(events,rules,'100000',fill_models=repo.fill_models(repo.manifest()['snapshot_id'])).run(lambda view,event:[])
 
 def test_backtest_context_pins_code_and_dependency_provenance(repository_paths):
-    from kestrel_engine.backtest import BacktestContext
+    from kestrel_engine.backtesting.engine import BacktestContext
     repo=TapeRepository(repository_paths['fixtures']);manifest=repo.manifest()
     class Base:
         run_id='backtest-run'

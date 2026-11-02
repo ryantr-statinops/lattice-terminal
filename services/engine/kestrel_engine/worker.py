@@ -90,10 +90,10 @@ def main():
             program=runpy.run_path(str(entry),run_name='kestrel_user_program')
             if config['kind']=='research':program['run'](context)
             elif config['kind']=='backtest':
-                from .backtest import execute_program
+                from .backtesting.engine import execute_program
                 execute_program(program,context)
             else:
-                from .strategy import execute_program
+                from .strategies.runner import execute_program
                 execute_program(program,context)
             writer.flush()
         context.emit('state',{'status':'completed'})

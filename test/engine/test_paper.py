@@ -1,6 +1,6 @@
 from pathlib import Path
 from kestrel_engine.execution.tapes import TapeRepository
-from kestrel_engine.paper import PaperSession
+from kestrel_engine.paper.session import PaperSession
 
 def test_paper_callbacks_reserve_then_fill_future_quote(repository_paths):
     repo=TapeRepository(repository_paths['fixtures']);events,rules=repo.load(repo.manifest()['snapshot_id']);output=[]
