@@ -10,6 +10,8 @@ This is a local-first Vietnamese equity research terminal:
 - `test/`: centralized web, Python, and Node test suites. Web tests are grouped by feature; Python tests live in `engine/`; script tests live in `scripts/`. `integration/` is for cross-service tests.
 - `data/fixtures/`: synthetic test and preview data. `data/` is local runtime data; do not commit generated data.
 - `packages/`, `contracts/`, `docs/`, and root `scripts/`: shared contracts, documentation, and repository checks.
+- `.agents/skills/`: repository-scoped agent workflows; each skill has its own `SKILL.md`.
+- `tools/agent/`: deterministic agent helper scripts and MCP server implementations. Keep credentials out of this tree.
 
 ## Build, Test, and Development Commands
 
