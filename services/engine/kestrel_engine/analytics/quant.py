@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import talib
-from .models import Candle
+from ..models import Candle
 
 INDICATORS=['returns','sma','ema','rsi','macd','bollinger','atr','obv','volatility','drawdown','correlation','beta']
 
