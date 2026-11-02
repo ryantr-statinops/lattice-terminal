@@ -23,3 +23,17 @@ Go owns auth, workspace/code snapshots, jobs/events/artifact registry and financ
 Parquet publication uses temporary directories/checksums/completed manifests. DuckDB is per-query, not a shared writable process database. Offline backup snapshots SQLite through VACUUM INTO and checksums managed files.
 
 Native Windows uses Job Objects; the Linux Compose runtime uses Unix process groups and container init/shutdown handling for descendants. Host/Origin/internal auth defend service boundaries, not a sandbox against the host/container user. [Security](../11-engineering/security-privacy.md).
+
+## Python engine package layout
+
+`services/engine/kestrel_engine/` groups implementation by responsibility:
+
+- `api/`: request models, shared route dependencies, and HTTP route groups. `app.py` creates services and assembles the routers.
+- `providers/`: common provider contracts and capability metadata, individual adapter families, and routing policy.
+- `market_data/`: market snapshots, normalized provider datasets, source gates, revisions, archive, and quarantine.
+- `analytics/`: causal Quant calculations.
+- `execution/`: order rules, event reconciliation, and detailed replay tapes.
+- `backtesting/`, `strategies/`, and `paper/`: distinct historical replay, strategy, and paper execution workflows.
+- `runtime/`: job supervision, worker implementation, and process lifecycle management.
+
+`models.py` remains the shared data-contract module. `__main__.py` starts the engine service, and the top-level `worker.py` remains the stable module entry point used to launch supervised workers.
