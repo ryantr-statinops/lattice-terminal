@@ -47,7 +47,7 @@ def execute_program(program,base):
     if mode not in ['paper','signal_only']:raise ValueError('strategy_mode must be paper or signal_only')
     allocation=params.get('allocation_id')
     if mode=='paper' and not allocation:raise ValueError('choose a strategy allocation')
-    repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures');events,rules=repo.load(params['event_snapshot'])
+    repo=TapeRepository(Path(__file__).resolve().parents[4]/'data/fixtures');events,rules=repo.load(params['event_snapshot'])
     after=int(params.get('after_sequence',0));events=[v for v in events if v.sequence>after]
     if not events:raise ValueError('fixture tape exhausted; existing positions remain held until eligible future data is available')
     session=None

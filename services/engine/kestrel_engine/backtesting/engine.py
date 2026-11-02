@@ -132,7 +132,7 @@ class BacktestContext:
         if stage not in ['train','test']:raise ValueError('choose train or test')
         if stage=='test' and not params.get('train_run_id'):raise ValueError('Test requires a frozen completed Train run')
         a,b=(train_start,train_end) if stage=='train' else (test_start,test_end)
-        repo=TapeRepository(Path(__file__).resolve().parents[3]/'data/fixtures')
+        repo=TapeRepository(Path(__file__).resolve().parents[4]/'data/fixtures')
         events,rules=repo.load(params['event_snapshot'])
         events=[v for v in events if a<=v.event_time<=b]
         manifest=repo.manifest()
